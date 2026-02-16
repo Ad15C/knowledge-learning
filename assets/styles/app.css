@@ -1,3 +1,152 @@
+/* =======================
+   Police générale
+======================= */
 body {
-    background-color: skyblue;
+    font-family: "Comic Sans MS", cursive, sans-serif;
+    background-color: #f1f8fc;  /* fond clair */
+    color: #384050;             /* texte principal */
+    margin: 0;
+    padding: 0;
+}
+
+/* =======================
+   Header principal
+======================= */
+.main-header {
+    display: flex;
+    justify-content: space-between; /* logo à gauche, menu à droite */
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #f1f8fc; /* fond clair */
+    border-bottom: 2px solid #0074c7; /* ligne de séparation */
+}
+
+/* Logo */
+.main-header .logo img {
+    height: 60px;
+    width: auto;
+}
+
+/* Menu */
+.main-header .main-nav ul {
+    display: flex; /* tous les éléments sur la même ligne */
+    list-style: none; /* supprime les points devant les li */
+    margin: 0;
+    padding: 0;
+    gap: 25px; /* espace entre les liens */
+}
+
+.main-header .main-nav a {
+    text-decoration: none;
+    color: #00497c;
+    font-weight: normal;
+    padding: 5px 0; /* petit padding pour surlignage */
+    transition: all 0.3s;
+    position: relative;
+}
+
+/* Effet sur hover */
+.main-header .main-nav a:hover,
+.main-header .main-nav a:focus {
+    color: #0074c7;
+}
+
+/* Lien actif */
+.main-header .main-nav a.active {
+    font-weight: bold;
+    color: #0074c7;
+}
+
+/* Soulignement du lien actif */
+.main-header .main-nav a.active::after {
+    content: "";
+    display: block;
+    height: 3px;
+    background-color: #0074c7;
+    width: 100%;
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+}
+
+/* =======================
+   Boutons
+======================= */
+button, input[type="submit"] {
+    background-color: #00497c;  /* accent fort */
+    color: #f1f8fc;            /* texte clair sur bouton */
+    border: none;
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-family: "Comic Sans MS", cursive, sans-serif;
+}
+
+button:hover, input[type="submit"]:hover {
+    background-color: #0074c7; /* léger hover */
+}
+
+/* =======================
+   Titres
+======================= */
+h1, h2, h3, h4, h5, h6 {
+    color: #00497c;  /* accent sombre pour titres */
+    margin-top: 0;
+}
+
+/* =======================
+   Cartes / sections
+======================= */
+.card {
+    background-color: #f1f8fc;
+    border: 1px solid #0074c7;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+/* =======================
+   Footer
+======================= */
+footer {
+    background-color: #384050;
+    color: #f1f8fc;
+    padding: 15px 20px;
+    text-align: center;
+}
+
+/* =======================
+   RESPONSIVE
+======================= */
+@media (max-width: 768px) {
+    .main-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .main-header .main-nav ul {
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .main-header .logo img {
+        max-height: 50px;
+        margin-bottom: 10px;
+    }
+
+    .card {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-header .main-nav ul {
+        gap: 8px;
+    }
+
+    button, input[type="submit"] {
+        width: 100%;
+        box-sizing: border-box;
+    }
 }
