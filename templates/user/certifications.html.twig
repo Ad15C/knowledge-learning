@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Certifications{% endblock %}
+
+{% block body %}
+<h1>Mes Certifications</h1>
+{% if certifications is empty %}
+    <p>Vous n'avez encore obtenu aucune certification.</p>
+{% else %}
+    <ul>
+        {% for cert in certifications %}
+            <li>{{ cert.name }} - obtenu le {{ cert.date|date('d/m/Y') }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+{% endblock %}

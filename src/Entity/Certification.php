@@ -21,15 +21,15 @@ class Certification
     #[ORM\JoinColumn(nullable: false)]
     private ?Cursus $cursus = null;
 
-    #[ORM\Column(type: 'datetime_immutable')]
-    private ?\DateTimeImmutable $issuedAt = null;
+    #[ORM\Column(type: 'datetime')]
+    private ?\DateTime $issuedAt = null;
 
     #[ORM\Column(length: 255)]
     private ?string $certificateCode = null; // code unique ou numéro du certificat
 
     public function __construct()
     {
-        $this->issuedAt = new \DateTimeImmutable();
+        $this->issuedAt = new \DateTime();
     }
 
     public function getId(): ?int
@@ -61,12 +61,12 @@ class Certification
         return $this;
     }
 
-    public function getIssuedAt(): ?\DateTimeImmutable
+    public function getIssuedAt(): ?\DateTime
     {
         return $this->issuedAt;
     }
 
-    public function setIssuedAt(\DateTimeImmutable $issuedAt): static
+    public function setIssuedAt(\DateTime $issuedAt): static
     {
         $this->issuedAt = $issuedAt;
 

@@ -17,56 +17,142 @@
          Header
     ====================== -->
     <header class="main-header">
-        <!-- Logo -->
-        <div class="logo">
-            <a href="#"><img src="{{ asset('images/knowledge_learning_logo.jpeg') }}" alt="Knowledge Learning Logo"></a>
-        </div>
 
-        <!-- Menu -->
-<nav class="main-nav">
+    <div class="logo">
+        <a href="{{ path('homepage') }}">
+            <img src="{{ asset('images/knowledge_learning_logo.jpeg') }}">
+        </a>
+    </div>
+
+    <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+
+    <nav class="main-nav">
+
         <ul>
-            <li><a href="{{ path('homepage') }}" class="active">Accueil</a></li>
-            <li><a href="#">Thèmes</a></li>
-            <li><a href="#">Panier</a></li>
-            <li><a href="#">Contact</a></li>
+
+            <li>
+                <a href="{{ path('homepage') }}"
+                   class="{{ app.request.attributes.get('_route') == 'homepage' ? 'active' : '' }}">
+                   Accueil
+                </a>
+            </li>
+
+            <li>
+                <a href="#">Thèmes</a>
+            </li>
+
+            <li>
+                <a href="#">Panier</a>
+            </li>
+
+            <li>
+                <a href="#">Contact</a>
+            </li>
 
             {% if app.user %}
+
                 {% if is_granted('ROLE_ADMIN') %}
-                    <!-- Menu Admin avec sous-menu -->
+
                     <li>
-                        <a href="#">Admin</a>
+                        <a href="#" class="has-submenu">
+                            Admin
+                        </a>
+
                         <ul>
+
+                            <li><a href="#">>Dashboard</a></li>
+
                             <li><a href="#">Utilisateurs</a></li>
+
                             <li><a href="#">Thèmes</a></li>
+
                             <li><a href="#">Cursus</a></li>
+
                             <li><a href="#">Leçons</a></li>
+
                             <li><a href="#">Achats</a></li>
+
                             <li><a href="#">Certifications</a></li>
-                            <li><a href="#">Contact</a></li>
+
                         </ul>
+
                     </li>
+
                 {% else %}
-                    <!-- Menu User avec sous-menu -->
+
                     <li>
-                        <a href="#">Dashboard</a>
+
+                        <a href="{{ path('user_dashboard') }}"
+                           class="has-submenu {{ app.request.attributes.get('_route') starts with 'user_dashboard' ? 'active' : '' }}">
+                           Dashboard
+                        </a>
+
                         <ul>
-                            <li><a href="#">Mon Profil</a></li>
-                            <li><a href="#">Mes Achats</a></li>
-                            <li><a href="#">Mes Certifications</a></li>
+
+                            <li>
+                                <a href="{{ path('user_dashboard') }}">
+                                    Vue d'ensemble
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="{{ path('user_dashboard_edit') }}">
+                                    Modifier profil
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="{{ path('user_dashboard_password') }}">
+                                    Mot de passe
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="{{ path('user_dashboard_purchases') }}">
+                                    Mes achats
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="{{ path('user_dashboard_certifications') }}">
+                                    Certifications
+                                </a>
+                            </li>
+
                         </ul>
+
                     </li>
+
                 {% endif %}
 
-                <li><a href="#">Déconnexion</a></li>
+                <li>
+                    <a href="{{ path('app_logout') }}">
+                        Déconnexion
+                    </a>
+                </li>
+
             {% else %}
-                <!-- Menu Public -->
-                <li><a href="#">Connexion</a></li>
-                <li><a href="#">Inscription</a></li>
+
+                <li>
+                    <a href="{{ path('app_login') }}">
+                        Connexion
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{{ path('app_register') }}">
+                        Inscription
+                    </a>
+                </li>
+
             {% endif %}
+
         </ul>
+
     </nav>
 
-    </header>
+</header>
+
 
     <!-- =======================
          Main Content

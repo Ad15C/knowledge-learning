@@ -1,202 +1,213 @@
+/* =======================
+   BODY
+======================= */
+body {
+    font-family: "Comic Sans MS", cursive, sans-serif;
+    background-color: #f1f8fc;
+    color: #384050;
+    margin: 0;
+    padding: 0;
+}
 
 /* =======================
-    Body et police
-    ======================= */
-    body {
-        font-family: "Comic Sans MS", cursive, sans-serif;
-        background-color: #f1f8fc;
-        color: #384050;
-        margin: 0;
-        padding: 0;
+   HEADER
+======================= */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #f1f8fc;
+    border-bottom: 2px solid #0074c7;
+}
+
+.logo img {
+    height: 60px;
+}
+
+/* =======================
+   HAMBURGER BUTTON
+======================= */
+.menu-toggle {
+    display: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #00497c;
+}
+
+/* =======================
+   MAIN NAV
+======================= */
+.main-nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 25px;
+    align-items: center;
+}
+
+.main-nav li {
+    position: relative;
+}
+
+.main-nav a {
+    text-decoration: none;
+    color: #00497c;
+    font-weight: 500;
+    padding: 8px 0;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+/* Hover */
+.main-nav a:hover {
+    color: #0074c7;
+}
+
+/* Active link underline */
+.main-nav a.active::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 3px;
+    bottom: -5px;
+    left: 0;
+    background-color: #0074c7;
+}
+
+/* =======================
+   SUBMENU
+======================= */
+.has-submenu::after {
+    content: "▾";
+    margin-left: 5px;
+    font-size: 0.7em;
+}
+
+.main-nav ul li ul {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    min-width: 200px;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: all 0.25s ease;
+}
+
+.main-nav ul li:hover ul {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.main-nav ul li ul li a {
+    padding: 10px 15px;
+    color: #333;
+}
+
+.main-nav ul li ul li a:hover {
+    color: #0074c7;
+    background-color: #f1f8fc;
+}
+
+/* =======================
+   BUTTONS
+======================= */
+button, input[type="submit"] {
+    background-color: #00497c;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+button:hover, input[type="submit"]:hover {
+    background-color: #0074c7;
+}
+
+/* =======================
+   TITLES
+======================= */
+h1,h2,h3,h4,h5,h6 {
+    color: #00497c;
+}
+
+/* =======================
+   FOOTER
+======================= */
+footer {
+    background-color: #384050;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    margin-top: 40px;
+}
+
+/* =======================
+   MAIN CONTENT
+======================= */
+main {
+    padding: 30px;
+}
+
+/* =======================
+   RESPONSIVE
+======================= */
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: block;
     }
 
-/* =======================
-     Header et logo
-    ======================= */
     .main-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 20px;
-        background-color: #f1f8fc;
-        border-bottom: 2px solid #0074c7;
+        flex-wrap: wrap;
     }
 
-    .main-header .logo img {
-        height: 60px;
-        width: auto;
+    .main-nav {
+        width: 100%;
     }
 
-/* =======================
-     Menu principal
-    ======================= */
     .main-nav ul {
-        list-style: none;
-        margin: 0;
-        padding: 0;
+        flex-direction: column;
+        width: 100%;
+        display: none;
+        background-color: #f1f8fc;
+        padding-top: 10px;
+    }
+
+    .main-nav ul.show {
         display: flex;
-        gap: 20px;
     }
 
     .main-nav ul li {
-        position: relative;
+        width: 100%;
     }
 
     .main-nav ul li a {
-        text-decoration: none;
-        color: #00497c;
-        padding: 8px 12px;
-        display: block;
-        font-weight: 500;
-        transition: color 0.3s;
-        position: relative;
-    }
-
-    /* Hover léger */
-    .main-nav ul li a:hover,
-    .main-nav ul li a:focus {
-        color: #007BFF;
-    }
-
-    /* Lien actif : souligné */
-    .main-nav ul li a.active::after {
-        content: "";
-        display: block;
-        height: 3px;
-        background-color: #007BFF;
+        padding: 12px;
         width: 100%;
-        position: absolute;
-        bottom: -5px;
-        left: 0;
     }
 
-    /* Flèche pour sous-menu */
-    .main-nav ul li a.has-submenu::after {
-        content: "▾";
-        margin-left: 5px;
-        font-size: 0.7em;
-    }
-
-/* =======================
-    Sous-menu
-    ======================= */
     .main-nav ul li ul {
+        position: static;
+        box-shadow: none;
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
         display: none;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        background-color: #fff;
-        border-radius: 4px;
-        min-width: 180px;
-        flex-direction: column;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        z-index: 1000;
     }
 
-    .main-nav ul li ul li a {
-        padding: 8px 12px;
-        color: #333;
-        font-weight: normal;
-    }
-
-    .main-nav ul li ul li a:hover {
-        color: #007BFF;
-    }
-
-    /* Hover desktop */
-    .main-nav ul li:hover > ul {
+    .main-nav ul li.open ul {
         display: flex;
+        flex-direction: column;
     }
-
-/* =======================
-    Responsive
-    ======================= */
-    @media (max-width: 768px) {
-        .main-header {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .main-nav ul {
-            flex-direction: column;
-            gap: 0;
-            width: 100%;
-        }
-
-        /* Sous-menu toggle via class .open */
-        .main-nav ul li ul {
-            position: static;
-            display: none;
-            box-shadow: none;
-        }
-
-        .main-nav ul li.open > ul {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .main-nav ul li a.has-submenu::after {
-            content: "▸";
-            transition: transform 0.3s;
-        }
-
-        .main-nav ul li.open > a.has-submenu::after {
-            transform: rotate(90deg);
-        }
-
-        .main-nav ul li a {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .main-header .logo img {
-            max-height: 50px;
-            margin-bottom: 10px;
-        }
-    }
-
-/* =======================
-    Boutons
-    ======================= */
-    button, input[type="submit"] {
-        background-color: #00497c;
-        color: #f1f8fc;
-        border: none;
-        padding: 8px 15px;
-        cursor: pointer;
-        border-radius: 4px;
-        font-family: "Comic Sans MS", cursive, sans-serif;
-    }
-
-    button:hover, input[type="submit"]:hover {
-        background-color: #0074c7;
-    }
-
-/* =======================
-    Titres
-    ======================= */
-    h1,h2,h3,h4,h5,h6 {
-        color: #00497c;
-        margin-top: 0;
-    }
-
-/* =======================
-    Cartes / sections
-    ======================= */
-    .card {
-        background-color: #f1f8fc;
-        border: 1px solid #0074c7;
-        border-radius: 5px;
-        padding: 15px;
-        margin-bottom: 15px;
-    }
-
-/* =======================
-    Footer
-    ======================= */
-    footer {
-        background-color: #384050;
-        color: #f1f8fc;
-        padding: 15px 20px;
-        text-align: center;
-    }
+}

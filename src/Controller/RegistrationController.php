@@ -35,7 +35,7 @@ class RegistrationController extends AbstractController
 
             // Génération du token de vérification
             $user->setVerificationToken(bin2hex(random_bytes(32)));
-            $user->setVerificationTokenExpiresAt(new \DateTimeImmutable('+1 day'));
+            $user->setVerificationTokenExpiresAt(new \DateTime('+1 day'));
             $user->setIsVerified(false); // compte non vérifié
 
             // Role par défaut

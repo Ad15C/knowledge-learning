@@ -20,15 +20,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 180)]
     private ?string $email = null;
 
-    /**
-     * @var list<string> The user roles
-     */
     #[ORM\Column]
     private array $roles = [];
 
-    /**
-     * @var string The hashed password
-     */
     #[ORM\Column]
     private ?string $password = null;
 
@@ -45,7 +39,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $verificationToken = null;
 
     #[ORM\Column(type: 'datetime', nullable: true)]
-    private ?\DateTimeImmutable $verificationTokenExpiresAt = null;
+    private ?\DateTime $verificationTokenExpiresAt = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: true)]
@@ -70,19 +64,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * A visual identifier that represents this user.
-     *
-     * @see UserInterface
-     */
+
     public function getUserIdentifier(): string
     {
         return (string) $this->email;
     }
 
-    /**
-     * @see UserInterface
-     */
+
     public function getRoles(): array
     {
         $roles = $this->roles;
@@ -92,9 +80,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return array_unique($roles);
     }
 
-    /**
-     * @param list<string> $roles
-     */
+
     public function setRoles(array $roles): static
     {
         $this->roles = $roles;
@@ -102,9 +88,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * @see PasswordAuthenticatedUserInterface
-     */
+
     public function getPassword(): ?string
     {
         return $this->password;
@@ -169,16 +153,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getVerificationTokenExpiresAt(): ?\DateTimeImmutable
+    public function getVerificationTokenExpiresAt(): ?\DateTime
     {
         return $this->verificationTokenExpiresAt;
     }
 
-    public function setVerificationTokenExpiresAt(?\DateTimeImmutable $expiresAt): static
+    public function setVerificationTokenExpiresAt(\DateTimeInterface|null $expiresAt): static
     {
+        // Convertir DateTimeImmutable en DateTime si nécessaire
+        if ($expiresAt instanceof \DateTimeImmutable) {
+            $expiresAt = \DateTime::createFromImmutable($expiresAt);
+        }
+
         $this->verificationTokenExpiresAt = $expiresAt;
+
         return $this;
     }
+
 
         public function getUser(): ?User
     {

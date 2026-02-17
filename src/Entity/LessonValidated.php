@@ -25,15 +25,15 @@ class LessonValidation
     #[ORM\JoinColumn(nullable: true)]
     private ?PurchaseItem $purchaseItem = null;
 
-    #[ORM\Column(type: 'datetime_immutable')]
-    private ?\DateTimeImmutable $validatedAt = null;
+    #[ORM\Column(type: 'datetime')]
+    private ?\DateTime $validatedAt = null;
 
     #[ORM\Column(type: 'boolean')]
     private bool $completed = false;
 
     public function __construct()
     {
-        $this->validatedAt = new \DateTimeImmutable();
+        $this->validatedAt = new \DateTime();
     }
 
     public function getId(): ?int
@@ -74,12 +74,12 @@ class LessonValidation
         return $this;
     }
 
-    public function getValidatedAt(): ?\DateTimeImmutable
+    public function getValidatedAt(): ?\DateTime
     {
         return $this->validatedAt;
     }
 
-    public function setValidatedAt(\DateTimeImmutable $validatedAt): static
+    public function setValidatedAt(\DateTime $validatedAt): static
     {
         $this->validatedAt = $validatedAt;
         return $this;
