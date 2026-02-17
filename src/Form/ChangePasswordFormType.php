@@ -21,14 +21,23 @@ class ChangePasswordFormType extends AbstractType
                 'invalid_message' => 'Les mots de passe doivent correspondre.',
                 'mapped' => false,
                 'constraints' => [
-                    new Assert\NotBlank(),
-                    new Assert\Length(['min' => 6])
-                ]
+                    new Assert\NotBlank(['message' => 'Veuillez saisir un mot de passe.']),
+                    new Assert\Length(['min' => 8, 'minMessage' => 'Le mot de passe doit contenir au moins {{ limit }} caractères.']),
+                    new Assert\Regex(['pattern' => '/[A-Z]/', 'message' => 'Le mot de passe doit contenir au moins une majuscule.']),
+                    new Assert\Regex(['pattern' => '/[a-z]/', 'message' => 'Le mot de passe doit contenir au moins une minuscule.']),
+                    new Assert\Regex(['pattern' => '/[0-9]/', 'message' => 'Le mot de passe doit contenir au moins un chiffre.']),
+                    new Assert\Regex(['pattern' => '/[\W_]/', 'message' => 'Le mot de passe doit contenir au moins un caractère spécial.']),
+                ],
             ]);
     }
 
-    public function configureOptions(OptionsResolver $resolver)
+    public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults([]);
+        $resolver->setDefaults([
+            'data_class' => User::class,
+            'csrf_protection' => true,
+            'csrf_field_name' => '_token',
+            'csrf_token_id'   => 'change_password',
+        ]);
     }
 }

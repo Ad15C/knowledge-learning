@@ -2,20 +2,15 @@
 
 {% block title %}Inscription{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/form.css') }}">
+{% endblock %}
+
 {% block body %}
-<h1>Inscription</h1>
+{% set title = 'Inscription' %}
+{% set form = registrationForm %}
+{% set button_label = 'S\'inscrire' %}
 
-{% for message in app.flashes('success') %}
-    <div class="flash-success">{{ message }}</div>
-{% endfor %}
-
-{{ form_start(registrationForm) }}
-    {{ form_row(registrationForm.firstname) }}
-    {{ form_row(registrationForm.lastname) }}
-    {{ form_row(registrationForm.email) }}
-    {{ form_row(registrationForm.plainPassword.first) }}
-    {{ form_row(registrationForm.plainPassword.second) }}
-
-    <button type="submit">S'inscrire</button>
-{{ form_end(registrationForm) }}
+{% include 'form/_form_container.html.twig' %}
 {% endblock %}

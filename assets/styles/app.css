@@ -118,31 +118,6 @@ body {
 }
 
 /* =======================
-   BUTTONS
-======================= */
-button, input[type="submit"] {
-    background-color: #00497c;
-    color: white;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s;
-}
-
-button:hover, input[type="submit"]:hover {
-    background-color: #0074c7;
-}
-
-/* =======================
-   TITLES
-======================= */
-h1,h2,h3,h4,h5,h6 {
-    color: #00497c;
-}
-
-/* =======================
    FOOTER
 ======================= */
 footer {
@@ -161,21 +136,50 @@ main {
 }
 
 /* =======================
+   FLASH MESSAGES
+======================= */
+.flash-messages {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.flash {
+    padding: 12px 20px;
+    border-radius: 6px;
+    color: #fff;
+    font-weight: 500;
+    min-width: 250px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    opacity: 0;
+    transform: translateY(-20px);
+    animation: slideIn 0.5s forwards, fadeOut 0.5s 4s forwards;
+}
+
+.flash-success { background-color: #28a745; }
+.flash-error   { background-color: #dc3545; }
+.flash-warning { background-color: #ffc107; color: #212529; }
+.flash-info    { background-color: #17a2b8; }
+
+@keyframes slideIn {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; transform: translateY(-20px); }
+}
+
+/* =======================
    RESPONSIVE
 ======================= */
 @media (max-width: 768px) {
-    .menu-toggle {
-        display: block;
-    }
-
-    .main-header {
-        flex-wrap: wrap;
-    }
-
-    .main-nav {
-        width: 100%;
-    }
-
+    .menu-toggle { display: block; }
+    .main-header { flex-wrap: wrap; }
+    .main-nav { width: 100%; }
     .main-nav ul {
         flex-direction: column;
         width: 100%;
@@ -183,20 +187,9 @@ main {
         background-color: #f1f8fc;
         padding-top: 10px;
     }
-
-    .main-nav ul.show {
-        display: flex;
-    }
-
-    .main-nav ul li {
-        width: 100%;
-    }
-
-    .main-nav ul li a {
-        padding: 12px;
-        width: 100%;
-    }
-
+    .main-nav ul.show { display: flex; }
+    .main-nav ul li { width: 100%; }
+    .main-nav ul li a { padding: 12px; width: 100%; }
     .main-nav ul li ul {
         position: static;
         box-shadow: none;
@@ -205,7 +198,6 @@ main {
         pointer-events: auto;
         display: none;
     }
-
     .main-nav ul li.open ul {
         display: flex;
         flex-direction: column;

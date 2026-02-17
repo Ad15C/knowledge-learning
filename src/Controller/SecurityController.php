@@ -2,33 +2,39 @@
 
 namespace App\Controller;
 
+use App\Form\LoginFormType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
-class LoginController extends AbstractController
+
+
+class SecurityController extends AbstractController
 {
-    #[Route('/login', name: 'app_login')]
+    #[Route(path: '/login', name: 'app_login')]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {
-        // obtenir l'erreur si elle existe
+        // Récupère l'erreur de connexion (si elle existe)
         $error = $authenticationUtils->getLastAuthenticationError();
-
-        // dernier email saisi
         $lastUsername = $authenticationUtils->getLastUsername();
 
+        // Crée le formulaire de login
+        $loginForm = $this->createForm(LoginFormType::class);
+
         return $this->render('security/login.html.twig', [
+            'loginForm' => $loginForm->createView(),
             'last_username' => $lastUsername,
-            'error' => $error
+            'error' => $error,
         ]);
     }
 
-    #[Route('/logout', name: 'app_logout')]
+
+    #[Route(path: '/logout', name: 'app_logout')]
     public function logout(): void
     {
-        // Symfony gère le logout via le firewall
-        throw new \Exception('Cette méthode doit être interceptée par le firewall.');
+        // cette méthode peut rester vide, Symfony s'occupe de la déconnexion
+        throw new \LogicException('Cette méthode peut rester vide.');
     }
 }

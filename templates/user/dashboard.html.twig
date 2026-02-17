@@ -3,19 +3,30 @@
 {% block title %}Mon Dashboard{% endblock %}
 
 {% block body %}
+<h1>Bienvenue, {{ user.firstname }} {{ user.lastname }} !</h1>
+
+<nav class="dashboard-nav">
+    <ul>
+        <li><a href="{{ path('user_dashboard') }}">Vue d'ensemble</a></li>
+        <li><a href="{{ path('user_dashboard_edit') }}">Modifier profil</a></li>
+        <li><a href="{{ path('user_dashboard_password') }}">Mot de passe</a></li>
+        <li><a href="{{ path('user_dashboard_purchases') }}">Mes achats</a></li>
+        <li><a href="{{ path('user_dashboard_certifications') }}">Certifications</a></li>
+    </ul>
+</nav>
+
 <div class="dashboard-container">
 
-    <!-- Header -->
-    <div class="dashboard-header" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px;">
+    <!-- Header / Progression -->
+    <div class="dashboard-header">
         <div>
-            <h1>Bonjour {{ app.user.firstname }}</h1>
+            <h2>Bonjour {{ user.firstname }} !</h2>
             <p class="subtitle">Bienvenue sur votre dashboard</p>
         </div>
 
-        <!-- Progression / Statut -->
         <div class="progress-card">
             <div class="progress-title">
-                Statut : {{ status }}
+                Statut actuel : {{ status }}
             </div>
             <div class="progress-subtitle">
                 Progression vers {{ nextStatus }} : {{ progressPercent }}%
@@ -26,19 +37,15 @@
         </div>
     </div>
 
-    <!-- Stats Grid -->
+    <!-- Stats -->
     <div class="stats-grid">
         <div class="stat-card">
-            <div>
-                <div class="stat-value">{{ totalOrders }}</div>
-                <div class="stat-label">Commandes</div>
-            </div>
+            <div class="stat-value">{{ totalOrders }}</div>
+            <div class="stat-label">Commandes</div>
         </div>
         <div class="stat-card">
-            <div>
-                <div class="stat-value">{{ totalSpent }} €</div>
-                <div class="stat-label">Total dépensé</div>
-            </div>
+            <div class="stat-value">{{ totalSpent }} €</div>
+            <div class="stat-label">Total dépensé</div>
         </div>
     </div>
 
@@ -48,7 +55,9 @@
             <h2>Derniers achats</h2>
         </div>
 
-        {% if orders|length > 0 %}
+        {% if orders is empty %}
+            <p>Aucun achat pour le moment.</p>
+        {% else %}
             <table class="orders-table">
                 <thead>
                     <tr>
@@ -62,24 +71,17 @@
                     {% for order in orders %}
                         <tr>
                             <td>#{{ order.id }}</td>
-                            <td>{{ order.createdAt|date('d/m/Y') }}</td>
+                            <td>{{ order.createdAt|date('d/m/Y H:i') }}</td>
                             <td>{{ order.total }} €</td>
                             <td>
-                                <span class="status status-{{ order.status }}">{{ order.status }}</span>
+                                <span class="status status-{{ order.status|lower }}">{{ order.status }}</span>
                             </td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        {% else %}
-            <p>Aucun achat pour le moment.</p>
         {% endif %}
     </div>
 
 </div>
 {% endblock %}
-{% block stylesheets %}
-    {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('styles/dashboard.css') }}">
-{% endblock %}
-

@@ -1,0 +1,38 @@
+<div class="form-page-wrapper">
+    <div class="form-container">
+        <h1>{{ title }}</h1>
+
+        {# Flash messages #}
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="flash flash-{{ label }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {{ form_start(form, {'action': path('app_login'), 'method': 'POST'}) }}
+
+        {% for child in form %}
+            {% set field_type = child.vars.block_prefixes[1] %}
+
+            {% if field_type == 'checkbox' %}
+                <div class="checkbox-container">
+                    {{ form_widget(child) }}
+                    {{ form_label(child) }}
+                </div>
+            {% else %}
+                {# Pré-remplir last_username #}
+                {% if child.vars.name == '_username' %}
+                    {{ form_row(child, {'value': last_username|default('')}) }}
+                {% else %}
+                    {{ form_row(child) }}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+
+        <div style="margin: 15px 0;">
+            <button type="submit">{{ button_label }}</button>
+        </div>
+
+        {{ form_end(form) }}
+    </div>
+</div>
