@@ -4,30 +4,43 @@ security:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        # used to reload user from session & other features (e.g. switch_user)
         app_user_provider:
             entity:
                 class: App\Entity\User
                 property: email
+
+    # ==========================
+    # Firewalls
+    # ==========================
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+
         main:
             lazy: true
             provider: app_user_provider
 
-            # activate different ways to authenticate
-            # https://symfony.com/doc/current/security.html#the-firewall
+            # Form login
+            form_login:
+                login_path: app_login           # route vers LoginController
+                check_path: app_login           # Symfony vérifie ici
+                default_target_path: user_dashboard # après login
+                enable_csrf: true
 
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
+            # Déconnexion
+            logout:
+                path: app_logout
+                target: homepage
 
-    # Easy way to control access for large sections of your site
-    # Note: Only the *first* access control that matches will be used
+            # Se souvenir de l'utilisateur
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 604800 # 1 semaine
+
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+       - { path: ^/admin, roles: ROLE_ADMIN }
+       - { path: ^/profile, roles: ROLE_USER }
 
 when@test:
     security:

@@ -23,16 +23,49 @@
         </div>
 
         <!-- Menu -->
-        <nav class="main-nav">
-            <ul>
-                <li><a href="#" class="active">Accueil</a></li>
-                <li><a href="#">Thèmes</a></li>
-                <li><a href="#">Panier</a></li>
-                <li><a href="#">Profil</a></li>
-                <li><a href="#">Contact</a></li>
+<nav class="main-nav">
+        <ul>
+            <li><a href="{{ path('homepage') }}" class="active">Accueil</a></li>
+            <li><a href="#">Thèmes</a></li>
+            <li><a href="#">Panier</a></li>
+            <li><a href="#">Contact</a></li>
+
+            {% if app.user %}
+                {% if is_granted('ROLE_ADMIN') %}
+                    <!-- Menu Admin avec sous-menu -->
+                    <li>
+                        <a href="#">Admin</a>
+                        <ul>
+                            <li><a href="#">Utilisateurs</a></li>
+                            <li><a href="#">Thèmes</a></li>
+                            <li><a href="#">Cursus</a></li>
+                            <li><a href="#">Leçons</a></li>
+                            <li><a href="#">Achats</a></li>
+                            <li><a href="#">Certifications</a></li>
+                            <li><a href="#">Contact</a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <!-- Menu User avec sous-menu -->
+                    <li>
+                        <a href="#">Dashboard</a>
+                        <ul>
+                            <li><a href="#">Mon Profil</a></li>
+                            <li><a href="#">Mes Achats</a></li>
+                            <li><a href="#">Mes Certifications</a></li>
+                        </ul>
+                    </li>
+                {% endif %}
+
                 <li><a href="#">Déconnexion</a></li>
-            </ul>
-        </nav>
+            {% else %}
+                <!-- Menu Public -->
+                <li><a href="#">Connexion</a></li>
+                <li><a href="#">Inscription</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
     </header>
 
     <!-- =======================

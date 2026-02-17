@@ -1,0 +1,32 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion{% endblock %}
+
+{% block body %}
+<h1>Connexion</h1>
+
+{% if error %}
+    <div class="flash-error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+{% endif %}
+
+<form method="post" action="{{ path('app_login') }}">
+    <div>
+        <label for="inputEmail">Email :</label>
+        <input type="email" name="_username" id="inputEmail" value="{{ last_username }}" required autofocus>
+    </div>
+
+    <div>
+        <label for="inputPassword">Mot de passe :</label>
+        <input type="password" name="_password" id="inputPassword" required>
+    </div>
+
+    <div>
+        <input type="checkbox" name="_remember_me" id="remember_me">
+        <label for="remember_me">Se souvenir de moi</label>
+    </div>
+
+    <button type="submit">Se connecter</button>
+</form>
+
+<p>Pas encore de compte ? <a href="{{ path('app_register') }}">Inscrivez-vous ici</a></p>
+{% endblock %}
