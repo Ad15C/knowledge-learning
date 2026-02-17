@@ -10,8 +10,7 @@ use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\Length;
-use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class RegistrationFormType extends AbstractType
 {
@@ -21,19 +20,23 @@ class RegistrationFormType extends AbstractType
             ->add('firstname', TextType::class, [
                 'label' => 'Prénom',
                 'constraints' => [
-                    new NotBlank(['message' => 'Veuillez saisir votre prénom.']),
-                    new Length(['max' => 255])
+                    new Assert\NotBlank(['message' => 'Veuillez saisir votre prénom.']),
+                    new Assert\Length(['max' => 255, 'maxMessage' => 'Le prénom ne peut pas dépasser {{ limit }} caractères.'])
                 ],
             ])
             ->add('lastname', TextType::class, [
                 'label' => 'Nom',
                 'constraints' => [
-                    new NotBlank(['message' => 'Veuillez saisir votre nom.']),
-                    new Length(['max' => 255])
+                    new Assert\NotBlank(['message' => 'Veuillez saisir votre nom.']),
+                    new Assert\Length(['max' => 255, 'maxMessage' => 'Le nom ne peut pas dépasser {{ limit }} caractères.'])
                 ],
             ])
             ->add('email', EmailType::class, [
-                'label' => 'Email'
+                'label' => 'Email',
+                'constraints' => [
+                    new Assert\NotBlank(['message' => 'Veuillez saisir votre email.']),
+                    new Assert\Email(['message' => 'Format d’email invalide.'])
+                ],
             ])
             ->add('plainPassword', RepeatedType::class, [
                 'type' => PasswordType::class,
@@ -42,12 +45,12 @@ class RegistrationFormType extends AbstractType
                 'first_options'  => ['label' => 'Mot de passe'],
                 'second_options' => ['label' => 'Confirmer le mot de passe'],
                 'constraints' => [
-                    new NotBlank(['message' => 'Veuillez saisir un mot de passe']),
-                    new Length([
-                        'min' => 6,
-                        'minMessage' => 'Votre mot de passe doit faire au moins {{ limit }} caractères',
-                        'max' => 4096,
-                    ]),
+                    new Assert\NotBlank(['message' => 'Veuillez saisir un mot de passe.']),
+                    new Assert\Length(['min' => 8, 'minMessage' => 'Le mot de passe doit contenir au moins {{ limit }} caractères.']),
+                    new Assert\Regex(['pattern' => '/[A-Z]/', 'message' => 'Le mot de passe doit contenir au moins une majuscule.']),
+                    new Assert\Regex(['pattern' => '/[a-z]/', 'message' => 'Le mot de passe doit contenir au moins une minuscule.']),
+                    new Assert\Regex(['pattern' => '/[0-9]/', 'message' => 'Le mot de passe doit contenir au moins un chiffre.']),
+                    new Assert\Regex(['pattern' => '/[\W_]/', 'message' => 'Le mot de passe doit contenir au moins un caractère spécial.']),
                 ],
             ]);
     }
@@ -56,6 +59,9 @@ class RegistrationFormType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => User::class,
+            'csrf_protection' => true,
+            'csrf_field_name' => '_token',
+            'csrf_token_id'   => 'registration',
         ]);
     }
 }

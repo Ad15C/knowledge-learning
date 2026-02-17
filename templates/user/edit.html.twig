@@ -1,13 +1,16 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Modifier Profil{% endblock %}
+{% block title %}Modifier mon profil{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/form.css') }}">
+{% endblock %}
 
 {% block body %}
-<h1>Modifier votre profil</h1>
-{{ form_start(profileForm) }}
-    {{ form_row(profileForm.firstname) }}
-    {{ form_row(profileForm.lastname) }}
-    {{ form_row(profileForm.email) }}
-    <button type="submit">Enregistrer</button>
-{{ form_end(profileForm) }}
+{% set title = 'Modifier mon profil' %}
+{% set form = editProfileForm %}
+{% set button_label = 'Mettre à jour' %}
+
+{% include 'form/_form_container.html.twig' %}
 {% endblock %}

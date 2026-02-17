@@ -10,8 +10,21 @@
 
     <!-- CSS -->
     <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/form.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/dashboard.css') }}">
 </head>
+
 <body>
+    {# Flash messages flottants #}
+    <div class="flash-messages">
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="flash flash-{{ label }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
 
     <!-- =======================
          Header
@@ -167,6 +180,36 @@
     <footer>
         &copy; {{ "now"|date("Y") }} Knowledge Learning - Tous droits réservés
     </footer>
+
+    {# =======================
+       JS pour menu et flashs
+    ======================= #}
+    <script>
+        // Toggle menu mobile
+        function toggleMenu() {
+            const nav = document.querySelector('.main-nav ul');
+            nav.classList.toggle('show');
+        }
+
+        // Sous-menus mobile
+        document.querySelectorAll('.has-submenu').forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768) {
+                    e.preventDefault();
+                    item.parentElement.classList.toggle('open');
+                }
+            });
+        });
+
+        // Supprimer les flash messages après 4s
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                document.querySelectorAll('.flash').forEach(flash => flash.remove());
+            }, 4000);
+        });
+    </script>
+
+    {% block javascripts %}{% endblock %}
 
 </body>
 </html>
