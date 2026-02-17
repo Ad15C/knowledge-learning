@@ -25,7 +25,7 @@ class Theme
     private ?string $image = null;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?\DateTime $createdAt = null;
 
     #[ORM\OneToMany(mappedBy: 'theme', targetEntity: Cursus::class, orphanRemoval: true)]
     private Collection $cursus;
@@ -33,7 +33,7 @@ class Theme
     public function __construct()
     {
         $this->cursus = new ArrayCollection();
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new \DateTime();
     }
 
     public function getId(): ?int
@@ -74,12 +74,12 @@ class Theme
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?\DateTime
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    public function setCreatedAt(\DateTime $createdAt): static
     {
         $this->createdAt = $createdAt;
         return $this;

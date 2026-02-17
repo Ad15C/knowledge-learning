@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Achats{% endblock %}
+
+{% block body %}
+<h1>Mes Achats</h1>
+{% if purchases is empty %}
+    <p>Vous n'avez aucun achat pour le moment.</p>
+{% else %}
+    <ul>
+        {% for purchase in purchases %}
+            <li>{{ purchase.name }} - {{ purchase.date|date('d/m/Y') }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+{% endblock %}

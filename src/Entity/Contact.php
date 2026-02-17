@@ -22,15 +22,15 @@ class Contact
     #[ORM\Column(type: 'text')]
     private ?string $message = null;
 
-    #[ORM\Column(type: 'datetime_immutable')]
-    private ?\DateTimeImmutable $sentAt = null;
+    #[ORM\Column(type: 'datetime')]
+    private ?\DateTime $sentAt = null;
 
     #[ORM\Column(type: 'boolean')]
     private bool $handled = false;
 
     public function __construct()
     {
-        $this->sentAt = new \DateTimeImmutable();
+        $this->sentAt = new \DateTime();
     }
 
     public function getId(): ?int
@@ -71,12 +71,12 @@ class Contact
         return $this;
     }
 
-    public function getSentAt(): ?\DateTimeImmutable
+    public function getSentAt(): ?\DateTime
     {
         return $this->sentAt;
     }
 
-    public function setSentAt(\DateTimeImmutable $sentAt): static
+    public function setSentAt(\DateTime $sentAt): static
     {
         $this->sentAt = $sentAt;
         return $this;
