@@ -1,152 +1,202 @@
-/* =======================
-   Police générale
-======================= */
-body {
-    font-family: "Comic Sans MS", cursive, sans-serif;
-    background-color: #f1f8fc;  /* fond clair */
-    color: #384050;             /* texte principal */
-    margin: 0;
-    padding: 0;
-}
 
 /* =======================
-   Header principal
-======================= */
-.main-header {
-    display: flex;
-    justify-content: space-between; /* logo à gauche, menu à droite */
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #f1f8fc; /* fond clair */
-    border-bottom: 2px solid #0074c7; /* ligne de séparation */
-}
-
-/* Logo */
-.main-header .logo img {
-    height: 60px;
-    width: auto;
-}
-
-/* Menu */
-.main-header .main-nav ul {
-    display: flex; /* tous les éléments sur la même ligne */
-    list-style: none; /* supprime les points devant les li */
-    margin: 0;
-    padding: 0;
-    gap: 25px; /* espace entre les liens */
-}
-
-.main-header .main-nav a {
-    text-decoration: none;
-    color: #00497c;
-    font-weight: normal;
-    padding: 5px 0; /* petit padding pour surlignage */
-    transition: all 0.3s;
-    position: relative;
-}
-
-/* Effet sur hover */
-.main-header .main-nav a:hover,
-.main-header .main-nav a:focus {
-    color: #0074c7;
-}
-
-/* Lien actif */
-.main-header .main-nav a.active {
-    font-weight: bold;
-    color: #0074c7;
-}
-
-/* Soulignement du lien actif */
-.main-header .main-nav a.active::after {
-    content: "";
-    display: block;
-    height: 3px;
-    background-color: #0074c7;
-    width: 100%;
-    position: absolute;
-    bottom: -5px;
-    left: 0;
-}
-
-/* =======================
-   Boutons
-======================= */
-button, input[type="submit"] {
-    background-color: #00497c;  /* accent fort */
-    color: #f1f8fc;            /* texte clair sur bouton */
-    border: none;
-    padding: 8px 15px;
-    cursor: pointer;
-    border-radius: 4px;
-    font-family: "Comic Sans MS", cursive, sans-serif;
-}
-
-button:hover, input[type="submit"]:hover {
-    background-color: #0074c7; /* léger hover */
-}
-
-/* =======================
-   Titres
-======================= */
-h1, h2, h3, h4, h5, h6 {
-    color: #00497c;  /* accent sombre pour titres */
-    margin-top: 0;
-}
-
-/* =======================
-   Cartes / sections
-======================= */
-.card {
-    background-color: #f1f8fc;
-    border: 1px solid #0074c7;
-    border-radius: 5px;
-    padding: 15px;
-    margin-bottom: 15px;
-}
-
-/* =======================
-   Footer
-======================= */
-footer {
-    background-color: #384050;
-    color: #f1f8fc;
-    padding: 15px 20px;
-    text-align: center;
-}
-
-/* =======================
-   RESPONSIVE
-======================= */
-@media (max-width: 768px) {
-    .main-header {
-        flex-direction: column;
-        align-items: flex-start;
+    Body et police
+    ======================= */
+    body {
+        font-family: "Comic Sans MS", cursive, sans-serif;
+        background-color: #f1f8fc;
+        color: #384050;
+        margin: 0;
+        padding: 0;
     }
 
-    .main-header .main-nav ul {
-        flex-direction: column;
-        gap: 10px;
-        margin-top: 10px;
+/* =======================
+     Header et logo
+    ======================= */
+    .main-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        background-color: #f1f8fc;
+        border-bottom: 2px solid #0074c7;
     }
 
     .main-header .logo img {
-        max-height: 50px;
-        margin-bottom: 10px;
+        height: 60px;
+        width: auto;
     }
 
-    .card {
-        padding: 10px;
+/* =======================
+     Menu principal
+    ======================= */
+    .main-nav ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        gap: 20px;
     }
-}
 
-@media (max-width: 480px) {
-    .main-header .main-nav ul {
-        gap: 8px;
+    .main-nav ul li {
+        position: relative;
     }
 
-    button, input[type="submit"] {
+    .main-nav ul li a {
+        text-decoration: none;
+        color: #00497c;
+        padding: 8px 12px;
+        display: block;
+        font-weight: 500;
+        transition: color 0.3s;
+        position: relative;
+    }
+
+    /* Hover léger */
+    .main-nav ul li a:hover,
+    .main-nav ul li a:focus {
+        color: #007BFF;
+    }
+
+    /* Lien actif : souligné */
+    .main-nav ul li a.active::after {
+        content: "";
+        display: block;
+        height: 3px;
+        background-color: #007BFF;
         width: 100%;
-        box-sizing: border-box;
+        position: absolute;
+        bottom: -5px;
+        left: 0;
     }
-}
+
+    /* Flèche pour sous-menu */
+    .main-nav ul li a.has-submenu::after {
+        content: "▾";
+        margin-left: 5px;
+        font-size: 0.7em;
+    }
+
+/* =======================
+    Sous-menu
+    ======================= */
+    .main-nav ul li ul {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: #fff;
+        border-radius: 4px;
+        min-width: 180px;
+        flex-direction: column;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+
+    .main-nav ul li ul li a {
+        padding: 8px 12px;
+        color: #333;
+        font-weight: normal;
+    }
+
+    .main-nav ul li ul li a:hover {
+        color: #007BFF;
+    }
+
+    /* Hover desktop */
+    .main-nav ul li:hover > ul {
+        display: flex;
+    }
+
+/* =======================
+    Responsive
+    ======================= */
+    @media (max-width: 768px) {
+        .main-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .main-nav ul {
+            flex-direction: column;
+            gap: 0;
+            width: 100%;
+        }
+
+        /* Sous-menu toggle via class .open */
+        .main-nav ul li ul {
+            position: static;
+            display: none;
+            box-shadow: none;
+        }
+
+        .main-nav ul li.open > ul {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-nav ul li a.has-submenu::after {
+            content: "▸";
+            transition: transform 0.3s;
+        }
+
+        .main-nav ul li.open > a.has-submenu::after {
+            transform: rotate(90deg);
+        }
+
+        .main-nav ul li a {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .main-header .logo img {
+            max-height: 50px;
+            margin-bottom: 10px;
+        }
+    }
+
+/* =======================
+    Boutons
+    ======================= */
+    button, input[type="submit"] {
+        background-color: #00497c;
+        color: #f1f8fc;
+        border: none;
+        padding: 8px 15px;
+        cursor: pointer;
+        border-radius: 4px;
+        font-family: "Comic Sans MS", cursive, sans-serif;
+    }
+
+    button:hover, input[type="submit"]:hover {
+        background-color: #0074c7;
+    }
+
+/* =======================
+    Titres
+    ======================= */
+    h1,h2,h3,h4,h5,h6 {
+        color: #00497c;
+        margin-top: 0;
+    }
+
+/* =======================
+    Cartes / sections
+    ======================= */
+    .card {
+        background-color: #f1f8fc;
+        border: 1px solid #0074c7;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+/* =======================
+    Footer
+    ======================= */
+    footer {
+        background-color: #384050;
+        color: #f1f8fc;
+        padding: 15px 20px;
+        text-align: center;
+    }
