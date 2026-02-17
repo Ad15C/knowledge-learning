@@ -9,7 +9,7 @@
             {% endfor %}
         {% endfor %}
 
-        {{ form_start(form, {'action': path('app_login'), 'method': 'POST'}) }}
+        {{ form_start(form) }}
 
         {% for child in form %}
             {% set field_type = child.vars.block_prefixes[1] %}
