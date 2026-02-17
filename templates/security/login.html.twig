@@ -1,16 +1,31 @@
-{% extends 'base.html.twig' %}
+<form method="post" action="{{ path('app_login') }}">
+    <h1>Connexion</h1>
 
-{% block title %}Connexion{% endblock %}
+    {% if error %}
+        <div class="flash flash-error">
+            {{ error.messageKey|trans(error.messageData, 'security') }}
+        </div>
+    {% endif %}
 
-{% block stylesheets %}
-    {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('styles/form.css') }}">
-{% endblock %}
+    <input type="email" name="_username"
+           value="{{ last_username|default('') }}"
+           placeholder="Email"
+           required
+           autocomplete="username">
 
-{% block body %}
-    {% set title = 'Connexion' %}
-    {% set form = loginForm %}
-    {% set button_label = 'Se connecter' %}
+    <input type="password" name="_password"
+           placeholder="Mot de passe"
+           required
+           autocomplete="current-password">
 
-    {% include 'form/_form_container.html.twig' %}
-{% endblock %}
+    {# CSRF token attendu par Symfony #}
+    <input type="hidden" name="_csrf_token"
+           value="{{ csrf_token('authenticate') }}">
+
+    <label>
+        <input type="checkbox" name="_remember_me">
+        Se souvenir de moi
+    </label>
+
+    <button type="submit">Se connecter</button>
+</form>

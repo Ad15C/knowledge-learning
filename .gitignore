@@ -37,7 +37,7 @@
 *.tmp
 
 # Environnements et secrets
-.env
+.env.local
 .env.local.php
 .env.*.local
 /config/secrets/*.php

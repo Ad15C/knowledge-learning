@@ -110,10 +110,10 @@ class UserController extends AbstractController
         }
 
         return $this->render('user/edit.html.twig', [
-            'profileForm' => $form->createView()
+            'editProfileForm' => $form->createView(),
         ]);
     }
-
+    
     #[Route('/dashboard/password', name: 'user_dashboard_password')]
     public function changePassword(
         Request $request, 

@@ -14,21 +14,16 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 class SecurityController extends AbstractController
 {
     #[Route(path: '/login', name: 'app_login')]
-    public function login(AuthenticationUtils $authenticationUtils): Response
-    {
-        // Récupère l'erreur de connexion (si elle existe)
-        $error = $authenticationUtils->getLastAuthenticationError();
-        $lastUsername = $authenticationUtils->getLastUsername();
-
-        // Crée le formulaire de login
-        $loginForm = $this->createForm(LoginFormType::class);
-
-        return $this->render('security/login.html.twig', [
-            'loginForm' => $loginForm->createView(),
-            'last_username' => $lastUsername,
-            'error' => $error,
-        ]);
-    }
+public function login(AuthenticationUtils $authenticationUtils): Response
+{
+    $csrfToken = $this->container->get('security.csrf.token_manager')->getToken('authenticate')->getValue();
+    dump($csrfToken); // Vérifie que le token correspond à celui du HTML
+    
+    return $this->render('security/login.html.twig', [
+        'last_username' => $authenticationUtils->getLastUsername(),
+        'error' => $authenticationUtils->getLastAuthenticationError(),
+    ]);
+}
 
 
     #[Route(path: '/logout', name: 'app_logout')]
