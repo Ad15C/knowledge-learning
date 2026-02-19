@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Certifications{% endblock %}
+
+{% block body %}
+<h1>Mes certifications</h1>
+
+{% if certifications is empty %}
+    <p>Vous n'avez aucune certification pour le moment.</p>
+{% else %}
+    <ul class="certification-list">
+        {% for cert in certifications %}
+            <li>
+                <a href="{{ path('certification_show', {'id': cert.id}) }}">
+                    {{ cert.type|capitalize }} : {{ cert.cursus.name }}
+                </a>
+                - Code : {{ cert.certificateCode }}
+                - Émise le : {{ cert.issuedAt|date('d/m/Y') }}
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
+{% endblock %}

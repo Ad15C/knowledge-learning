@@ -38,7 +38,6 @@ body {
 /* =======================
    MAIN NAV
 ======================= */
-/* Conteneur de navigation */
 .main-nav ul {
     list-style: none;
     margin: 0;
@@ -48,11 +47,9 @@ body {
     align-items: center;
 }
 
-
-/* Liens principaux */
 .main-nav li {
-    position: relative; /* pour le sous-menu */
-    overflow: visible;  /* éviter que le submenu soit coupé */
+    position: relative;
+    overflow: visible;
 }
 
 .main-nav a {
@@ -90,16 +87,16 @@ body {
     font-size: 0.7em;
 }
 
-/* Sous-menu amélioré */
+/* Sous-menu */
 .main-nav ul li ul {
     position: absolute;
-    top: calc(100% + 12px); /* plus d’espace au-dessus */
+    top: calc(100% + 12px);
     left: 0;
     display: flex;
     flex-direction: column;
     background-color: #f1f8fc;
-    min-width: 260px; /* largeur plus confortable */
-    padding: 20px 0;  /* espace intérieur */
+    min-width: 260px;
+    padding: 20px 0;
     border-radius: 8px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     opacity: 0;
@@ -109,14 +106,12 @@ body {
     z-index: 100;
 }
 
-/* Affichage au hover */
 .main-nav ul li:hover ul {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
 }
 
-/* Liens du sous-menu */
 .main-nav ul li ul li a {
     padding: 12px 20px;
     color: #00497c;
@@ -128,6 +123,20 @@ body {
     color: #f1f8fc;
     background-color: #0074c7;
     border-radius: 6px;
+}
+
+/* =======================
+   CART COUNT BADGE
+======================= */
+.cart-badge {
+    background-color: #dc3545;
+    color: #fff;
+    font-size: 0.8em;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 12px;
+    margin-left: 5px;
+    vertical-align: middle;
 }
 
 /* =======================
@@ -187,9 +196,6 @@ main {
 @media (max-width: 992px) {
     .menu-toggle {
         display: block;
-        cursor: pointer;
-        font-size: 28px;
-        color: #00497c;
     }
 
     .main-nav ul {
@@ -213,7 +219,6 @@ main {
         width: 100%;
     }
 
-    /* Submenu responsive */
     .main-nav ul li ul {
         position: static;
         opacity: 1;

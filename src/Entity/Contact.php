@@ -19,6 +19,9 @@ class Contact
     #[ORM\Column(length: 255)]
     private ?string $email = null;
 
+    #[ORM\Column(length: 100)]
+    private ?string $subject = null;
+
     #[ORM\Column(type: 'text')]
     private ?string $message = null;
 
@@ -28,68 +31,25 @@ class Contact
     #[ORM\Column(type: 'boolean')]
     private bool $handled = false;
 
-    public function __construct()
-    {
-        $this->sentAt = new \DateTime();
-    }
+    public function __construct() { $this->sentAt = new \DateTime(); }
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+    public function getId(): ?int { return $this->id; }
 
-    public function getFullname(): ?string
-    {
-        return $this->fullname;
-    }
+    public function getFullname(): ?string { return $this->fullname; }
+    public function setFullname(string $fullname): static { $this->fullname = $fullname; return $this; }
 
-    public function setFullname(string $fullname): static
-    {
-        $this->fullname = $fullname;
-        return $this;
-    }
+    public function getSubject(): ?string { return $this->subject; }
+    public function setSubject(string $subject): static { $this->subject = $subject; return $this; }
 
-    public function getEmail(): ?string
-    {
-        return $this->email;
-    }
+    public function getEmail(): ?string { return $this->email; }
+    public function setEmail(string $email): static { $this->email = $email; return $this; }
 
-    public function setEmail(string $email): static
-    {
-        $this->email = $email;
-        return $this;
-    }
+    public function getMessage(): ?string { return $this->message; }
+    public function setMessage(string $message): static { $this->message = $message; return $this; }
 
-    public function getMessage(): ?string
-    {
-        return $this->message;
-    }
+    public function getSentAt(): ?\DateTime { return $this->sentAt; }
+    public function setSentAt(\DateTime $sentAt): static { $this->sentAt = $sentAt; return $this; }
 
-    public function setMessage(string $message): static
-    {
-        $this->message = $message;
-        return $this;
-    }
-
-    public function getSentAt(): ?\DateTime
-    {
-        return $this->sentAt;
-    }
-
-    public function setSentAt(\DateTime $sentAt): static
-    {
-        $this->sentAt = $sentAt;
-        return $this;
-    }
-
-    public function isHandled(): bool
-    {
-        return $this->handled;
-    }
-
-    public function setHandled(bool $handled): static
-    {
-        $this->handled = $handled;
-        return $this;
-    }
+    public function isHandled(): bool { return $this->handled; }
+    public function setHandled(bool $handled): static { $this->handled = $handled; return $this; }
 }

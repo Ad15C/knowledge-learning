@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détail de la certification{% endblock %}
+
+{% block body %}
+<h1>Détail de la certification</h1>
+
+{% if certification %}
+    <div class="certification-detail">
+        <p><strong>Type :</strong> {{ certification.type|capitalize }}</p>
+        <p><strong>Cursus :</strong> {{ certification.cursus.name }}</p>
+        {% if certification.theme %}
+            <p><strong>Thème :</strong> {{ certification.theme.name }}</p>
+        {% endif %}
+        <p><strong>Code :</strong> {{ certification.certificateCode }}</p>
+        <p><strong>Date d'émission :</strong> {{ certification.issuedAt|date('d/m/Y') }}</p>
+    </div>
+{% else %}
+    <p>Certification introuvable.</p>
+{% endif %}
+
+<a href="{{ path('certification_index') }}">← Retour à la liste des certifications</a>
+{% endblock %}

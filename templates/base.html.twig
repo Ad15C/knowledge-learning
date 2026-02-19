@@ -1,40 +1,36 @@
+{% import 'macros.html.twig' as macros %}
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Plateforme Knowledge Learning{% endblock %}</title>
-
-    <!-- Favicon -->
     <link rel="icon" href="{{ asset('images/knowledge_learning_favicon.png') }}" type="image/x-icon">
 
-    <!-- CSS -->
+    {# Tous les CSS #}
     <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
-    <link rel="stylesheet" href="{{ asset('styles/form.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/certification.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/contact.css') }}">
     <link rel="stylesheet" href="{{ asset('styles/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/form.css') }}">
     <link rel="stylesheet" href="{{ asset('styles/lesson_validated.css') }}">
-    <link rel="stylesheet" href="{{ asset('styles/themes.css') }}">
     <link rel="stylesheet" href="{{ asset('styles/lesson.css') }}">
-
+    <link rel="stylesheet" href="{{ asset('styles/themes.css') }}">
 </head>
-
 <body>
-    {# Flash messages flottants #}
-    <div class="flash-messages">
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="flash flash-{{ label }}">
-                    {{ message }}
-                </div>
-            {% endfor %}
+
+{# Flash messages #}
+<div class="flash-messages">
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="flash flash-{{ label }}">{{ message }}</div>
         {% endfor %}
-    </div>
+    {% endfor %}
+</div>
 
-    <!-- =======================
-         Header
-    ====================== -->
-    <header class="main-header">
-
+{# Header / Menu #}
+<header class="main-header">
     <div class="logo">
         <a href="{{ path('homepage') }}">
             <img src="{{ asset('images/knowledge_learning_logo.jpeg') }}">
@@ -44,181 +40,96 @@
     <div class="menu-toggle" onclick="toggleMenu()">☰</div>
 
     <nav class="main-nav">
+        {% set menuItems = [
+            {'label':'Accueil', 'path': path('homepage'), 'active': app.request.attributes.get('_route') == 'homepage' ? 'active' : ''},
+            {'label':'Thèmes', 'path': path('themes_index'), 'active': app.request.attributes.get('_route') starts with 'themes' ? 'active' : ''},
+            {'label':'Panier', 'path': path('cart_show'), 'active': app.request.attributes.get('_route') starts with 'cart' ? 'active' : '', 'count': cartCount},
+            {'label':'Contact', 'path': path('contact_index'), 'active': app.request.attributes.get('_route') starts with 'contact' ? 'active' : '', 'submenu': [
+                {'label':'Question sur un thème', 'path': path('contact_index', {'subject':'theme'})},
+                {'label':'Question sur un cursus', 'path': path('contact_index', {'subject':'cursus'})},
+                {'label':'Question sur une leçon', 'path': path('contact_index', {'subject':'lesson'})},
+                {'label':'Question sur le paiement', 'path': path('contact_index', {'subject':'payment'})},
+                {'label':'Question sur la validation du cours', 'path': path('contact_index', {'subject':'validation'})},
+                {'label':'Question sur la certification', 'path': path('contact_index', {'subject':'certification'})},
+                {'label':'Question sur l\'inscription', 'path': path('contact_index', {'subject':'registration'})},
+                {'label':'Question sur la connexion', 'path': path('contact_index', {'subject':'login'})},
+                {'label':'Autre question', 'path': path('contact_index', {'subject':'other'})}
+            ]}
+        ] %}
 
-        <ul>
-
-            <li>
-                <a href="{{ path('homepage') }}"
-                   class="{{ app.request.attributes.get('_route') == 'homepage' ? 'active' : '' }}">
-                   Accueil
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ path('themes_index') }}"
-                    class="{{ app.request.attributes.get('_route') starts with 'themes' ? 'active' : '' }}">
-                    Thèmes
-                </a>
-            </li>
-
-            <li>
-                <a href="#">Panier</a>
-            </li>
-
-            <li>
-                <a href="#">Contact</a>
-            </li>
-
-            {% if app.user %}
-
-                {% if is_granted('ROLE_ADMIN') %}
-
-                    <li>
-                        <a href="#" class="has-submenu">
-                            Admin
-                        </a>
-
-                        <ul>
-
-                            <li><a href="#">>Dashboard</a></li>
-
-                            <li><a href="#">Utilisateurs</a></li>
-
-                            <li><a href="#">Thèmes</a></li>
-
-                            <li><a href="#">Cursus</a></li>
-
-                            <li><a href="#">Leçons</a></li>
-
-                            <li>
-                                Panier ({{ cart_item_count() }})
-                            </li>
-
-                            <li><a href="#">Certifications</a></li>
-
-                        </ul>
-
-                    </li>
-
-                {% else %}
-
-                    <li>
-
-                        <a href="{{ path('user_dashboard') }}"
-                           class="has-submenu {{ app.request.attributes.get('_route') starts with 'user_dashboard' ? 'active' : '' }}">
-                           Dashboard
-                        </a>
-
-                        <ul>
-
-                            <li>
-                                <a href="{{ path('user_dashboard') }}">
-                                    Vue d'ensemble
-                                </a>
-                            </li>
-
-                            <li>
-                                <a href="{{ path('user_dashboard_edit') }}">
-                                    Modifier profil
-                                </a>
-                            </li>
-
-                            <li>
-                                <a href="{{ path('user_dashboard_password') }}">
-                                    Mot de passe
-                                </a>
-                            </li>
-
-                            <li>
-                                <a href="{{ path('user_dashboard_purchases') }}">
-                                    Mes achats
-                                </a>
-                            </li>
-
-                            <li>
-                                <a href="{{ path('user_dashboard_certifications') }}">
-                                    Certifications
-                                </a>
-                            </li>
-
-                        </ul>
-
-                    </li>
-
-                {% endif %}
-
-                <li>
-                    <a href="{{ path('app_logout') }}">
-                        Déconnexion
-                    </a>
-                </li>
-
+        {% if app.user %}
+            {% if is_granted('ROLE_ADMIN') %}
+                {% set adminMenu = {
+                    'label':'Admin',
+                    'submenu': [
+                        {'label':'Dashboard', 'path':'#'},
+                        {'label':'Utilisateurs', 'path':'#'},
+                        {'label':'Thèmes', 'path':'#'},
+                        {'label':'Cursus', 'path':'#'},
+                        {'label':'Leçons', 'path':'#'},
+                        {'label':'Panier (' ~ cartCount ~ ')', 'path':'#'},
+                        {'label':'Messages Contact','submenu': [
+                            {'label':'Tous les messages', 'path': path('admin_contact_index')},
+                            {'label':'Non traités', 'path': path('admin_contact_unhandled')},
+                            {'label':'Traités', 'path': path('admin_contact_handled')}
+                        ]},
+                        {'label':'Certifications', 'path':'#'}
+                    ]
+                } %}
+                {% set menuItems = menuItems|merge([adminMenu]) %}
             {% else %}
-
-                <li>
-                    <a href="{{ path('app_login') }}">
-                        Connexion
-                    </a>
-                </li>
-
-                <li>
-                    <a href="{{ path('app_register') }}">
-                        Inscription
-                    </a>
-                </li>
-
+                {% set userMenu = {
+                    'label':'Dashboard',
+                    'path': path('user_dashboard'),
+                    'submenu': [
+                        {'label':'Vue d\'ensemble', 'path': path('user_dashboard')},
+                        {'label':'Modifier profil', 'path': path('user_dashboard_edit')},
+                        {'label':'Mot de passe', 'path': path('user_dashboard_password')},
+                        {'label':'Mes achats', 'path': path('user_dashboard_purchases')},
+                        {'label':'Certifications', 'path': path('user_dashboard_certifications')}
+                    ]
+                } %}
+                {% set menuItems = menuItems|merge([userMenu]) %}
             {% endif %}
+            {% set menuItems = menuItems|merge([{'label':'Déconnexion','path': path('app_logout')}]) %}
+        {% else %}
+            {% set menuItems = menuItems|merge([
+                {'label':'Connexion','path': path('app_login')},
+                {'label':'Inscription','path': path('app_register')}
+            ]) %}
+        {% endif %}
 
-        </ul>
-
+        {{ macros.renderMenu(menuItems) }}
     </nav>
-
 </header>
 
+<main>{% block body %}{% endblock %}</main>
 
-    <!-- =======================
-         Main Content
-    ====================== -->
-    <main>
-        {% block body %}{% endblock %}
-    </main>
+<footer>&copy; {{ "now"|date("Y") }} Knowledge Learning - Tous droits réservés</footer>
 
-    <!-- =======================
-         Footer
-    ====================== -->
-    <footer>
-        &copy; {{ "now"|date("Y") }} Knowledge Learning - Tous droits réservés
-    </footer>
+<script>
+    function toggleMenu() {
+        document.querySelector('.main-nav ul').classList.toggle('show');
+    }
 
-    {# =======================
-       JS pour menu et flashs
-    ======================= #}
-    <script>
-        // Toggle menu mobile
-        function toggleMenu() {
-            const nav = document.querySelector('.main-nav ul');
-            nav.classList.toggle('show');
-        }
-
-        // Sous-menus mobile
-        document.querySelectorAll('.has-submenu').forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (window.innerWidth <= 768) {
-                    e.preventDefault();
-                    item.parentElement.classList.toggle('open');
-                }
-            });
+    document.querySelectorAll('.has-submenu').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                item.parentElement.classList.toggle('open');
+            }
         });
+    });
 
-        // Supprimer les flash messages après 4s
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                document.querySelectorAll('.flash').forEach(flash => flash.remove());
-            }, 4000);
-        });
-    </script>
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            document.querySelectorAll('.flash').forEach(flash => flash.remove());
+        }, 4000);
+    });
+</script>
 
-    {% block javascripts %}{% endblock %}
+{% block javascripts %}
+{% endblock %}
 
 </body>
 </html>
