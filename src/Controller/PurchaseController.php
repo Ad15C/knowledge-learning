@@ -24,6 +24,28 @@ class PurchaseController extends AbstractController
         $this->purchaseRepo = $purchaseRepo;
     }
 
+        /**
+     * Afficher le panier
+     */
+    #[Route('/cart', name: 'cart_show')]
+    public function show(): Response
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            $this->addFlash('error', 'Vous devez être connecté pour voir votre panier.');
+            return $this->redirectToRoute('app_login');
+        }
+
+        $purchase = $this->purchaseRepo->findOneBy([
+            'user' => $user,
+            'status' => 'cart'
+        ]);
+
+        return $this->render('cart/show.html.twig', [
+            'purchase' => $purchase
+        ]);
+    }
+
     /**
      * Ajouter un cursus au panier
      */
@@ -144,28 +166,6 @@ class PurchaseController extends AbstractController
 
         $this->addFlash('success', 'Élément supprimé du panier.');
         return $this->redirectToRoute('cart_show');
-    }
-
-    /**
-     * Afficher le panier
-     */
-    #[Route('/cart', name: 'cart_show')]
-    public function show(): Response
-    {
-        $user = $this->getUser();
-        if (!$user) {
-            $this->addFlash('error', 'Vous devez être connecté pour voir votre panier.');
-            return $this->redirectToRoute('app_login');
-        }
-
-        $purchase = $this->purchaseRepo->findOneBy([
-            'user' => $user,
-            'status' => 'cart'
-        ]);
-
-        return $this->render('cart/show.html.twig', [
-            'purchase' => $purchase
-        ]);
     }
 
     /**
