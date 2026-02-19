@@ -1,33 +1,46 @@
-<form method="post" action="{{ path('app_login') }}">
-    <h1>Connexion</h1>
+{% extends 'base.html.twig' %}
 
-    {% if error %}
-        <div class="flash flash-error">
-            {{ error.messageKey|trans(error.messageData, 'security') }}
-        </div>
-    {% endif %}
+{% block title %}Connexion - Knowledge Learning{% endblock %}
 
-    <input type="email" name="_username"
-           value="{{ last_username|default('') }}"
-           placeholder="Email"
-           required
-           autocomplete="username">
+{% block body %}
+{# Ajouter le CSS spécifique à cette page #}
+<link rel="stylesheet" href="{{ asset('styles/login.css') }}">
 
-    <input type="password" name="_password"
-           placeholder="Mot de passe"
-           required
-           autocomplete="current-password">
+<main class="login-page">
+    <div class="login-container">
+        <form method="post" action="{{ path('app_login') }}">
+            <h1>Connexion</h1>
 
-    {# CSRF token attendu par Symfony #}
-    <input type="hidden" name="_csrf_token"
-           value="{{ csrf_token('authenticate') }}">
+            {% if error %}
+                <div class="flash flash-error">
+                    {{ error.messageKey|trans(error.messageData, 'security') }}
+                </div>
+            {% endif %}
 
-    <label>
-        <input type="checkbox" name="_remember_me">
-        Se souvenir de moi
-    </label>
+            <input type="email" name="_username"
+                   value="{{ last_username|default('') }}"
+                   placeholder="Email"
+                   required
+                   autocomplete="username">
 
-    <button type="submit">Se connecter</button>
+            <input type="password" name="_password"
+                   placeholder="Mot de passe"
+                   required
+                   autocomplete="current-password">
 
-    <a href="{{ path('homepage') }}" class="btn-back">← Retour à l'accueil</a>
-</form>
+            {# CSRF token #}
+            <input type="hidden" name="_csrf_token"
+                   value="{{ csrf_token('authenticate') }}">
+
+            <label>
+                <input type="checkbox" name="_remember_me">
+                Se souvenir de moi
+            </label>
+
+            <button type="submit">Se connecter</button>
+
+            <a href="{{ path('homepage') }}" class="btn-back">← Retour à l'accueil</a>
+        </form>
+    </div>
+</main>
+{% endblock %}

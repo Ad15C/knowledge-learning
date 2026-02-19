@@ -5,11 +5,13 @@
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    font-family: "Comic Sans MS", cursive, sans-serif;
 }
 
 .lesson-container h1 {
     margin-bottom: 1.5rem;
     color: #384050;
+    font-size: 2rem;
 }
 
 .lesson-content p {
@@ -20,6 +22,9 @@
 
 .lesson-actions {
     margin-top: 2rem;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .btn {
@@ -29,6 +34,13 @@
     text-decoration: none;
     color: #fff;
     font-weight: bold;
+    background-color: #0074c7;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.btn:hover {
+    background-color: #00497c;
+    transform: translateY(-2px);
 }
 
 .btn-success {
@@ -39,4 +51,38 @@
     font-weight: bold;
     color: #28a745;
     font-size: 1.1rem;
+}
+
+/* ========================
+   RESPONSIVE
+======================== */
+@media (max-width: 992px) {
+    .lesson-container {
+        padding: 1rem 1.5rem;
+    }
+
+    .lesson-container h1 {
+        font-size: 1.75rem;
+    }
+
+    .lesson-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 576px) {
+    .lesson-container {
+        padding: 1rem;
+        margin: 1rem;
+    }
+
+    .lesson-container h1 {
+        font-size: 1.5rem;
+    }
+
+    .btn {
+        width: 100%;
+        text-align: center;
+    }
 }

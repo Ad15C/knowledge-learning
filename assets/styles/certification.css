@@ -1,5 +1,4 @@
 /* ====== Certification Front Styles ====== */
-
 .certification-list {
     list-style: none;
     padding: 0;
@@ -13,6 +12,7 @@
     padding: 15px;
     border-radius: 8px;
     transition: box-shadow 0.2s ease;
+    font-family: "Comic Sans MS", cursive, sans-serif;
 }
 
 .certification-list li:hover {
@@ -21,7 +21,7 @@
 
 .certification-list a {
     text-decoration: none;
-    color: #1d4ed8; /* bleu */
+    color: #0074c7;
     font-weight: 500;
 }
 
@@ -42,6 +42,7 @@
     margin: 8px 0;
     font-size: 1rem;
     line-height: 1.4;
+    color: #384050;
 }
 
 .certification-detail strong {
@@ -52,13 +53,47 @@ a.btn-back {
     display: inline-block;
     margin-top: 20px;
     padding: 10px 15px;
-    background-color: #1d4ed8;
+    background-color: #0074c7;
     color: white;
     border-radius: 6px;
     text-decoration: none;
-    transition: background-color 0.2s ease;
+    font-weight: bold;
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 a.btn-back:hover {
-    background-color: #2563eb;
+    background-color: #00497c;
+    transform: translateY(-2px);
+}
+
+/* ========================
+   RESPONSIVE
+======================== */
+@media (max-width: 992px) {
+    .certification-detail {
+        padding: 20px;
+        margin: 15px;
+    }
+
+    a.btn-back {
+        padding: 8px 12px;
+    }
+}
+
+@media (max-width: 576px) {
+    .certification-list li {
+        padding: 12px;
+    }
+
+    .certification-detail {
+        padding: 15px;
+        margin: 10px;
+    }
+
+    a.btn-back {
+        display: block;
+        width: 100%;
+        text-align: center;
+        margin-top: 15px;
+    }
 }

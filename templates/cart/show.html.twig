@@ -2,27 +2,68 @@
 
 {% block title %}Mon Panier{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/cart.css') }}">
+{% endblock %}
+
 {% block body %}
 <h1>Mon Panier</h1>
 
 {% if purchase and purchase.items|length > 0 %}
-    <ul>
-        {% for item in purchase.items %}
-            <li>
-                {% if item.cursus %}
-                    Cursus: {{ item.cursus.title }} - {{ item.price }}€
-                {% elseif item.lesson %}
-                    Leçon: {{ item.lesson.title }} - {{ item.price }}€
-                {% endif %}
-                <a href="{{ path('cart_remove', {'type': item.cursus ? 'cursus' : 'lesson', 'id': item.cursus ? item.cursus.id : item.lesson.id }) }}">
-                    Supprimer
-                </a>
-            </li>
-        {% endfor %}
-    </ul>
 
-    <a href="{{ path('cart_success') }}" class="btn btn-success">Passer à la commande</a>
+    {# ===== LISTE DES ITEMS ===== #}
+    <div class="cart-items">
+        {% for item in purchase.items %}
+            <div class="cart-item-card">
+
+                <div class="cart-item-info">
+                    {% if item.cursus %}
+                        <h3>{{ item.cursus.title }}</h3>
+                        <span class="cart-type">Cursus</span>
+                    {% elseif item.lesson %}
+                        <h3>{{ item.lesson.title }}</h3>
+                        <span class="cart-type">Leçon</span>
+                    {% endif %}
+                </div>
+
+                <div class="cart-item-actions">
+                    <span class="cart-price">{{ item.price }}€</span>
+
+                    <a href="{{ path('cart_remove', {
+                        'type': item.cursus ? 'cursus' : 'lesson',
+                        'id': item.cursus ? item.cursus.id : item.lesson.id
+                    }) }}"
+                       class="btn-remove">
+                        Supprimer
+                    </a>
+                </div>
+
+            </div>
+        {% endfor %}
+    </div>
+
+    {# ===== BLOC TOTAL + ACTIONS EN DESSOUS A DROITE ===== #}
+    <div class="cart-summary-wrapper">
+        <div class="cart-summary">
+
+            <div class="cart-total">
+                Total : <strong>{{ purchase.getTotalPrice() }}€</strong>
+            </div>
+
+            <a href="{{ path('themes_index') }}" class="btn btn-outline">
+                Ajouter un cursus / leçon
+            </a>
+
+            <a href="{{ path('cart_success') }}" class="btn btn-primary">
+                Passer au paiement
+            </a>
+
+        </div>
+    </div>
+
 {% else %}
     <p>Votre panier est vide.</p>
 {% endif %}
+
 {% endblock %}
