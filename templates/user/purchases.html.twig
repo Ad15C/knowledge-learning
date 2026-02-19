@@ -4,13 +4,48 @@
 
 {% block body %}
 <h1>Mes Achats</h1>
+
 {% if purchases is empty %}
     <p>Vous n'avez aucun achat pour le moment.</p>
 {% else %}
-    <ul>
-        {% for purchase in purchases %}
-            <li>{{ purchase.name }} - {{ purchase.date|date('d/m/Y') }}</li>
-        {% endfor %}
-    </ul>
+    <table class="purchases-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Articles</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for purchase in purchases %}
+                <tr>
+                    <td>#{{ purchase.id }}</td>
+                    <td>{{ purchase.createdAt|date('d/m/Y H:i') }}</td>
+                    <td>{{ purchase.total }} €</td>
+                    <td>
+                        <span class="status status-{{ purchase.status|lower }}">
+                            {{ purchase.status|capitalize }}
+                        </span>
+                    </td>
+                    <td>
+                        <ul>
+                            {% for item in purchase.items %}
+                                <li>
+                                    {{ item.cursus.name }} 
+                                    (x{{ item.quantity }}) - {{ item.price }} €
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endif %}
+
+<a href="{{ path('user_dashboard') }}" class="btn-back">
+    ← Retour au dashboard
+</a>
 {% endblock %}

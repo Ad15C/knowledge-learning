@@ -38,6 +38,7 @@ body {
 /* =======================
    MAIN NAV
 ======================= */
+/* Conteneur de navigation */
 .main-nav ul {
     list-style: none;
     margin: 0;
@@ -47,15 +48,18 @@ body {
     align-items: center;
 }
 
+
+/* Liens principaux */
 .main-nav li {
-    position: relative;
+    position: relative; /* pour le sous-menu */
+    overflow: visible;  /* éviter que le submenu soit coupé */
 }
 
 .main-nav a {
     text-decoration: none;
     color: #00497c;
     font-weight: 500;
-    padding: 8px 0;
+    padding: 10px 5px;
     position: relative;
     transition: all 0.2s ease;
 }
@@ -71,9 +75,10 @@ body {
     position: absolute;
     width: 100%;
     height: 3px;
-    bottom: -5px;
+    bottom: -6px;
     left: 0;
     background-color: #0074c7;
+    border-radius: 2px;
 }
 
 /* =======================
@@ -85,36 +90,44 @@ body {
     font-size: 0.7em;
 }
 
+/* Sous-menu amélioré */
 .main-nav ul li ul {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 12px); /* plus d’espace au-dessus */
     left: 0;
     display: flex;
     flex-direction: column;
-    background-color: white;
-    min-width: 200px;
-    border-radius: 6px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    background-color: #f1f8fc;
+    min-width: 260px; /* largeur plus confortable */
+    padding: 20px 0;  /* espace intérieur */
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     opacity: 0;
     transform: translateY(10px);
     pointer-events: none;
     transition: all 0.25s ease;
+    z-index: 100;
 }
 
+/* Affichage au hover */
 .main-nav ul li:hover ul {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
 }
 
+/* Liens du sous-menu */
 .main-nav ul li ul li a {
-    padding: 10px 15px;
-    color: #333;
+    padding: 12px 20px;
+    color: #00497c;
+    transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .main-nav ul li ul li a:hover {
-    color: #0074c7;
-    background-color: #f1f8fc;
+    color: #f1f8fc;
+    background-color: #0074c7;
+    border-radius: 6px;
 }
 
 /* =======================
@@ -165,41 +178,57 @@ main {
 .flash-warning { background-color: #ffc107; color: #212529; }
 .flash-info    { background-color: #17a2b8; }
 
-@keyframes slideIn {
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeOut {
-    to { opacity: 0; transform: translateY(-20px); }
-}
+@keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeOut { to { opacity: 0; transform: translateY(-20px); } }
 
 /* =======================
    RESPONSIVE
 ======================= */
-@media (max-width: 768px) {
-    .menu-toggle { display: block; }
-    .main-header { flex-wrap: wrap; }
-    .main-nav { width: 100%; }
+@media (max-width: 992px) {
+    .menu-toggle {
+        display: block;
+        cursor: pointer;
+        font-size: 28px;
+        color: #00497c;
+    }
+
     .main-nav ul {
         flex-direction: column;
         width: 100%;
         display: none;
         background-color: #f1f8fc;
-        padding-top: 10px;
+        padding: 10px 0;
     }
-    .main-nav ul.show { display: flex; }
-    .main-nav ul li { width: 100%; }
-    .main-nav ul li a { padding: 12px; width: 100%; }
+
+    .main-nav ul.show {
+        display: flex;
+    }
+
+    .main-nav ul li {
+        width: 100%;
+    }
+
+    .main-nav ul li a {
+        padding: 12px 20px;
+        width: 100%;
+    }
+
+    /* Submenu responsive */
     .main-nav ul li ul {
         position: static;
-        box-shadow: none;
         opacity: 1;
         transform: none;
-        pointer-events: auto;
         display: none;
+        box-shadow: none;
+        padding-left: 15px;
     }
+
     .main-nav ul li.open ul {
         display: flex;
         flex-direction: column;
+    }
+
+    .main-nav ul li ul li a {
+        padding: 10px 15px;
     }
 }

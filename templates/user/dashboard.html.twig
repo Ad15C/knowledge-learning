@@ -1,5 +1,12 @@
 {% extends 'base.html.twig' %}
 
+{% block title %}Mon Dashboard{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/dashboard.css') }}">
+{% endblock %}
+
 {% block body %}
 
 <div class="dashboard-layout">
@@ -12,105 +19,45 @@
         </div>
 
         <nav class="sidebar-nav">
-
-            <a href="{{ path('user_dashboard') }}" class="sidebar-link active">
-                Dashboard
-            </a>
-
-            <a href="{{ path('user_dashboard_edit') }}" class="sidebar-link">
-                Modifier profil
-            </a>
-
-            <a href="{{ path('user_dashboard_password') }}" class="sidebar-link">
-                Mot de passe
-            </a>
-
-            <a href="{{ path('user_dashboard_purchases') }}" class="sidebar-link">
-                Mes commandes
-            </a>
-
-            <a href="{{ path('user_dashboard_certifications') }}" class="sidebar-link">
-                Mes certifications
-            </a>
-
+            <a href="{{ path('user_dashboard') }}" class="sidebar-link active">Dashboard</a>
+            <a href="{{ path('user_dashboard_edit') }}" class="sidebar-link">Modifier profil</a>
+            <a href="{{ path('user_dashboard_password') }}" class="sidebar-link">Mot de passe</a>
+            <a href="{{ path('user_dashboard_purchases') }}" class="sidebar-link">Mes commandes</a>
+            <a href="{{ path('user_dashboard_certifications') }}" class="sidebar-link">Mes certifications</a>
         </nav>
 
     </aside>
 
+    <!-- CONTENU -->
+    <main class="dashboard-content">
 
-    <!-- MAIN CONTENT -->
-    <main class="dashboard-main">
+        <h1>Bienvenue, {{ user.firstname }} {{ user.lastname }} !</h1>
 
-        <h1>
-            Bienvenue, {{ app.user.firstname }} {{ app.user.lastname }}
-        </h1>
+        <div class="dashboard-cards">
 
-
-        <div class="dashboard-sections">
-
-            <!-- STATUT -->
+            <!-- STATUT ET PROGRESSION -->
             <div class="dashboard-card">
-
                 <h2>Mon statut et progression</h2>
-
-                <p>
-                    Statut actuel :
-                    <strong>{{ status }}</strong>
-                </p>
-
+                <p>Statut actuel : <strong>{{ status }}</strong></p>
                 <div class="progress-bar">
-                    <div class="progress-fill"
-                         style="width: {{ progressPercent }}%">
-                    </div>
+                    <div class="progress-fill" style="width: {{ progressPercent }}%"></div>
                 </div>
-
-                <small>
-                    {{ progressPercent }}% vers {{ nextStatus }}
-                </small>
-
+                <small>{{ progressPercent }}% vers {{ nextStatus }}</small>
             </div>
 
-
-
-            <!-- COMMANDES -->
-            <a href="{{ path('user_dashboard_purchases') }}"
-               class="dashboard-card dashboard-card-clickable">
-
+            <!-- COMMANDES (CARTE CLIQUABLE) -->
+            <a href="{{ path('user_dashboard_purchases') }}" class="dashboard-card dashboard-card-clickable">
                 <h2>Mes commandes</h2>
-
-                <p>
-                    Total commandes :
-                    <strong>{{ totalOrders }}</strong>
-                </p>
-
-                <p>
-                    Total dépensé :
-                    <strong>{{ totalSpent }} €</strong>
-                </p>
-
-                <span class="card-link-indicator">
-                    Voir mes commandes →
-                </span>
-
+                <p>Total commandes : <strong>{{ totalOrders }}</strong></p>
+                <p>Total dépensé : <strong>{{ totalSpent }} €</strong></p>
+                <span class="card-link-indicator">Voir mes commandes →</span>
             </a>
 
-
-
-            <!-- CERTIFICATIONS -->
-            <a href="{{ path('user_dashboard_certifications') }}"
-               class="dashboard-card dashboard-card-clickable">
-
+            <!-- CERTIFICATIONS (CARTE CLIQUABLE) -->
+            <a href="{{ path('user_dashboard_certifications') }}" class="dashboard-card dashboard-card-clickable">
                 <h2>Mes certifications</h2>
-
-                <p>
-                    Certifications obtenues :
-                    <strong>{{ certificationsCount|default(0) }}</strong>
-                </p>
-
-                <span class="card-link-indicator">
-                    Voir mes certifications →
-                </span>
-
+                <p>Certifications obtenues : <strong>{{ certificationsCount }}</strong></p>
+                <span class="card-link-indicator">Voir mes certifications →</span>
             </a>
 
         </div>

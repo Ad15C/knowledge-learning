@@ -24,43 +24,27 @@ class UserController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        // récupérer les achats de l'utilisateur
+        // --- Achats ---
         $purchases = $em->getRepository(Purchase::class)
             ->findBy(['user' => $user], ['createdAt' => 'DESC']);
 
-        // calculer le total dépensé
-        $totalSpent = 0;
-        foreach ($purchases as $purchase) {
-            $totalSpent += $purchase->getTotal();
-        }
-
-        // nombre total de commandes
         $totalOrders = count($purchases);
+        $totalSpent = array_reduce($purchases, fn($sum, $purchase) => $sum + $purchase->getTotal(), 0);
 
-        // progression globale (simple exemple basé sur nb commandes)
-        $progression = min(100, $totalOrders * 10);
-
-        // ==========================
-        // Statut utilisateur & progression vers le prochain niveau
-        // ==========================
-
-        $status = 'Bronze';
-        $nextStatus = 'Silver';
-        $progressPercent = 0;
-
-        // seuils
+        // --- Progression / Statut ---
         $tiers = [
             'Bronze' => 0,
             'Silver' => 100,
             'Gold' => 300,
-            'Platinum' => 600
+            'Platinum' => 600,
         ];
 
+        $status = 'Bronze';
+        $nextStatus = 'Silver';
         $currentMin = 0;
         $currentMax = 100;
 
         foreach ($tiers as $tier => $minAmount) {
-
             if ($totalSpent >= $minAmount) {
                 $status = $tier;
                 $currentMin = $minAmount;
@@ -71,27 +55,29 @@ class UserController extends AbstractController
             }
         }
 
-        if ($currentMax > $currentMin) {
-            $progressPercent = (($totalSpent - $currentMin) / ($currentMax - $currentMin)) * 100;
-            $progressPercent = min(100, round($progressPercent));
-        }
+        $progressPercent = $currentMax > $currentMin 
+            ? min(100, round((($totalSpent - $currentMin) / ($currentMax - $currentMin)) * 100)) 
+            : 0;
 
-        // ==========================
-        // Envoi des données à Twig
-        // ==========================
+        // --- Certifications ---
+        $certifications = $em->getRepository(Certification::class)
+            ->findBy(['user' => $user], ['issuedAt' => 'DESC']);
+        $certificationsCount = count($certifications);
+
+        // --- Limiter les 5 derniers achats pour aperçu ---
+        $latestPurchases = array_slice($purchases, 0, 5);
+
         return $this->render('user/dashboard.html.twig', [
             'user' => $user,
-            'orders' => array_slice($purchases, 0, 5), // 5 derniers achats
-            'totalSpent' => $totalSpent,
+            'orders' => $latestPurchases,
             'totalOrders' => $totalOrders,
-            'progression' => $progression,
+            'totalSpent' => $totalSpent,
             'status' => $status,
             'nextStatus' => $nextStatus,
             'progressPercent' => $progressPercent,
+            'certificationsCount' => $certificationsCount,
         ]);
     }
-
-
 
     #[Route('/dashboard/edit', name: 'user_dashboard_edit')]
     public function editProfile(Request $request, EntityManagerInterface $em): Response
@@ -113,7 +99,7 @@ class UserController extends AbstractController
             'editProfileForm' => $form->createView(),
         ]);
     }
-    
+
     #[Route('/dashboard/password', name: 'user_dashboard_password')]
     public function changePassword(
         Request $request, 
@@ -128,9 +114,7 @@ class UserController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $newPassword = $form->get('plainPassword')->getData();
-            $user->setPassword(
-                $passwordHasher->hashPassword($user, $newPassword)
-            );
+            $user->setPassword($passwordHasher->hashPassword($user, $newPassword));
 
             $em->flush();
             $this->addFlash('success', 'Mot de passe mis à jour !');
@@ -144,13 +128,12 @@ class UserController extends AbstractController
     }
 
     #[Route('/dashboard/purchases', name: 'user_dashboard_purchases')]
-    public function purchases(): Response
+    public function purchases(EntityManagerInterface $em): Response
     {
         /** @var User $user */
         $user = $this->getUser();
 
-        $purchases = $this->getDoctrine()
-            ->getRepository(Purchase::class)
+        $purchases = $em->getRepository(Purchase::class)
             ->findBy(['user' => $user], ['createdAt' => 'DESC']);
 
         return $this->render('user/purchases.html.twig', [
@@ -159,13 +142,12 @@ class UserController extends AbstractController
     }
 
     #[Route('/dashboard/certifications', name: 'user_dashboard_certifications')]
-    public function certifications(): Response
+    public function certifications(EntityManagerInterface $em): Response
     {
         /** @var User $user */
         $user = $this->getUser();
 
-        $certifications = $this->getDoctrine()
-            ->getRepository(Certification::class)
+        $certifications = $em->getRepository(Certification::class)
             ->findBy(['user' => $user], ['issuedAt' => 'DESC']);
 
         return $this->render('user/certifications.html.twig', [
