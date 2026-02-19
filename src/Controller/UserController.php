@@ -3,10 +3,17 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Entity\Lesson;
+use App\Entity\Cursus;
+use App\Entity\Theme;
 use App\Entity\Purchase;
 use App\Entity\Certification;
 use App\Form\UserProfileFormType;
 use App\Form\ChangePasswordFormType;
+use App\Repository\PurchaseRepository;
+use App\Repository\CertificationRepository;
+use App\Repository\LessonRepository;
+use App\Service\LessonValidatedService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,19 +26,19 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class UserController extends AbstractController
 {
     #[Route('/dashboard', name: 'user_dashboard')]
-    public function dashboard(EntityManagerInterface $em): Response
+    public function dashboard(
+        PurchaseRepository $purchaseRepository,
+        CertificationRepository $certificationRepository
+    ): Response
     {
         /** @var User $user */
         $user = $this->getUser();
 
-        // --- Achats ---
-        $purchases = $em->getRepository(Purchase::class)
-            ->findBy(['user' => $user], ['createdAt' => 'DESC']);
-
+        $purchases = $purchaseRepository->findBy(['user' => $user], ['createdAt' => 'DESC']);
         $totalOrders = count($purchases);
-        $totalSpent = array_reduce($purchases, fn($sum, $purchase) => $sum + $purchase->getTotal(), 0);
+        $totalSpent = $purchaseRepository->getTotalSpent($user);
 
-        // --- Progression / Statut ---
+        // Niveaux de fidélité
         $tiers = [
             'Bronze' => 0,
             'Silver' => 100,
@@ -55,16 +62,14 @@ class UserController extends AbstractController
             }
         }
 
-        $progressPercent = $currentMax > $currentMin 
-            ? min(100, round((($totalSpent - $currentMin) / ($currentMax - $currentMin)) * 100)) 
+        $progressPercent = $currentMax > $currentMin
+            ? min(100, round((($totalSpent - $currentMin) / ($currentMax - $currentMin)) * 100))
             : 0;
 
-        // --- Certifications ---
-        $certifications = $em->getRepository(Certification::class)
-            ->findBy(['user' => $user], ['issuedAt' => 'DESC']);
+        $certifications = $certificationRepository->findBy(['user' => $user]);
         $certificationsCount = count($certifications);
 
-        // --- Limiter les 5 derniers achats pour aperçu ---
+        // Limiter aux 5 dernières commandes
         $latestPurchases = array_slice($purchases, 0, 5);
 
         return $this->render('user/dashboard.html.twig', [
@@ -91,7 +96,6 @@ class UserController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $em->flush();
             $this->addFlash('success', 'Profil mis à jour avec succès !');
-
             return $this->redirectToRoute('user_dashboard');
         }
 
@@ -102,8 +106,8 @@ class UserController extends AbstractController
 
     #[Route('/dashboard/password', name: 'user_dashboard_password')]
     public function changePassword(
-        Request $request, 
-        UserPasswordHasherInterface $passwordHasher, 
+        Request $request,
+        UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $em
     ): Response {
         /** @var User $user */
@@ -123,35 +127,123 @@ class UserController extends AbstractController
         }
 
         return $this->render('user/change_password.html.twig', [
-            'passwordForm' => $form->createView()
+            'passwordForm' => $form->createView(),
         ]);
     }
 
     #[Route('/dashboard/purchases', name: 'user_dashboard_purchases')]
-    public function purchases(EntityManagerInterface $em): Response
+    public function purchases(Request $request, EntityManagerInterface $em): Response
     {
         /** @var User $user */
         $user = $this->getUser();
 
-        $purchases = $em->getRepository(Purchase::class)
-            ->findBy(['user' => $user], ['createdAt' => 'DESC']);
+        $status = $request->query->get('status');
+        $fromDate = $request->query->get('from');
+        $toDate = $request->query->get('to');
+
+        $repo = $em->getRepository(Purchase::class);
+        $qb = $repo->createQueryBuilder('p')
+            ->andWhere('p.user = :user')
+            ->setParameter('user', $user);
+
+        if ($status) {
+            $qb->andWhere('p.status = :status')->setParameter('status', $status);
+        }
+
+        if ($fromDate) {
+            $from = new \DateTime($fromDate);
+            $qb->andWhere('p.createdAt >= :from')->setParameter('from', $from);
+        }
+
+        if ($toDate) {
+            $to = new \DateTime($toDate);
+            $qb->andWhere('p.createdAt <= :to')->setParameter('to', $to);
+        }
+
+        $purchases = $qb->orderBy('p.createdAt', 'DESC')->getQuery()->getResult();
 
         return $this->render('user/purchases.html.twig', [
-            'purchases' => $purchases
+            'purchases' => $purchases,
+            'filter_status' => $status,
+            'filter_from' => $fromDate,
+            'filter_to' => $toDate,
         ]);
     }
 
     #[Route('/dashboard/certifications', name: 'user_dashboard_certifications')]
-    public function certifications(EntityManagerInterface $em): Response
+    public function certifications(Request $request, EntityManagerInterface $em): Response
     {
         /** @var User $user */
         $user = $this->getUser();
 
-        $certifications = $em->getRepository(Certification::class)
-            ->findBy(['user' => $user], ['issuedAt' => 'DESC']);
+        $filterCursusId = $request->query->get('cursus');
+        $filterFrom = $request->query->get('from');
+        $filterTo = $request->query->get('to');
+
+        $certRepo = $em->getRepository(Certification::class);
+        $cursusRepo = $em->getRepository(Cursus::class);
+
+        $allCursus = $cursusRepo->findAll();
+
+        $qb = $certRepo->createQueryBuilder('c')
+            ->andWhere('c.user = :user')
+            ->setParameter('user', $user);
+
+        if ($filterCursusId) {
+            $cursus = $cursusRepo->find($filterCursusId);
+            if ($cursus) {
+                $qb->andWhere('c.cursus = :cursus')
+                   ->setParameter('cursus', $cursus);
+            }
+        }
+
+        if ($filterFrom) {
+            $from = new \DateTime($filterFrom);
+            $qb->andWhere('c.issuedAt >= :from')->setParameter('from', $from);
+        }
+
+        if ($filterTo) {
+            $to = new \DateTime($filterTo);
+            $qb->andWhere('c.issuedAt <= :to')->setParameter('to', $to);
+        }
+
+        $certifications = $qb->orderBy('c.issuedAt', 'DESC')->getQuery()->getResult();
 
         return $this->render('user/certifications.html.twig', [
-            'certifications' => $certifications
+            'certifications' => $certifications,
+            'all_cursus' => $allCursus,
+            'filter_cursus' => $filterCursusId,
+            'filter_from' => $filterFrom,
+            'filter_to' => $filterTo,
+        ]);
+    }
+
+    #[Route('/validate/{lessonId}', name: 'validate')]
+    public function validateLesson(
+        int $lessonId,
+        LessonValidatedService $lessonService,
+        LessonRepository $lessonRepository
+    ): Response {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $lesson = $lessonRepository->find($lessonId);
+        if (!$lesson) {
+            $this->addFlash('error', 'Leçon introuvable.');
+            return $this->redirectToRoute('user_dashboard');
+        }
+
+        $validation = $lessonService->validateLesson($user, $lesson);
+
+        // Vérifier le theme pour éviter null
+        $theme = $lesson->getCursus()?->getTheme();
+        $allCompleted = $theme ? $lessonService->isThemeCompleted($user, $theme) : false;
+
+        $this->addFlash('success', 'Leçon validée !');
+
+        return $this->render('lesson/validated.html.twig', [
+            'lessonValidated' => $validation,
+            'allCompleted' => $allCompleted,
         ]);
     }
 }
