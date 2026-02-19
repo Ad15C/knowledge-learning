@@ -4,71 +4,58 @@
 
 {% block stylesheets %}
     {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('build/css/themes.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/themes.css') }}">
 {% endblock %}
 
 {% block body %}
 
-<div class="container">
+<div class="dashboard-layout">
 
-    <a href="{{ path('themes_index') }}" class="btn-back">
-        ← Retour aux thèmes
-    </a>
+    <main class="dashboard-content">
 
-    <h1>{{ cursus.name }}</h1>
+        <!-- TITRE DU CURSUS -->
+        <h1>{{ cursus.name }}</h1>
 
-    {% if cursus.image %}
-        <img src="{{ asset(cursus.image) }}" class="cursus-image">
-    {% endif %}
+        {% if cursus.description %}
+            <p style="margin-bottom: 30px;">{{ cursus.description }}</p>
+        {% endif %}
 
-    <p class="price">{{ cursus.price }} €</p>
+        <!-- LEÇONS DISPONIBLES -->
+        <h2>Leçons disponibles</h2>
 
-    <h2>Leçons</h2>
+        <div class="cursus-grid">
+            {% for lesson in cursus.lessons %}
+                <div class="cursus-card lesson-card">
+                    {% if lesson.image %}
+                        <img src="{{ asset(lesson.image) }}" alt="{{ lesson.title }}">
+                    {% endif %}
 
-    {% if cursus.lessons|length > 0 %}
+                    <h3>{{ lesson.title }}</h3>
+                    <p>Prix : <strong>{{ lesson.price }} €</strong></p>
 
-        <ul class="lesson-list">
+                    <div style="margin-top: 10px;">
+                        {# Bouton ajouter au panier #}
+                        <a href="{{ path('cart_add_lesson', {id: lesson.id}) }}" class="btn">
+                            Ajouter au panier
+                        </a>
 
-        {% for lesson in cursus.lessons %}
+                        {# Bouton “Valider la leçon” seulement si l'utilisateur a terminé #}
+                        {% if lesson.userHasCompleted %}
+                            <a href="{{ path('lesson_validate', {id: lesson.id}) }}" class="btn-secondary">
+                                Valider la leçon
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <p>Aucune leçon disponible pour ce cursus.</p>
+            {% endfor %}
+        </div>
+        <a href="{{ path('theme_show', {'id': cursus.theme.id}) }}" class="btn-back">
+            ← Retour au thème "{{ cursus.theme.name }}"
+        </a>
 
-            <li class="lesson-item">
-
-                <h3>{{ lesson.title }}</h3>
-
-                {% if lesson.image %}
-                    <img src="{{ asset(lesson.image) }}" class="lesson-image">
-                {% endif %}
-
-                <p>{{ lesson.price }} €</p>
-
-                {% if lesson.fiche %}
-                    <p>{{ lesson.fiche }}</p>
-                {% endif %}
-
-                {% if lesson.videoUrl %}
-                    <a href="{{ lesson.videoUrl }}" target="_blank">
-                        Voir la vidéo
-                    </a>
-                {% endif %}
-
-                <br>
-
-                <a href="{{ path('validate', {lessonId: lesson.id}) }}"
-                   class="btn-validate">
-                    Valider la leçon
-                </a>
-
-            </li>
-
-        {% endfor %}
-
-        </ul>
-
-    {% else %}
-
-        <p>Aucune leçon.</p>
-
-    {% endif %}
+    </main>
 
 </div>
 

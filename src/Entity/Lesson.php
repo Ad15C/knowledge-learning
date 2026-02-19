@@ -29,8 +29,11 @@ class Lesson
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $videoUrl = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $image = null;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $userHasCompleted = false;
 
     public function getId(): ?int { return $this->id; }
     public function getTitle(): ?string { return $this->title; }
@@ -50,4 +53,7 @@ class Lesson
 
     public function getVideoUrl(): ?string { return $this->videoUrl; }
     public function setVideoUrl(?string $videoUrl): static { $this->videoUrl = $videoUrl; return $this; }
+
+    public function getUserHasCompleted(): bool { return $this->userHasCompleted; }
+    public function setUserHasCompleted(bool $completed): static { $this->userHasCompleted = $completed; return $this; }
 }

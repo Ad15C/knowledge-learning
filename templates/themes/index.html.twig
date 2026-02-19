@@ -4,166 +4,32 @@
 
 {% block stylesheets %}
     {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('styles/themes.css') }}">
+    <link rel="stylesheet" href="{{ asset('build/css/themes.css') }}">
 {% endblock %}
 
 {% block body %}
-<h1>Liste des Thèmes</h1>
+<h1>Nos Thèmes</h1>
 
-{# Formulaire de filtre #}
-<form method="get" action="{{ path('themes_index') }}" class="filter-form">
-    <input type="text" name="name"
-           placeholder="Nom du thème"
-           value="{{ filter_name|default('') }}">
-
-    <input type="number"
-           step="0.01"
-           name="minPrice"
-           placeholder="Prix min"
-           value="{{ filter_minPrice|default('') }}">
-
-    <input type="number"
-           step="0.01"
-           name="maxPrice"
-           placeholder="Prix max"
-           value="{{ filter_maxPrice|default('') }}">
-
-    <button type="submit">Filtrer</button>
-</form>
-
-
-{# Accordéon des thèmes #}
-<div class="accordion">
-
-{% for theme in themes %}
-
-    <div class="theme-item">
-
-        <button class="accordion-header">
-
-            {# IMAGE DU THEME DANS LE HEADER #}
+<div class="themes-grid">
+    {% for theme in themes %}
+        <div class="theme-card">
             {% if theme.image %}
-                <img src="{{ asset(theme.image) }}"
-                     alt="{{ theme.name }}"
-                     class="theme-thumbnail">
+                <img src="{{ asset(theme.image) }}" alt="{{ theme.name }}" class="theme-image">
             {% endif %}
 
-            {{ theme.name }}
-
-        </button>
-
-
-        <div class="accordion-content">
-
-            {# IMAGE GRAND FORMAT (OPTIONNEL) #}
-            {% if theme.image %}
-                <img src="{{ asset(theme.image) }}"
-                     alt="{{ theme.name }}"
-                     class="theme-image">
-            {% endif %}
-
+            <h2>{{ theme.name }}</h2>
 
             {% if theme.description %}
                 <p>{{ theme.description }}</p>
             {% endif %}
 
-
-            {% if theme.cursus|length > 0 %}
-
-                <ul>
-
-                {% for cursus in theme.cursus %}
-
-                    <li>
-
-                        <strong>
-
-                            <a href="{{ path('cursus_show', {'id': cursus.id}) }}">
-
-                                {{ cursus.name }} - {{ cursus.price }} €
-
-                            </a>
-
-                        </strong>
-
-
-                        {% if cursus.lessons|length > 0 %}
-
-                            <ul>
-
-                            {% for lesson in cursus.lessons %}
-
-                                <li>
-
-                                    {{ lesson.title }} - {{ lesson.price }} €
-
-                                    {% if lesson.fiche %}
-                                        <br>
-                                        <small>Fiche: {{ lesson.fiche }}</small>
-                                    {% endif %}
-
-                                    {% if lesson.videoUrl %}
-                                        <br>
-                                        <a href="{{ lesson.videoUrl }}" target="_blank">
-                                            Voir la vidéo
-                                        </a>
-                                    {% endif %}
-
-                                </li>
-
-                            {% endfor %}
-
-                            </ul>
-
-                        {% else %}
-
-                            <p>Aucune leçon pour ce cursus</p>
-
-                        {% endif %}
-
-                    </li>
-
-                {% endfor %}
-
-                </ul>
-
-            {% else %}
-
-                <p>Aucun cursus pour ce thème</p>
-
-            {% endif %}
-
+            <a href="{{ path('theme_show', {'id': theme.id}) }}" class="btn btn-primary">
+                Découvrir
+            </a>
         </div>
-
-    </div>
-
-{% else %}
-
-    <p>Aucun thème ne correspond aux filtres.</p>
-
-{% endfor %}
-
+    {% else %}
+        <p>Aucun thème disponible.</p>
+    {% endfor %}
 </div>
-
-
-{# Script accordéon #}
-<script>
-
-document.querySelectorAll('.accordion-header').forEach(header => {
-
-    header.addEventListener('click', () => {
-
-        const content = header.nextElementSibling;
-
-        content.style.display =
-            content.style.display === 'block'
-            ? 'none'
-            : 'block';
-
-    });
-
-});
-
-</script>
-
+<a href="{{ path('homepage') }}" class="btn-back">← Retour à l'accueil</a>
 {% endblock %}

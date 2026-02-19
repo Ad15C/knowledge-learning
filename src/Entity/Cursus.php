@@ -21,6 +21,9 @@ class Cursus
     #[ORM\Column(type: 'decimal', precision: 6, scale: 2)]
     private ?float $price = null;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $description = null;
+
     #[ORM\ManyToOne(targetEntity: Theme::class, inversedBy: 'cursus')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Theme $theme = null;
@@ -43,6 +46,10 @@ class Cursus
 
     public function getPrice(): ?float { return $this->price; }
     public function setPrice(float $price): static { $this->price = $price; return $this; }
+
+    public function getDescription(): ?string { return $this->description; }
+    public function setDescription(?string $description): static { $this->description = $description; return $this; }
+
 
     public function getTheme(): ?Theme { return $this->theme; }
     public function setTheme(?Theme $theme): static { $this->theme = $theme; return $this; }
