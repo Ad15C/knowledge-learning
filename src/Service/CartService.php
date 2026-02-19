@@ -16,17 +16,16 @@ class CartService
         $this->security = $security;
     }
 
-    public function getItemCount(): int
+    public function getCartItemCount(): int
     {
         $user = $this->security->getUser();
         if (!$user) return 0;
 
-        $cart = $this->purchaseRepo->findOneBy([
+        $purchase = $this->purchaseRepo->findOneBy([
             'user' => $user,
-            'status' => 'pending'
+            'status' => 'cart'
         ]);
 
-        return $cart ? count($cart->getItems()) : 0;
+        return $purchase ? count($purchase->getItems()) : 0;
     }
 }
-

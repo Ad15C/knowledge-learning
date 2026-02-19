@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon Panier{% endblock %}
+
+{% block body %}
+<h1>Mon Panier</h1>
+
+{% if purchase and purchase.items|length > 0 %}
+    <ul>
+        {% for item in purchase.items %}
+            <li>
+                {% if item.cursus %}
+                    Cursus: {{ item.cursus.title }} - {{ item.price }}€
+                {% elseif item.lesson %}
+                    Leçon: {{ item.lesson.title }} - {{ item.price }}€
+                {% endif %}
+                <a href="{{ path('cart_remove', {'type': item.cursus ? 'cursus' : 'lesson', 'id': item.cursus ? item.cursus.id : item.lesson.id }) }}">
+                    Supprimer
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <a href="{{ path('cart_success') }}" class="btn btn-success">Passer à la commande</a>
+{% else %}
+    <p>Votre panier est vide.</p>
+{% endif %}
+{% endblock %}

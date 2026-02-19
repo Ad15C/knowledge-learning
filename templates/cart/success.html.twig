@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Commande réussie{% endblock %}
+
+{% block body %}
+<h1>Merci pour votre achat !</h1>
+
+{% if purchase %}
+    <p>Vous avez acheté :</p>
+    <ul>
+        {% for item in purchase.items %}
+            <li>
+                {% if item.cursus %}
+                    Cursus: {{ item.cursus.title }}
+                {% elseif item.lesson %}
+                    Leçon: {{ item.lesson.title }}
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+<a href="{{ path('homepage') }}">Retour à l'accueil</a>
+{% endblock %}
