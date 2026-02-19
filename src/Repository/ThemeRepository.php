@@ -6,9 +6,6 @@ use App\Entity\Theme;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<Theme>
- */
 class ThemeRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -16,28 +13,34 @@ class ThemeRepository extends ServiceEntityRepository
         parent::__construct($registry, Theme::class);
     }
 
-    //    /**
-    //     * @return Theme[] Returns an array of Theme objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('t')
-    //            ->andWhere('t.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('t.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    /**
+     * Récupère tous les thèmes avec leurs cursus et leçons.
+     *
+     * @return Theme[]
+     */
+    public function findThemesWithFilters(?string $name = null, ?float $minPrice = null, ?float $maxPrice = null): array
+    {
+        $qb = $this->createQueryBuilder('t')
+            ->leftJoin('t.cursus', 'c')
+            ->addSelect('c')
+            ->leftJoin('c.lessons', 'l')
+            ->addSelect('l');
 
-    //    public function findOneBySomeField($value): ?Theme
-    //    {
-    //        return $this->createQueryBuilder('t')
-    //            ->andWhere('t.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        if ($name) {
+            $qb->andWhere('t.name LIKE :name')
+               ->setParameter('name', '%'.$name.'%');
+        }
+
+        if ($minPrice !== null) {
+            $qb->andWhere('c.price >= :minPrice')
+               ->setParameter('minPrice', $minPrice);
+        }
+
+        if ($maxPrice !== null) {
+            $qb->andWhere('c.price <= :maxPrice')
+               ->setParameter('maxPrice', $maxPrice);
+        }
+
+        return $qb->orderBy('t.name', 'ASC')->getQuery()->getResult();
+    }
 }

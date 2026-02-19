@@ -20,26 +20,28 @@ class LessonValidatedRepository extends ServiceEntityRepository
      */
     public function hasCompletedTheme(User $user, Theme $theme): bool
     {
-        $totalLessons = 0;
-        foreach ($theme->getCursus() as $cursus) {
-            $totalLessons += count($cursus->getLessons());
-        }
-
-        if ($totalLessons === 0) return false;
-
         $validatedLessons = $this->createQueryBuilder('lv')
             ->select('COUNT(lv.id)')
             ->join('lv.lesson', 'l')
             ->join('l.cursus', 'c')
             ->andWhere('lv.user = :user')
             ->andWhere('c.theme = :theme')
-            ->setParameters([
-                'user' => $user,
-                'theme' => $theme,
-            ])
+            ->setParameter('user', $user)
+            ->setParameter('theme', $theme)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $totalLessons = $this->getEntityManager()
+            ->createQueryBuilder()
+            ->select('COUNT(l.id)')
+            ->from(Lesson::class, 'l')
+            ->join('l.cursus', 'c')
+            ->andWhere('c.theme = :theme')
+            ->setParameter('theme', $theme)
             ->getQuery()
             ->getSingleScalarResult();
 
         return $validatedLessons >= $totalLessons;
     }
+
 }
