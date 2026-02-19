@@ -75,6 +75,17 @@ class Purchase
         return $this;
     }
 
+    public function getTotalPrice(): float
+    {
+        $total = 0;
+
+        foreach ($this->items as $item) {
+            $total += $item->getPrice(); 
+        }
+
+        return $total;
+    }
+
     public function getStatus(): ?string
     {
         return $this->status;
