@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ cursus.name }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('build/css/themes.css') }}">
+{% endblock %}
+
+{% block body %}
+
+<div class="container">
+
+    <a href="{{ path('themes_index') }}" class="btn-back">
+        ← Retour aux thèmes
+    </a>
+
+    <h1>{{ cursus.name }}</h1>
+
+    {% if cursus.image %}
+        <img src="{{ asset(cursus.image) }}" class="cursus-image">
+    {% endif %}
+
+    <p class="price">{{ cursus.price }} €</p>
+
+    <h2>Leçons</h2>
+
+    {% if cursus.lessons|length > 0 %}
+
+        <ul class="lesson-list">
+
+        {% for lesson in cursus.lessons %}
+
+            <li class="lesson-item">
+
+                <h3>{{ lesson.title }}</h3>
+
+                {% if lesson.image %}
+                    <img src="{{ asset(lesson.image) }}" class="lesson-image">
+                {% endif %}
+
+                <p>{{ lesson.price }} €</p>
+
+                {% if lesson.fiche %}
+                    <p>{{ lesson.fiche }}</p>
+                {% endif %}
+
+                {% if lesson.videoUrl %}
+                    <a href="{{ lesson.videoUrl }}" target="_blank">
+                        Voir la vidéo
+                    </a>
+                {% endif %}
+
+                <br>
+
+                <a href="{{ path('validate', {lessonId: lesson.id}) }}"
+                   class="btn-validate">
+                    Valider la leçon
+                </a>
+
+            </li>
+
+        {% endfor %}
+
+        </ul>
+
+    {% else %}
+
+        <p>Aucune leçon.</p>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
