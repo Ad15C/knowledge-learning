@@ -1,0 +1,129 @@
+.lesson-validated-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 75vh;
+    padding: 20px;
+    background-color: #f1f8fc;
+}
+
+.lesson-validated-card {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 35px 25px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.lesson-validated-card h1 {
+    font-size: 2em;
+    color: #00497c;
+    margin-bottom: 15px;
+}
+
+.lesson-validated-card p {
+    font-size: 1.1em;
+    color: #384050;
+    margin-bottom: 20px;
+}
+
+/* Cercle de progression */
+.progress-circle {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 20px auto;
+}
+
+.progress-circle svg {
+    transform: rotate(-90deg);
+    width: 120px;
+    height: 120px;
+}
+
+.progress-circle circle {
+    fill: none;
+    stroke-width: 10;
+    cx: 60;
+    cy: 60;
+    r: 50;
+    transition: stroke-dashoffset 1s ease;
+}
+
+.progress-circle circle.bg {
+    stroke: #d9eaf6;
+}
+
+.progress-circle circle.progress {
+    stroke: #0074c7;
+    stroke-linecap: round;
+    stroke-dasharray: 0;
+    stroke-dashoffset: 0;
+}
+
+.progress-circle span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.2em;
+    color: #00497c;
+    font-weight: bold;
+}
+
+.progress-text {
+    font-size: 0.95em;
+    color: #384050;
+    margin-bottom: 20px;
+}
+
+/* Boutons */
+.lesson-validated-card .btn {
+    display: inline-block;
+    padding: 12px 25px;
+    margin-top: 10px;
+    font-size: 1em;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #0074c7;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background-color: #00497c;
+}
+
+.btn-secondary {
+    background-color: #e2e8f0;
+    color: #384050;
+}
+
+.btn-secondary:hover {
+    background-color: #cbd5e1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .lesson-validated-card {
+        padding: 25px 15px;
+    }
+
+    .lesson-validated-card h1 {
+        font-size: 1.8em;
+    }
+
+    .lesson-validated-card p {
+        font-size: 1em;
+    }
+
+    .lesson-validated-card .btn {
+        width: 100%;
+        padding: 12px 0;
+    }
+}

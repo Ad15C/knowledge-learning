@@ -2,11 +2,11 @@
 
 namespace App\Entity;
 
-use App\Repository\LessonValidationRepository;
+use App\Repository\LessonValidatedRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: LessonValidationRepository::class)]
-class LessonValidation
+#[ORM\Entity(repositoryClass: LessonValidatedRepository::class)]
+class LessonValidated
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -36,63 +36,26 @@ class LessonValidation
         $this->validatedAt = new \DateTime();
     }
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+    public function getId(): ?int { return $this->id; }
+    public function getUser(): ?User { return $this->user; }
+    public function setUser(?User $user): static { $this->user = $user; return $this; }
 
-    public function getUser(): ?User
-    {
-        return $this->user;
-    }
+    public function getLesson(): ?Lesson { return $this->lesson; }
+    public function setLesson(?Lesson $lesson): static { $this->lesson = $lesson; return $this; }
 
-    public function setUser(?User $user): static
-    {
-        $this->user = $user;
-        return $this;
-    }
+    public function getPurchaseItem(): ?PurchaseItem { return $this->purchaseItem; }
+    public function setPurchaseItem(?PurchaseItem $purchaseItem): static { $this->purchaseItem = $purchaseItem; return $this; }
 
-    public function getLesson(): ?Lesson
-    {
-        return $this->lesson;
-    }
+    public function getValidatedAt(): ?\DateTime { return $this->validatedAt; }
+    public function setValidatedAt(\DateTime $validatedAt): static { $this->validatedAt = $validatedAt; return $this; }
 
-    public function setLesson(?Lesson $lesson): static
-    {
-        $this->lesson = $lesson;
-        return $this;
-    }
+    public function isCompleted(): bool { return $this->completed; }
+    public function setCompleted(bool $completed): static { $this->completed = $completed; return $this; }
 
-    public function getPurchaseItem(): ?PurchaseItem
+    public function markCompleted(): static
     {
-        return $this->purchaseItem;
-    }
-
-    public function setPurchaseItem(?PurchaseItem $purchaseItem): static
-    {
-        $this->purchaseItem = $purchaseItem;
-        return $this;
-    }
-
-    public function getValidatedAt(): ?\DateTime
-    {
-        return $this->validatedAt;
-    }
-
-    public function setValidatedAt(\DateTime $validatedAt): static
-    {
-        $this->validatedAt = $validatedAt;
-        return $this;
-    }
-
-    public function isCompleted(): bool
-    {
-        return $this->completed;
-    }
-
-    public function setCompleted(bool $completed): static
-    {
-        $this->completed = $completed;
+        $this->completed = true;
+        $this->validatedAt = new \DateTime();
         return $this;
     }
 }

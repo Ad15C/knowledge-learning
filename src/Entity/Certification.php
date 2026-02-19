@@ -13,7 +13,7 @@ class Certification
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'certifications')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
@@ -21,67 +21,40 @@ class Certification
     #[ORM\JoinColumn(nullable: false)]
     private ?Cursus $cursus = null;
 
+    #[ORM\ManyToOne(targetEntity: Theme::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Theme $theme = null;
+
     #[ORM\Column(type: 'datetime')]
-    private ?\DateTime $issuedAt = null;
+    private ?\DateTimeInterface $issuedAt = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $certificateCode = null; // code unique ou numéro du certificat
+    private ?string $certificateCode = null;
+
+    #[ORM\Column(length: 50)]
+    private ?string $type = null;
 
     public function __construct()
     {
         $this->issuedAt = new \DateTime();
     }
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+    public function getId(): ?int { return $this->id; }
+    public function getUser(): ?User { return $this->user; }
+    public function setUser(?User $user): static { $this->user = $user; return $this; }
 
-    public function getUser(): ?User
-    {
-        return $this->user;
-    }
+    public function getCursus(): ?Cursus { return $this->cursus; }
+    public function setCursus(?Cursus $cursus): static { $this->cursus = $cursus; return $this; }
 
-    public function setUser(?User $user): static
-    {
-        $this->user = $user;
+    public function getTheme(): ?Theme { return $this->theme; }
+    public function setTheme(?Theme $theme): static { $this->theme = $theme; return $this; }
 
-        return $this;
-    }
+    public function getIssuedAt(): ?\DateTimeInterface { return $this->issuedAt; }
+    public function setIssuedAt(\DateTimeInterface $issuedAt): static { $this->issuedAt = $issuedAt; return $this; }
 
-    public function getCursus(): ?Cursus
-    {
-        return $this->cursus;
-    }
+    public function getCertificateCode(): ?string { return $this->certificateCode; }
+    public function setCertificateCode(string $certificateCode): static { $this->certificateCode = $certificateCode; return $this; }
 
-    public function setCursus(?Cursus $cursus): static
-    {
-        $this->cursus = $cursus;
-
-        return $this;
-    }
-
-    public function getIssuedAt(): ?\DateTime
-    {
-        return $this->issuedAt;
-    }
-
-    public function setIssuedAt(\DateTime $issuedAt): static
-    {
-        $this->issuedAt = $issuedAt;
-
-        return $this;
-    }
-
-    public function getCertificateCode(): ?string
-    {
-        return $this->certificateCode;
-    }
-
-    public function setCertificateCode(string $certificateCode): static
-    {
-        $this->certificateCode = $certificateCode;
-
-        return $this;
-    }
+    public function getType(): ?string { return $this->type; }
+    public function setType(string $type): static { $this->type = $type; return $this; }
 }

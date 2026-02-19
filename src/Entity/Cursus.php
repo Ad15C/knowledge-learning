@@ -3,9 +3,9 @@
 namespace App\Entity;
 
 use App\Repository\CursusRepository;
-use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: CursusRepository::class)]
 class Cursus
@@ -36,62 +36,21 @@ class Cursus
         $this->lessons = new ArrayCollection();
     }
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+    public function getId(): ?int { return $this->id; }
+    public function getName(): ?string { return $this->name; }
+    public function setName(string $name): static { $this->name = $name; return $this; }
 
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
+    public function getDescription(): ?string { return $this->description; }
+    public function setDescription(?string $description): static { $this->description = $description; return $this; }
 
-    public function setName(string $name): static
-    {
-        $this->name = $name;
-        return $this;
-    }
+    public function getPrice(): ?float { return $this->price; }
+    public function setPrice(float $price): static { $this->price = $price; return $this; }
 
-    public function getDescription(): ?string
-    {
-        return $this->description;
-    }
+    public function getTheme(): ?Theme { return $this->theme; }
+    public function setTheme(?Theme $theme): static { $this->theme = $theme; return $this; }
 
-    public function setDescription(?string $description): static
-    {
-        $this->description = $description;
-        return $this;
-    }
-
-    public function getPrice(): ?float
-    {
-        return $this->price;
-    }
-
-    public function setPrice(float $price): static
-    {
-        $this->price = $price;
-        return $this;
-    }
-
-    public function getTheme(): ?Theme
-    {
-        return $this->theme;
-    }
-
-    public function setTheme(?Theme $theme): static
-    {
-        $this->theme = $theme;
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, Lesson>
-     */
-    public function getLessons(): Collection
-    {
-        return $this->lessons;
-    }
+    /** @return Collection<int, Lesson> */
+    public function getLessons(): Collection { return $this->lessons; }
 
     public function addLesson(Lesson $lesson): static
     {
@@ -99,18 +58,14 @@ class Cursus
             $this->lessons->add($lesson);
             $lesson->setCursus($this);
         }
-
         return $this;
     }
 
     public function removeLesson(Lesson $lesson): static
     {
-        if ($this->lessons->removeElement($lesson)) {
-            if ($lesson->getCursus() === $this) {
-                $lesson->setCursus(null);
-            }
+        if ($this->lessons->removeElement($lesson) && $lesson->getCursus() === $this) {
+            $lesson->setCursus(null);
         }
-
         return $this;
     }
 }
