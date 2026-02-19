@@ -1,83 +1,122 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Mon Dashboard{% endblock %}
-
 {% block body %}
-<h1>Bienvenue, {{ user.firstname }} {{ user.lastname }} !</h1>
 
-<nav class="dashboard-nav">
-    <ul>
-        <li><a href="{{ path('user_dashboard') }}">Vue d'ensemble</a></li>
-        <li><a href="{{ path('user_dashboard_edit') }}">Modifier profil</a></li>
-        <li><a href="{{ path('user_dashboard_password') }}">Mot de passe</a></li>
-        <li><a href="{{ path('user_dashboard_purchases') }}">Mes achats</a></li>
-        <li><a href="{{ path('user_dashboard_certifications') }}">Certifications</a></li>
-    </ul>
-</nav>
+<div class="dashboard-layout">
 
-<div class="dashboard-container">
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
 
-    <!-- Header / Progression -->
-    <div class="dashboard-header"
+        <div class="sidebar-header">
+            Espace membre
+        </div>
 
-        <div class="progress-card">
-            <div class="progress-title">
-                Statut actuel : {{ status }}
+        <nav class="sidebar-nav">
+
+            <a href="{{ path('user_dashboard') }}" class="sidebar-link active">
+                Dashboard
+            </a>
+
+            <a href="{{ path('user_dashboard_edit') }}" class="sidebar-link">
+                Modifier profil
+            </a>
+
+            <a href="{{ path('user_dashboard_password') }}" class="sidebar-link">
+                Mot de passe
+            </a>
+
+            <a href="{{ path('user_dashboard_purchases') }}" class="sidebar-link">
+                Mes commandes
+            </a>
+
+            <a href="{{ path('user_dashboard_certifications') }}" class="sidebar-link">
+                Mes certifications
+            </a>
+
+        </nav>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="dashboard-main">
+
+        <h1>
+            Bienvenue, {{ app.user.firstname }} {{ app.user.lastname }}
+        </h1>
+
+
+        <div class="dashboard-sections">
+
+            <!-- STATUT -->
+            <div class="dashboard-card">
+
+                <h2>Mon statut et progression</h2>
+
+                <p>
+                    Statut actuel :
+                    <strong>{{ status }}</strong>
+                </p>
+
+                <div class="progress-bar">
+                    <div class="progress-fill"
+                         style="width: {{ progressPercent }}%">
+                    </div>
+                </div>
+
+                <small>
+                    {{ progressPercent }}% vers {{ nextStatus }}
+                </small>
+
             </div>
-            <div class="progress-subtitle">
-                Progression vers {{ nextStatus }} : {{ progressPercent }}%
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill {{ status|lower }}" style="width: {{ progressPercent }}%"></div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Stats -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-value">{{ totalOrders }}</div>
-            <div class="stat-label">Commandes</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ totalSpent }} €</div>
-            <div class="stat-label">Total dépensé</div>
-        </div>
-    </div>
 
-    <!-- Derniers achats -->
-    <div class="dashboard-card">
-        <div class="card-header">
-            <h2>Derniers achats</h2>
+
+            <!-- COMMANDES -->
+            <a href="{{ path('user_dashboard_purchases') }}"
+               class="dashboard-card dashboard-card-clickable">
+
+                <h2>Mes commandes</h2>
+
+                <p>
+                    Total commandes :
+                    <strong>{{ totalOrders }}</strong>
+                </p>
+
+                <p>
+                    Total dépensé :
+                    <strong>{{ totalSpent }} €</strong>
+                </p>
+
+                <span class="card-link-indicator">
+                    Voir mes commandes →
+                </span>
+
+            </a>
+
+
+
+            <!-- CERTIFICATIONS -->
+            <a href="{{ path('user_dashboard_certifications') }}"
+               class="dashboard-card dashboard-card-clickable">
+
+                <h2>Mes certifications</h2>
+
+                <p>
+                    Certifications obtenues :
+                    <strong>{{ certificationsCount|default(0) }}</strong>
+                </p>
+
+                <span class="card-link-indicator">
+                    Voir mes certifications →
+                </span>
+
+            </a>
+
         </div>
 
-        {% if orders is empty %}
-            <p>Aucun achat pour le moment.</p>
-        {% else %}
-            <table class="orders-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Date</th>
-                        <th>Montant</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for order in orders %}
-                        <tr>
-                            <td>#{{ order.id }}</td>
-                            <td>{{ order.createdAt|date('d/m/Y H:i') }}</td>
-                            <td>{{ order.total }} €</td>
-                            <td>
-                                <span class="status status-{{ order.status|lower }}">{{ order.status }}</span>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% endif %}
-    </div>
+    </main>
 
 </div>
+
 {% endblock %}

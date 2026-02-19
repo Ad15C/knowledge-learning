@@ -1,5 +1,9 @@
 <div class="form-page-wrapper">
     <div class="form-container">
+        <a href="{{ path('user_dashboard') }}" class="btn-back">
+            ← Retour au dashboard
+        </a>
+        
         <h1>{{ title }}</h1>
 
         {# Flash messages #}
@@ -34,5 +38,6 @@
         </div>
 
         {{ form_end(form) }}
+
     </div>
 </div>

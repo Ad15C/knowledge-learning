@@ -5,6 +5,39 @@
     box-sizing: border-box;
 }
 
+/* Bouton retour dashboard */
+.btn-back {
+    display: inline-block;
+    margin-bottom: 15px;
+    text-decoration: none;
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.btn-back:hover {
+    color: #000;
+}
+
+
+/* Version bouton moderne (optionnel) */
+.btn-back-modern {
+    display: inline-block;
+    margin-bottom: 20px;
+    padding: 8px 14px;
+    background: #f4f6f8;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #333;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.btn-back-modern:hover {
+    background: #e2e6ea;
+}
+
 /* =======================
    FORM PAGE WRAPPER
 ======================= */
