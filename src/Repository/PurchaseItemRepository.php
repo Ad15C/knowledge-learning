@@ -3,12 +3,11 @@
 namespace App\Repository;
 
 use App\Entity\PurchaseItem;
+use App\Entity\User;
+use App\Entity\Cursus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<PurchaseItem>
- */
 class PurchaseItemRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -16,28 +15,59 @@ class PurchaseItemRepository extends ServiceEntityRepository
         parent::__construct($registry, PurchaseItem::class);
     }
 
-    //    /**
-    //     * @return PurchaseItem[] Returns an array of PurchaseItem objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    // Tous les items d'une commande
+    public function findByPurchase($purchase): array
+    {
+        return $this->createQueryBuilder('pi')
+            ->andWhere('pi.purchase = :purchase')
+            ->setParameter('purchase', $purchase)
+            ->getQuery()
+            ->getResult();
+    }
 
-    //    public function findOneBySomeField($value): ?PurchaseItem
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    // Recherche par utilisateur et cursus/cours
+    public function findByUserAndCursus(User $user, Cursus $cursus): array
+    {
+        return $this->createQueryBuilder('pi')
+            ->join('pi.purchase', 'p')
+            ->andWhere('p.user = :user')
+            ->andWhere('pi.cursus = :cursus')
+            ->setParameters([
+                'user' => $user,
+                'cursus' => $cursus,
+            ])
+            ->getQuery()
+            ->getResult();
+    }
+
+    // Recherche par utilisateur et statut de la commande
+    public function findByUserAndStatus(User $user, string $status): array
+    {
+        return $this->createQueryBuilder('pi')
+            ->join('pi.purchase', 'p')
+            ->andWhere('p.user = :user')
+            ->andWhere('p.status = :status')
+            ->setParameters([
+                'user' => $user,
+                'status' => $status,
+            ])
+            ->getQuery()
+            ->getResult();
+    }
+
+    // Recherche par utilisateur et période
+    public function findByUserAndPeriod(User $user, \DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        return $this->createQueryBuilder('pi')
+            ->join('pi.purchase', 'p')
+            ->andWhere('p.user = :user')
+            ->andWhere('p.createdAt BETWEEN :from AND :to')
+            ->setParameters([
+                'user' => $user,
+                'from' => $from,
+                'to' => $to,
+            ])
+            ->getQuery()
+            ->getResult();
+    }
 }
