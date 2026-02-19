@@ -1,0 +1,28 @@
+{# templates/lesson/show.html.twig #}
+
+{% extends 'base.html.twig' %}
+
+{% block title %}Leçon {{ lesson.title }}{% endblock %}
+
+{% block body %}
+<div class="lesson-container">
+    <h1>{{ lesson.title }}</h1>
+
+    <div class="lesson-content">
+        {# Contenu fictif de la leçon #}
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+        <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+    </div>
+
+    <div class="lesson-actions">
+        {% if not lesson.userHasCompleted %}
+            <a href="{{ path('lesson_validate', {'id': lesson.id}) }}" class="btn btn-success">
+                Valider la leçon
+            </a>
+        {% else %}
+            <span class="lesson-validated">Leçon validée ✔</span>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

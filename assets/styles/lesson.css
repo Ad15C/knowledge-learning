@@ -1,0 +1,42 @@
+.lesson-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 1rem 2rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.lesson-container h1 {
+    margin-bottom: 1.5rem;
+    color: #384050;
+}
+
+.lesson-content p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    color: #555;
+}
+
+.lesson-actions {
+    margin-top: 2rem;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    border-radius: 5px;
+    text-decoration: none;
+    color: #fff;
+    font-weight: bold;
+}
+
+.btn-success {
+    background-color: #28a745;
+}
+
+.lesson-validated {
+    font-weight: bold;
+    color: #28a745;
+    font-size: 1.1rem;
+}

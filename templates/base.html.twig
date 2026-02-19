@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="{{ asset('styles/dashboard.css') }}">
     <link rel="stylesheet" href="{{ asset('styles/lesson_validated.css') }}">
     <link rel="stylesheet" href="{{ asset('styles/themes.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/lesson.css') }}">
+
 </head>
 
 <body>
@@ -88,7 +90,9 @@
 
                             <li><a href="#">Leçons</a></li>
 
-                            <li><a href="#">Achats</a></li>
+                            <li>
+                                Panier ({{ cart_item_count() }})
+                            </li>
 
                             <li><a href="#">Certifications</a></li>
 
