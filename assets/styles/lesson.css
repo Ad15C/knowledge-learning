@@ -1,88 +1,58 @@
-.lesson-container {
+.lesson-page {
     max-width: 800px;
-    margin: 2rem auto;
-    padding: 1rem 2rem;
+    margin: 0 auto;
+    padding: 20px;
     background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    font-family: "Comic Sans MS", cursive, sans-serif;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.lesson-container h1 {
-    margin-bottom: 1.5rem;
-    color: #384050;
+.lesson-title {
     font-size: 2rem;
+    color: #00497c;
+    margin-bottom: 15px;
+    text-align: center;
 }
 
-.lesson-content p {
+.lesson-image-wrapper {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.lesson-image-small {
+    max-width: 250px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.lesson-fiche p {
     margin-bottom: 1rem;
     line-height: 1.6;
-    color: #555;
+    color: #384050;
 }
 
-.lesson-actions {
-    margin-top: 2rem;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+.lesson-video {
+    text-align: center;
+    margin: 20px 0;
 }
 
-.btn {
-    display: inline-block;
-    padding: 0.6rem 1.2rem;
-    border-radius: 5px;
-    text-decoration: none;
-    color: #fff;
-    font-weight: bold;
-    background-color: #0074c7;
-    transition: background 0.2s, transform 0.2s;
-}
-
-.btn:hover {
-    background-color: #00497c;
-    transform: translateY(-2px);
-}
-
-.btn-success {
-    background-color: #28a745;
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.9rem;
 }
 
 .lesson-validated {
     font-weight: bold;
     color: #28a745;
-    font-size: 1.1rem;
 }
 
-/* ========================
-   RESPONSIVE
-======================== */
-@media (max-width: 992px) {
-    .lesson-container {
-        padding: 1rem 1.5rem;
-    }
-
-    .lesson-container h1 {
-        font-size: 1.75rem;
-    }
-
-    .lesson-actions {
-        flex-direction: column;
-        gap: 8px;
-    }
+.lesson-locked {
+    font-style: italic;
+    color: #dc3545;
 }
 
 @media (max-width: 576px) {
-    .lesson-container {
-        padding: 1rem;
-        margin: 1rem;
-    }
-
-    .lesson-container h1 {
-        font-size: 1.5rem;
-    }
-
-    .btn {
-        width: 100%;
-        text-align: center;
+    .lesson-image-small {
+        max-width: 100%;
     }
 }

@@ -37,35 +37,45 @@
 {% if purchases is empty %}
     <p class="cart-empty">Vous n'avez aucun achat pour le moment.</p>
 {% else %}
-    <div class="dashboard-cards">
+    <div class="cart-items">
         {% for purchase in purchases %}
-            <div class="dashboard-card">
-                <h2>Commande #{{ purchase.id }}</h2>
-                <p><strong>Date :</strong> {{ purchase.createdAt|date('d/m/Y H:i') }}</p>
-                <p><strong>Total :</strong> {{ purchase.total|number_format(2, '.', ' ') }} €</p>
-                <p><strong>Statut :</strong> {{ purchase.status|capitalize }}</p>
+            <div class="cart-item-card">
+                <div class="cart-item-info">
+                    <h3>Commande #{{ purchase.id }}</h3>
+                    <p><strong>Date :</strong> {{ purchase.createdAt|date('d/m/Y H:i') }}</p>
+                    <p><strong>Total :</strong> {{ purchase.total|number_format(2, '.', ' ') }} €</p>
+                    <p><strong>Statut :</strong> {{ purchase.status|capitalize }}</p>
 
-                {% if purchase.items|length > 0 %}
-                    <h4>Articles :</h4>
-                    <ul>
-                        {% for item in purchase.items %}
-                            <li>
-                                {% if item.cursus %}
-                                    {{ item.cursus.name }} - {{ item.getTotal()|number_format(2, '.', ' ') }} € 
-                                    <span class="cart-type">(Cursus)</span>
-                                {% elseif item.lesson %}
-                                    {{ item.lesson.title }} - {{ item.getTotal()|number_format(2, '.', ' ') }} € 
-                                    <span class="cart-type">(Leçon)</span>
-                                    {% if item.quantity %}
-                                        - Quantité : {{ item.quantity }}
+                    {% if purchase.items|length > 0 %}
+                        <h4>Articles :</h4>
+                        <ul>
+                            {% for item in purchase.items %}
+                                <li>
+                                    {% if item.cursus %}
+                                        {{ item.cursus.name }} - {{ item.getTotal()|number_format(2, '.', ' ') }} € 
+                                        <span class="cart-type">(Cursus)</span>
+
+                                        {# Lien vers le premier cours non complété, ou message si inexistant #}
+                                        {% if item.firstIncompleteLesson %}
+                                            <a href="{{ path('lesson_show', {'id': item.firstIncompleteLesson.id}) }}" class="cart-link">
+                                                Accéder au premier cours
+                                            </a>
+                                        {% else %}
+                                            <span class="cart-link disabled">Cours indisponible</span>
+                                        {% endif %}
+
+                                    {% elseif item.lesson %}
+                                        {{ item.lesson.title }} - {{ item.getTotal()|number_format(2, '.', ' ') }} € 
+                                        <span class="cart-type">(Leçon)</span> - Quantité : {{ item.getQuantity() }}
+                                        <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}" class="cart-link">Accéder</a>
+                                    {% else %}
+                                        Article inconnu - {{ item.getTotal()|number_format(2, '.', ' ') }} €
                                     {% endif %}
-                                {% else %}
-                                    Article inconnu - {{ item.getTotal()|number_format(2, '.', ' ') }} €
-                                {% endif %}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
             </div>
         {% endfor %}
     </div>

@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use App\Entity\Lesson;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -50,29 +51,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Certification::class, orphanRemoval: true)]
     private Collection $certifications;
 
+    #[ORM\ManyToMany(targetEntity: Lesson::class)]
+    #[ORM\JoinTable(name: "user_completed_lessons")]
+    private Collection $completedLessons;
+
     public function __construct()
     {
         $this->purchases = new ArrayCollection();
         $this->certifications = new ArrayCollection();
+        $this->completedLessons = new ArrayCollection();
         $this->roles = [];
     }
 
-    // ID & Email
+    // --- ID & Email ---
     public function getId(): ?int { return $this->id; }
     public function getEmail(): ?string { return $this->email; }
     public function setEmail(string $email): static { $this->email = $email; return $this; }
     public function getUserIdentifier(): string { return (string)$this->email; }
 
-    // Roles
+    // --- Roles ---
     public function getRoles(): array { $roles = $this->roles; $roles[] = 'ROLE_USER'; return array_unique($roles); }
     public function setRoles(array $roles): static { $this->roles = $roles; return $this; }
 
-    // Password
+    // --- Password ---
     public function getPassword(): ?string { return $this->password; }
     public function setPassword(string $password): static { $this->password = $password; return $this; }
     #[\Deprecated] public function eraseCredentials(): void {}
 
-    // User Info
+    // --- User Info ---
     public function getFirstname(): ?string { return $this->firstname; }
     public function setFirstname(string $firstname): static { $this->firstname = $firstname; return $this; }
     public function getLastname(): ?string { return $this->lastname; }
@@ -80,13 +86,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function isVerified(): bool { return $this->isVerified; }
     public function setIsVerified(bool $isVerified): static { $this->isVerified = $isVerified; return $this; }
 
-    // Verification Token
+    // --- Verification Token ---
     public function getVerificationToken(): ?string { return $this->verificationToken; }
     public function setVerificationToken(?string $token): static { $this->verificationToken = $token; return $this; }
     public function getVerificationTokenExpiresAt(): ?\DateTimeInterface { return $this->verificationTokenExpiresAt; }
     public function setVerificationTokenExpiresAt(?\DateTimeInterface $expiresAt): static { $this->verificationTokenExpiresAt = $expiresAt; return $this; }
 
-    // Purchases & Certifications
+    // --- Purchases & Certifications ---
     /** @return Collection<int, Purchase> */
     public function getPurchases(): Collection { return $this->purchases; }
     public function addPurchase(Purchase $purchase): static
@@ -120,6 +126,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         if ($this->certifications->removeElement($certification) && $certification->getUser() === $this) {
             $certification->setUser(null);
         }
+        return $this;
+    }
+
+    // --- Completed Lessons (ManyToMany) ---
+    /**
+     * @return Collection<int, Lesson>
+     */
+    public function getCompletedLessons(): Collection
+    {
+        return $this->completedLessons;
+    }
+
+    public function addCompletedLesson(Lesson $lesson): static
+    {
+        if (!$this->completedLessons->contains($lesson)) {
+            $this->completedLessons->add($lesson);
+        }
+        return $this;
+    }
+
+    public function removeCompletedLesson(Lesson $lesson): static
+    {
+        $this->completedLessons->removeElement($lesson);
         return $this;
     }
 }

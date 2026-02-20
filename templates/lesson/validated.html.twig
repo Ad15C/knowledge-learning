@@ -9,7 +9,7 @@
 {% block body %}
 <div class="lesson-validated-container">
     <div class="lesson-validated-card">
-        <h1>🎉 Bravo {{ app.user.firstName ?? app.user.username }} !</h1>
+        <h1>Bravo {{ app.user.firstName ?? app.user.username }} !</h1>
 
         {% if lessonValidated.lesson %}
             <p>Vous avez terminé la leçon : <strong>{{ lessonValidated.lesson.title }}</strong> ✅</p>
@@ -31,10 +31,10 @@
                 <p class="progress-text">{{ completedLessons }}/{{ totalLessons }} leçons terminées</p>
 
                 {% if allCompleted %}
-                    <p>🎓 Félicitations ! Vous avez complété le thème : 
+                    <p>Félicitations ! Vous avez complété le thème : 
                         <strong>{{ theme.title }}</strong> et obtenu votre certification.</p>
                 {% else %}
-                    <p>📚 Continuez à valider les leçons pour compléter le thème et obtenir votre certification.</p>
+                    <p>Continuez à valider les leçons pour compléter le thème et obtenir votre certification.</p>
                 {% endif %}
 
                 {% if theme.cursus %}
@@ -42,20 +42,20 @@
                         Retour aux leçons
                     </a>
                 {% else %}
-                    <p>⚠️ Cursus introuvable pour ce thème.</p>
+                    <p>Cursus introuvable pour ce thème.</p>
                     <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">
                         Retour au tableau de bord
                     </a>
                 {% endif %}
             {% else %}
-                <p>⚠️ Thème introuvable pour cette leçon.</p>
+                <p>Thème introuvable pour cette leçon.</p>
                 <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">
                     Retour au tableau de bord
                 </a>
             {% endif %}
 
         {% else %}
-            <p>⚠️ Leçon introuvable.</p>
+            <p>Leçon introuvable.</p>
             <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">
                 Retour au tableau de bord
             </a>

@@ -41,6 +41,7 @@ class Purchase
     public function __construct()
     {
         $this->items = new ArrayCollection();
+        $this->createdAt = new \DateTimeImmutable();
     }
 
     #[ORM\PrePersist]
@@ -48,10 +49,6 @@ class Purchase
     {
         if (!$this->orderNumber) {
             $this->orderNumber = 'ORD-' . date('Ymd') . '-' . bin2hex(random_bytes(4));
-        }
-
-        if (!$this->createdAt) {
-            $this->createdAt = new \DateTimeImmutable();
         }
     }
 
