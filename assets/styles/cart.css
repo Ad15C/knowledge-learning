@@ -210,12 +210,23 @@
     }
 
     .cart-summary-wrapper {
-        justify-content: center;
+    display: block;         /* empêche le flex horizontal avec les items */
+    width: 100%;
+    margin-top: 30px;       /* espace entre items et total */
     }
 
     .cart-summary {
-        width: 100%;
-        max-width: 400px;
+        width: 320px;
+        margin-left: auto;      /* pousse le total à droite */
+        background-color: #fff;
+        border: 1px solid #d6e4f0;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
 
 }

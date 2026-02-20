@@ -6,6 +6,7 @@ use App\Repository\LessonValidatedRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: LessonValidatedRepository::class)]
+#[ORM\UniqueConstraint(name: 'user_lesson_unique', columns: ['user_id', 'lesson_id'])]
 class LessonValidated
 {
     #[ORM\Id]
@@ -25,18 +26,19 @@ class LessonValidated
     #[ORM\JoinColumn(nullable: true)]
     private ?PurchaseItem $purchaseItem = null;
 
-    #[ORM\Column(type: 'datetime')]
-    private ?\DateTime $validatedAt = null;
+    #[ORM\Column(type: 'datetime_immutable')]
+    private ?\DateTimeInterface $validatedAt = null;
 
     #[ORM\Column(type: 'boolean')]
-    private bool $completed = false;
+    private bool $completed = true;
 
     public function __construct()
     {
-        $this->validatedAt = new \DateTime();
+        $this->validatedAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int { return $this->id; }
+
     public function getUser(): ?User { return $this->user; }
     public function setUser(?User $user): static { $this->user = $user; return $this; }
 
@@ -46,16 +48,14 @@ class LessonValidated
     public function getPurchaseItem(): ?PurchaseItem { return $this->purchaseItem; }
     public function setPurchaseItem(?PurchaseItem $purchaseItem): static { $this->purchaseItem = $purchaseItem; return $this; }
 
-    public function getValidatedAt(): ?\DateTime { return $this->validatedAt; }
-    public function setValidatedAt(\DateTime $validatedAt): static { $this->validatedAt = $validatedAt; return $this; }
+    public function getValidatedAt(): ?\DateTimeInterface { return $this->validatedAt; }
 
     public function isCompleted(): bool { return $this->completed; }
-    public function setCompleted(bool $completed): static { $this->completed = $completed; return $this; }
 
     public function markCompleted(): static
     {
         $this->completed = true;
-        $this->validatedAt = new \DateTime();
+        $this->validatedAt = new \DateTimeImmutable();
         return $this;
     }
 }

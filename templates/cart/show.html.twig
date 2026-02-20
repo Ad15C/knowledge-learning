@@ -11,15 +11,12 @@
 <h1>Mon Panier</h1>
 
 {% if purchase and purchase.items|length > 0 %}
-
-    {# ===== LISTE DES ITEMS ===== #}
     <div class="cart-items">
         {% for item in purchase.items %}
             <div class="cart-item-card">
-
                 <div class="cart-item-info">
                     {% if item.cursus %}
-                        <h3>{{ item.cursus.title }}</h3>
+                        <h3>{{ item.cursus.name }}</h3>
                         <span class="cart-type">Cursus</span>
                     {% elseif item.lesson %}
                         <h3>{{ item.lesson.title }}</h3>
@@ -28,42 +25,36 @@
                 </div>
 
                 <div class="cart-item-actions">
-                    <span class="cart-price">{{ item.price }}€</span>
+                    <span class="cart-price">{{ item.getTotal()|number_format(2, '.', ' ') }} €</span>
+
+                    <span>Quantité : {{ item.quantity|default(1) }}</span>
 
                     <a href="{{ path('cart_remove', {
                         'type': item.cursus ? 'cursus' : 'lesson',
                         'id': item.cursus ? item.cursus.id : item.lesson.id
-                    }) }}"
-                       class="btn-remove">
-                        Supprimer
-                    </a>
+                    }) }}" class="btn-remove">Supprimer</a>
                 </div>
-
             </div>
         {% endfor %}
     </div>
 
-    {# ===== BLOC TOTAL + ACTIONS EN DESSOUS A DROITE ===== #}
+    {# WRAPPER POUR LE TOTAL ET BOUTONS #}
     <div class="cart-summary-wrapper">
         <div class="cart-summary">
-
             <div class="cart-total">
-                Total : <strong>{{ purchase.getTotalPrice() }}€</strong>
+                Total : <strong>{{ purchase.total|number_format(2, '.', ' ') }} €</strong>
             </div>
 
             <a href="{{ path('themes_index') }}" class="btn btn-outline">
                 Ajouter un cursus / leçon
             </a>
 
-            <a href="{{ path('cart_success') }}" class="btn btn-primary">
+            <a href="{{ path('cart_pay') }}" class="btn btn-primary">
                 Passer au paiement
             </a>
-
         </div>
     </div>
-
 {% else %}
-    <p>Votre panier est vide.</p>
+    <p class="cart-empty">Votre panier est vide.</p>
 {% endif %}
-
 {% endblock %}

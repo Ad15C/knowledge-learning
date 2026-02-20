@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Lesson;
 use App\Entity\LessonValidated;
 use App\Entity\Theme;
 use App\Entity\User;

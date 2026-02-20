@@ -9,54 +9,47 @@
 
 {% block body %}
 
-<div class="dashboard-layout">
+<h1>{{ cursus.name }}</h1>
+{% if cursus.description %}
+    <p>{{ cursus.description }}</p>
+{% endif %}
 
-    <main class="dashboard-content">
+<h2>Leçons disponibles</h2>
+<div class="cursus-grid">
+    {% for lesson in cursus.lessons %}
+        <div class="cursus-card lesson-card">
+            {% if lesson.image %}
+                <img src="{{ asset(lesson.image) }}" alt="{{ lesson.title }}">
+            {% endif %}
 
-        <!-- TITRE DU CURSUS -->
-        <h1>{{ cursus.name }}</h1>
+            <h3>{{ lesson.title }}</h3>
+            <p>Prix : {{ lesson.price|number_format(2, '.', ' ') }} €</p>
 
-        {% if cursus.description %}
-            <p style="margin-bottom: 30px;">{{ cursus.description }}</p>
-        {% endif %}
-
-        <!-- LEÇONS DISPONIBLES -->
-        <h2>Leçons disponibles</h2>
-
-        <div class="cursus-grid">
-            {% for lesson in cursus.lessons %}
-                <div class="cursus-card lesson-card">
-                    {% if lesson.image %}
-                        <img src="{{ asset(lesson.image) }}" alt="{{ lesson.title }}">
-                    {% endif %}
-
-                    <h3>{{ lesson.title }}</h3>
-                    <p>Prix : <strong>{{ lesson.price }} €</strong></p>
-
-                    <div style="margin-top: 10px;">
-                        {# Bouton ajouter au panier #}
-                        <a href="{{ path('cart_add_lesson', {id: lesson.id}) }}" class="btn">
-                            Ajouter au panier
+            <div class="lesson-actions">
+                {% if userHasAccess[lesson.id] is defined %}
+                    {# L'utilisateur a accès à la leçon #}
+                    {% if userHasCompleted[lesson.id] is not defined %}
+                        <a href="{{ path('lesson_validate', {id: lesson.id}) }}" class="btn btn-success">
+                            Valider la leçon
                         </a>
-
-                        {# Bouton “Valider la leçon” seulement si l'utilisateur a terminé #}
-                        {% if lesson.userHasCompleted %}
-                            <a href="{{ path('lesson_validate', {id: lesson.id}) }}" class="btn-secondary">
-                                Valider la leçon
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
-            {% else %}
-                <p>Aucune leçon disponible pour ce cursus.</p>
-            {% endfor %}
+                    {% else %}
+                        <span class="lesson-validated">Leçon validée ✔</span>
+                    {% endif %}
+                {% else %}
+                    {# Bouton pour acheter la leçon individuelle #}
+                    <a href="{{ path('cart_add_lesson', {id: lesson.id}) }}" class="btn btn-outline">
+                        Ajouter au panier
+                    </a>
+                {% endif %}
+            </div>
         </div>
-        <a href="{{ path('theme_show', {'id': cursus.theme.id}) }}" class="btn-back">
-            ← Retour au thème "{{ cursus.theme.name }}"
-        </a>
-
-    </main>
-
+    {% else %}
+        <p>Aucune leçon disponible pour ce cursus.</p>
+    {% endfor %}
 </div>
+
+<a href="{{ path('theme_show', {'id': cursus.theme.id}) }}" class="btn-back">
+    ← Retour au thème "{{ cursus.theme.name }}"
+</a>
 
 {% endblock %}

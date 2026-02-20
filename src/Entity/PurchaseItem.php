@@ -13,36 +13,38 @@ class PurchaseItem
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Purchase::class, inversedBy: 'items')]
+    #[ORM\ManyToOne(inversedBy: 'items')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Purchase $purchase = null;
 
-    #[ORM\ManyToOne(targetEntity: Cursus::class)]
-    #[ORM\JoinColumn(nullable: true)] 
-    private ?Cursus $cursus = null;
-
-    #[ORM\ManyToOne(targetEntity: Lesson::class)]
-    #[ORM\JoinColumn(nullable: true)]
+    #[ORM\ManyToOne]
     private ?Lesson $lesson = null;
 
-    #[ORM\Column(type: 'float')]
-    private ?float $price = null;
+    #[ORM\ManyToOne]
+    private ?Cursus $cursus = null;
 
     #[ORM\Column]
+    private int $quantity = 1;
+
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
+    private string $unitPrice;
+
     public function getId(): ?int { return $this->id; }
 
     public function getPurchase(): ?Purchase { return $this->purchase; }
     public function setPurchase(?Purchase $purchase): static { $this->purchase = $purchase; return $this; }
 
-    public function getCursus(): ?Cursus { return $this->cursus; }
-    public function setCursus(?Cursus $cursus): static { $this->cursus = $cursus; return $this; }
-
     public function getLesson(): ?Lesson { return $this->lesson; }
     public function setLesson(?Lesson $lesson): static { $this->lesson = $lesson; return $this; }
 
-    public function getPrice(): ?float { return $this->price; }
-    public function setPrice(float $price): static { $this->price = $price; return $this; }
+    public function getCursus(): ?Cursus { return $this->cursus; }
+    public function setCursus(?Cursus $cursus): static { $this->cursus = $cursus; return $this; }
 
-    public function getQuantity(): ?int { return $this->quantity; }
+    public function getQuantity(): int { return $this->quantity; }
     public function setQuantity(int $quantity): static { $this->quantity = $quantity; return $this; }
+
+    public function getUnitPrice(): float { return (float)$this->unitPrice; }
+    public function setUnitPrice(float $price): static { $this->unitPrice = number_format($price, 2, '.', ''); return $this; }
+
+    public function getTotal(): float { return $this->getUnitPrice() * $this->quantity; }
 }
