@@ -3,7 +3,7 @@
         <a href="{{ path('user_dashboard') }}" class="btn-back">
             ← Retour au dashboard
         </a>
-        
+
         <h1>{{ title }}</h1>
 
         {# Flash messages #}
@@ -17,19 +17,29 @@
 
         {% for child in form %}
             {% set field_type = child.vars.block_prefixes[1] %}
+            {% set is_invalid = child.vars.errors|length > 0 %}
 
             {% if field_type == 'checkbox' %}
-                <div class="checkbox-container">
+                <div class="checkbox-container {% if is_invalid %}is-invalid{% endif %}">
                     {{ form_widget(child) }}
                     {{ form_label(child) }}
+                    {% for error in child.vars.errors %}
+                        <div class="form-error">{{ error.message }}</div>
+                    {% endfor %}
                 </div>
             {% else %}
-                {# Pré-remplir last_username #}
-                {% if child.vars.name == '_username' %}
-                    {{ form_row(child, {'value': last_username|default('')}) }}
-                {% else %}
-                    {{ form_row(child) }}
-                {% endif %}
+                <div class="form-group {% if is_invalid %}is-invalid{% endif %}">
+                    {# Pré-remplir last_username si nécessaire #}
+                    {% if child.vars.name == '_username' %}
+                        {{ form_widget(child, {'value': last_username|default('')}) }}
+                    {% else %}
+                        {{ form_widget(child) }}
+                    {% endif %}
+                    {{ form_label(child) }}
+                    {% for error in child.vars.errors %}
+                        <div class="form-error">{{ error.message }}</div>
+                    {% endfor %}
+                </div>
             {% endif %}
         {% endfor %}
 
@@ -38,6 +48,5 @@
         </div>
 
         {{ form_end(form) }}
-
     </div>
 </div>

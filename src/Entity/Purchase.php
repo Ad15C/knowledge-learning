@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PurchaseRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class Purchase
 {
     #[ORM\Id]
@@ -15,96 +16,78 @@ class Purchase
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\Column(length: 50, unique: true)]
+    private ?string $orderNumber = null;
+
+    #[ORM\ManyToOne(inversedBy: 'purchases')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
-    #[ORM\Column(type: 'datetime')]
-    private ?\DateTime $createdAt = null;
+    #[ORM\Column(length: 20)]
+    private string $status = 'cart';
 
-    #[ORM\Column(type: 'float')]
-    private ?float $total = 0;
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
+    private string $total = '0.00';
 
-    #[ORM\Column(length: 50)]
-    private ?string $status = 'pending'; // pending, paid, cancelled, etc.
+    #[ORM\Column]
+    private \DateTimeImmutable $createdAt;
 
-    #[ORM\OneToMany(mappedBy: 'purchase', targetEntity: PurchaseItem::class, cascade: ['persist', 'remove'])]
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $paidAt = null;
+
+    #[ORM\OneToMany(mappedBy: 'purchase', targetEntity: PurchaseItem::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $items;
 
     public function __construct()
     {
         $this->items = new ArrayCollection();
-        $this->createdAt = new \DateTime();
     }
 
-    public function getId(): ?int
+    #[ORM\PrePersist]
+    public function generateOrderNumber(): void
     {
-        return $this->id;
+        if (!$this->orderNumber) {
+            $this->orderNumber = 'ORD-' . date('Ymd') . '-' . bin2hex(random_bytes(4));
+        }
+
+        if (!$this->createdAt) {
+            $this->createdAt = new \DateTimeImmutable();
+        }
     }
 
-    public function getUser(): ?User
-    {
-        return $this->user;
-    }
-
-    public function setUser(?User $user): static
-    {
-        $this->user = $user;
-        return $this;
-    }
-
-    public function getCreatedAt(): ?\DateTime
-    {
-        return $this->createdAt;
-    }
-
-    public function setCreatedAt(\DateTime $createdAt): static
-    {
-        $this->createdAt = $createdAt;
-        return $this;
-    }
-
-    public function getTotal(): ?float
-    {
-        return $this->total;
-    }
-
-    public function setTotal(float $total): static
-    {
-        $this->total = $total;
-        return $this;
-    }
-
-    public function getTotalPrice(): float
+    public function calculateTotal(): void
     {
         $total = 0;
 
         foreach ($this->items as $item) {
-            $total += $item->getPrice(); 
+            $total += $item->getTotal();
         }
 
-        return $total;
+        $this->total = number_format($total, 2, '.', '');
     }
 
-    public function getStatus(): ?string
-    {
-        return $this->status;
-    }
+    public function getId(): ?int { return $this->id; }
 
-    public function setStatus(string $status): static
+    public function getOrderNumber(): ?string { return $this->orderNumber; }
+
+    public function getUser(): ?User { return $this->user; }
+    public function setUser(?User $user): static { $this->user = $user; return $this; }
+
+    public function getStatus(): string { return $this->status; }
+    public function setStatus(string $status): static { $this->status = $status; return $this; }
+
+    public function getTotal(): float { return (float)$this->total; }
+
+    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
+
+    public function getPaidAt(): ?\DateTimeImmutable { return $this->paidAt; }
+    public function setPaidAt(?\DateTimeImmutable $paidAt): static
     {
-        $this->status = $status;
+        $this->paidAt = $paidAt;
         return $this;
     }
 
-    /**
-     * @return Collection<int, PurchaseItem>
-     */
-    public function getItems(): Collection
-    {
-        return $this->items;
-    }
-
+    public function getItems(): Collection { return $this->items; }
     public function addItem(PurchaseItem $item): static
     {
         if (!$this->items->contains($item)) {

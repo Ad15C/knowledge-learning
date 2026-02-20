@@ -3,22 +3,45 @@
 {% block title %}Commande réussie{% endblock %}
 
 {% block body %}
+
 <h1>Merci pour votre achat !</h1>
 
 {% if purchase %}
-    <p>Vous avez acheté :</p>
+
+    <p>
+        Numéro de commande :
+        <strong>{{ purchase.orderNumber }}</strong>
+    </p>
+
+    <p>
+        Total payé :
+        <strong>{{ purchase.total|number_format(2, '.', ' ') }} €</strong>
+    </p>
+
+    <h3>Contenu :</h3>
+
     <ul>
         {% for item in purchase.items %}
             <li>
+
                 {% if item.cursus %}
-                    Cursus: {{ item.cursus.title }}
+                    Cursus : {{ item.cursus.title }}
+
                 {% elseif item.lesson %}
-                    Leçon: {{ item.lesson.title }}
+                    Leçon : {{ item.lesson.title }}
+
                 {% endif %}
+
+                — {{ item.price|number_format(2, '.', ' ') }} €
+
             </li>
         {% endfor %}
     </ul>
+
 {% endif %}
 
-<a href="{{ path('homepage') }}">Retour à l'accueil</a>
+<a href="{{ path('homepage') }}" class="btn btn-primary">
+    Retour à l'accueil
+</a>
+
 {% endblock %}

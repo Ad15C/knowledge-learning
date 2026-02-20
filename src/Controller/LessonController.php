@@ -3,94 +3,101 @@
 namespace App\Controller;
 
 use App\Entity\Lesson;
+use App\Entity\LessonValidated;
 use App\Entity\PurchaseItem;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route('/lesson')]
 class LessonController extends AbstractController
 {
-    private EntityManagerInterface $em;
+    public function __construct(private EntityManagerInterface $em) {}
 
-    public function __construct(EntityManagerInterface $em)
-    {
-        $this->em = $em;
-    }
-
-    /**
-     * Afficher une leçon si elle a été achetée
-     */
-    #[Route('/{id}', name: 'lesson_show')]
-    public function show(Lesson $lesson): Response
+    private function getUserAccessAndCompleted(): array
     {
         $user = $this->getUser();
-        if (!$user) {
-            $this->addFlash('warning', 'Vous devez être connecté pour accéder à cette leçon.');
-            return $this->redirectToRoute('app_login');
-        }
+        $userHasAccess = [];
+        $userHasCompleted = [];
 
-        // Vérifier si la leçon a été achetée
-        $items = $this->em->getRepository(PurchaseItem::class)->findBy([
-            'lesson' => $lesson
-        ]);
+        if ($user) {
+            // Récupérer les items payés (leçons + cursus)
+            $paidItems = $this->em->getRepository(PurchaseItem::class)
+                ->createQueryBuilder('pi')
+                ->join('pi.purchase', 'p')
+                ->andWhere('p.user = :user')
+                ->andWhere('p.status = :status')
+                ->setParameters([
+                    'user' => $user,
+                    'status' => 'paid'
+                ])
+                ->getQuery()
+                ->getResult();
 
-        $hasAccess = false;
-        foreach ($items as $item) {
-            $purchase = $item->getPurchase();
-            if ($purchase->getUser() === $user && $purchase->getStatus() === 'paid') {
-                $hasAccess = true;
-                break;
+            foreach ($paidItems as $item) {
+                if ($item->getLesson()) {
+                    $userHasAccess[$item->getLesson()->getId()] = true;
+                }
+                if ($item->getCursus()) {
+                    foreach ($item->getCursus()->getLessons() as $lesson) {
+                        $userHasAccess[$lesson->getId()] = true;
+                    }
+                }
+            }
+
+            // Leçons déjà validées
+            $validatedLessons = $this->em->getRepository(LessonValidated::class)
+                ->findBy(['user' => $user]);
+
+            foreach ($validatedLessons as $validation) {
+                $userHasCompleted[$validation->getLesson()->getId()] = true;
             }
         }
 
-        if (!$hasAccess) {
-            $this->addFlash('warning', 'Vous devez acheter ce cours pour y accéder.');
-            return $this->redirectToRoute('themes_index');
+        return [$userHasAccess, $userHasCompleted];
+    }
+
+    #[Route('/lesson/{id}', name: 'lesson_show')]
+    public function show(Lesson $lesson): Response
+    {
+        [$userHasAccess, $userHasCompleted] = $this->getUserAccessAndCompleted();
+
+        // Vérifier accès
+        if (!isset($userHasAccess[$lesson->getId()])) {
+            throw $this->createAccessDeniedException('Vous devez acheter cette leçon ou le cursus.');
         }
 
         return $this->render('lesson/show.html.twig', [
-            'lesson' => $lesson
+            'lesson' => $lesson,
+            'userHasAccess' => $userHasAccess,
+            'userHasCompleted' => $userHasCompleted
         ]);
     }
 
-    /**
-     * Valider une leçon pour générer la certification
-     */
-    #[Route('/validate/{id}', name: 'lesson_validate')]
+    #[Route('/lesson/validate/{id}', name: 'lesson_validate')]
     public function validate(Lesson $lesson): Response
     {
+        [$userHasAccess, $userHasCompleted] = $this->getUserAccessAndCompleted();
+
+        if (!isset($userHasAccess[$lesson->getId()])) {
+            throw $this->createAccessDeniedException('Vous devez acheter cette leçon ou le cursus.');
+        }
+
         $user = $this->getUser();
-        if (!$user) {
-            $this->addFlash('warning', 'Vous devez être connecté pour valider une leçon.');
-            return $this->redirectToRoute('app_login');
+
+        if (!isset($userHasCompleted[$lesson->getId()])) {
+            $validation = new LessonValidated();
+            $validation->setUser($user)
+                       ->setLesson($lesson);
+
+            $this->em->persist($validation);
+            $this->em->flush();
+
+            $this->addFlash('success', 'Leçon validée avec succès !');
+        } else {
+            $this->addFlash('info', 'Vous avez déjà validé cette leçon.');
         }
 
-        // Vérifier que l’utilisateur a accès à la leçon
-        $items = $this->em->getRepository(PurchaseItem::class)->findBy([
-            'lesson' => $lesson
-        ]);
-
-        $hasAccess = false;
-        foreach ($items as $item) {
-            $purchase = $item->getPurchase();
-            if ($purchase->getUser() === $user && $purchase->getStatus() === 'paid') {
-                $hasAccess = true;
-                break;
-            }
-        }
-
-        if (!$hasAccess) {
-            $this->addFlash('warning', 'Vous ne pouvez pas valider une leçon que vous n’avez pas achetée.');
-            return $this->redirectToRoute('themes_index');
-        }
-
-        // Marquer la leçon comme validée pour cet utilisateur
-        $lesson->setUserHasCompleted(true);
-        $this->em->flush();
-
-        $this->addFlash('success', 'Leçon validée !');
         return $this->redirectToRoute('lesson_show', ['id' => $lesson->getId()]);
     }
 }

@@ -23,7 +23,7 @@ class ThemeController extends AbstractController
             $filterMaxPrice !== null ? (float)$filterMaxPrice : null
         );
 
-        // Si c’est un appel AJAX, on renvoie seulement le contenu
+        // Appel AJAX -> retourne seulement le fragment HTML
         if ($request->isXmlHttpRequest()) {
             return $this->render('themes/_themes_list.html.twig', [
                 'themes' => $themes,

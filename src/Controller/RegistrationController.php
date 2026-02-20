@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class RegistrationController extends AbstractController
 {
@@ -25,6 +26,14 @@ class RegistrationController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+
+            // Vérifier que l'email n'existe pas déjà
+            $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $user->getEmail()]);
+            if ($existingUser) {
+                $this->addFlash('error', 'Cet email est déjà utilisé.');
+                return $this->redirectToRoute('app_register');
+            }
+
             // Hash du mot de passe
             $user->setPassword(
                 $passwordHasher->hashPassword(
@@ -44,9 +53,7 @@ class RegistrationController extends AbstractController
             $em->persist($user);
             $em->flush();
 
-            // Ici tu peux envoyer un mail avec le token ou simuler la vérification
             $this->addFlash('success', 'Inscription réussie ! Vérifiez votre email pour activer votre compte.');
-
             return $this->redirectToRoute('app_login');
         }
 

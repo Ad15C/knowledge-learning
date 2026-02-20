@@ -2,6 +2,11 @@
 
 {% block title %}Mes Achats{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/cart.css') }}">
+{% endblock %}
+
 {% block body %}
 <h1>Mes Achats</h1>
 
@@ -30,21 +35,34 @@
 </form>
 
 {% if purchases is empty %}
-    <p>Vous n'avez aucun achat pour le moment.</p>
+    <p class="cart-empty">Vous n'avez aucun achat pour le moment.</p>
 {% else %}
     <div class="dashboard-cards">
         {% for purchase in purchases %}
             <div class="dashboard-card">
                 <h2>Commande #{{ purchase.id }}</h2>
                 <p><strong>Date :</strong> {{ purchase.createdAt|date('d/m/Y H:i') }}</p>
-                <p><strong>Total :</strong> {{ purchase.total }} €</p>
+                <p><strong>Total :</strong> {{ purchase.total|number_format(2, '.', ' ') }} €</p>
                 <p><strong>Statut :</strong> {{ purchase.status|capitalize }}</p>
 
                 {% if purchase.items|length > 0 %}
-                    <h3>Articles :</h3>
+                    <h4>Articles :</h4>
                     <ul>
                         {% for item in purchase.items %}
-                            <li>{{ item.cursus.name }} - {{ item.price }} €</li>
+                            <li>
+                                {% if item.cursus %}
+                                    {{ item.cursus.name }} - {{ item.getTotal()|number_format(2, '.', ' ') }} € 
+                                    <span class="cart-type">(Cursus)</span>
+                                {% elseif item.lesson %}
+                                    {{ item.lesson.title }} - {{ item.getTotal()|number_format(2, '.', ' ') }} € 
+                                    <span class="cart-type">(Leçon)</span>
+                                    {% if item.quantity %}
+                                        - Quantité : {{ item.quantity }}
+                                    {% endif %}
+                                {% else %}
+                                    Article inconnu - {{ item.getTotal()|number_format(2, '.', ' ') }} €
+                                {% endif %}
+                            </li>
                         {% endfor %}
                     </ul>
                 {% endif %}
