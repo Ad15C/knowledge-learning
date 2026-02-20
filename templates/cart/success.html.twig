@@ -8,57 +8,57 @@
 {% endblock %}
 
 {% block body %}
+<div class="cart-success-wrapper">
+    <main class="cart-success">
+     <h1>Commande réussie </h1>
+        {% for item in purchase.items %}
+            <div class="cart-item-card">
+                <p class="order-number">Numéro de commande : <strong>{{ purchase.orderNumber }}</strong></p>
+                <p class="order-date">Date : {{ purchase.createdAt|date('d/m/Y H:i') }}</p>
 
-<main class="cart-success premium">
-    <h1>Paiement réussi </h1>
-    <p>Commande : <strong>{{ purchase.orderNumber }}</strong></p>
-
-    <ul class="cart-success-list">
-    {% for item in purchase.items %}
-        <li class="cart-item-row">
-            {% if item.lesson %}
-                <div class="cart-item-info">
-                    <span class="item-name">{{ item.lesson.title }}</span>
-                    <span class="item-type">Leçon</span>
-                </div>
-                <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}"
-                   class="cart-link">
-                   Accéder <span class="arrow">→</span>
-                </a>
-            {% endif %}
-
-            {% if item.cursus %}
-                <div class="cart-item-info">
-                    <span class="item-name">{{ item.cursus.name }}</span>
-                    <span class="item-type">Cursus</span>
-                </div>
-
-                {% if item.cursus.lessons|length > 0 %}
-                    <ul class="cursus-lessons">
-                    {% for lesson in item.cursus.lessons %}
-                        <li class="cart-item-row">
-                            <div class="cart-item-info">
-                                <span class="item-name">{{ lesson.title }}</span>
-                                <span class="item-type">Leçon</span>
-                            </div>
-                            <a href="{{ path('lesson_show', {'id': lesson.id}) }}"
-                               class="cart-link">
-                               Accéder <span class="arrow">→</span>
-                            </a>
-                        </li>
-                    {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="no-lessons">Aucune leçon disponible</p>
+                {% if item.lesson %}
+                    <div class="cart-item-row">
+                        <div class="cart-item-info">
+                            <span class="item-badge lesson-badge">Leçon</span>
+                            <span class="item-name">{{ item.lesson.title }}</span>
+                        </div>
+                        <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}" class="cart-link">
+                            Accéder <span class="arrow">→</span>
+                        </a>
+                    </div>
                 {% endif %}
-            {% endif %}
-        </li>
-    {% endfor %}
-    </ul>
 
-    <a href="{{ path('homepage') }}" class="cart-link-back">
-        ← Retour à l'accueil
-    </a>
-</main>
+                {% if item.cursus %}
+                    <div class="cart-item-row">
+                        <div class="cart-item-info">
+                            <span class="item-badge cursus-badge">Cursus</span>
+                            <span class="item-name">{{ item.cursus.name }}</span>
+                        </div>
+                    </div>
+                    {% if item.cursus.lessons|length > 0 %}
+                        <ul class="cursus-lessons">
+                            {% for lesson in item.cursus.lessons %}
+                                <li class="cart-item-row">
+                                    <div class="cart-item-info">
+                                        <span class="item-badge lesson-badge">Leçon</span>
+                                        <span class="item-name">{{ lesson.title }}</span>
+                                    </div>
+                                    <a href="{{ path('lesson_show', {'id': lesson.id}) }}" class="cart-link">
+                                        Accéder <span class="arrow">→</span>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="no-lessons">Aucune leçon disponible</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        {% endfor %}
 
+        <a href="{{ path('homepage') }}" class="cart-link-back">
+            ← Retour à l'accueil
+        </a>
+    </main>
+</div>
 {% endblock %}

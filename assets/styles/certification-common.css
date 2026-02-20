@@ -1,0 +1,40 @@
+/* ====== Common styles for certifications ====== */
+body {
+    font-family: "Comic Sans MS", cursive, sans-serif;
+    color: #384050;
+}
+
+/* Encadré blanc commun */
+.card-white {
+    background-color: #fff;
+    border: 1px solid #d6e4f0;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.2s ease;
+}
+
+/* Boutons et liens premium */
+.btn, .btn-back, .card-link-detail {
+    display: inline-block;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn {
+    padding: 10px 15px;
+    border-radius: 6px;
+    background-color: #0074c7;
+    color: #fff;
+}
+
+.btn:hover, .btn-back:hover, .card-link-detail:hover {
+    background-color: #00497c;
+    transform: translateY(-2px);
+    color: #fff;
+}
+
+/* Titres et textes */
+h1, h2 {
+    color: #00497c;
+}

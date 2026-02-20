@@ -3,11 +3,8 @@
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Entity\Lesson;
-use App\Entity\Cursus;
-use App\Entity\Theme;
-use App\Entity\Purchase;
 use App\Entity\Certification;
+use App\Entity\Cursus;
 use App\Form\UserProfileFormType;
 use App\Form\ChangePasswordFormType;
 use App\Repository\PurchaseRepository;
@@ -29,47 +26,23 @@ class UserController extends AbstractController
     public function dashboard(
         PurchaseRepository $purchaseRepository,
         CertificationRepository $certificationRepository
-    ): Response
-    {
-        /** @var User $user */
+    ): Response {
         $user = $this->getUser();
-
         $purchases = $purchaseRepository->findBy(['user' => $user], ['createdAt' => 'DESC']);
         $totalOrders = count($purchases);
         $totalSpent = $purchaseRepository->getTotalSpent($user);
 
         // Niveaux de fidélité
-        $tiers = [
-            'Bronze' => 0,
-            'Silver' => 100,
-            'Gold' => 300,
-            'Platinum' => 600,
-        ];
-
-        $status = 'Bronze';
-        $nextStatus = 'Silver';
-        $currentMin = 0;
-        $currentMax = 100;
-
+        $tiers = ['Bronze'=>0, 'Silver'=>100, 'Gold'=>300, 'Platinum'=>600];
+        $status = 'Bronze'; $nextStatus = 'Silver'; $currentMin=0; $currentMax=100;
         foreach ($tiers as $tier => $minAmount) {
-            if ($totalSpent >= $minAmount) {
-                $status = $tier;
-                $currentMin = $minAmount;
-            } else {
-                $nextStatus = $tier;
-                $currentMax = $minAmount;
-                break;
-            }
+            if ($totalSpent >= $minAmount) { $status = $tier; $currentMin = $minAmount; }
+            else { $nextStatus=$tier; $currentMax=$minAmount; break; }
         }
+        $progressPercent = $currentMax>$currentMin ? min(100, round((($totalSpent-$currentMin)/($currentMax-$currentMin))*100)) : 0;
 
-        $progressPercent = $currentMax > $currentMin
-            ? min(100, round((($totalSpent - $currentMin) / ($currentMax - $currentMin)) * 100))
-            : 0;
-
-        $certifications = $certificationRepository->findBy(['user' => $user]);
-        $certificationsCount = count($certifications);
-
-        // Limiter aux 5 dernières commandes
+        $certifications = $certificationRepository->findBy(['user'=>$user]);
+        $certificationsCount = $certificationRepository->countByUser($user);
         $latestPurchases = array_slice($purchases, 0, 5);
 
         return $this->render('user/dashboard.html.twig', [
@@ -80,6 +53,7 @@ class UserController extends AbstractController
             'status' => $status,
             'nextStatus' => $nextStatus,
             'progressPercent' => $progressPercent,
+            'certifications' => $certifications,
             'certificationsCount' => $certificationsCount,
         ]);
     }
@@ -87,106 +61,53 @@ class UserController extends AbstractController
     #[Route('/dashboard/edit', name: 'user_dashboard_edit')]
     public function editProfile(Request $request, EntityManagerInterface $em): Response
     {
-        /** @var User $user */
         $user = $this->getUser();
-
-        $form = $this->createForm(UserProfileFormType::class, $user);
+        $form = $this->createForm(UserProfileFormType::class,$user);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if($form->isSubmitted() && $form->isValid()){
             $em->flush();
-            $this->addFlash('success', 'Profil mis à jour avec succès !');
+            $this->addFlash('success','Profil mis à jour avec succès !');
             return $this->redirectToRoute('user_dashboard');
         }
 
-        return $this->render('user/edit.html.twig', [
-            'editProfileForm' => $form->createView(),
-        ]);
+        return $this->render('user/edit.html.twig',['editProfileForm'=>$form->createView()]);
     }
 
     #[Route('/dashboard/password', name: 'user_dashboard_password')]
-    public function changePassword(
-        Request $request,
-        UserPasswordHasherInterface $passwordHasher,
-        EntityManagerInterface $em
-    ): Response {
-        /** @var User $user */
+    public function changePassword(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $em): Response
+    {
         $user = $this->getUser();
-
         $form = $this->createForm(ChangePasswordFormType::class);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if($form->isSubmitted() && $form->isValid()){
             $newPassword = $form->get('plainPassword')->getData();
-            $user->setPassword($passwordHasher->hashPassword($user, $newPassword));
-
+            $user->setPassword($passwordHasher->hashPassword($user,$newPassword));
             $em->flush();
-            $this->addFlash('success', 'Mot de passe mis à jour !');
-
+            $this->addFlash('success','Mot de passe mis à jour !');
             return $this->redirectToRoute('user_dashboard');
         }
 
-        return $this->render('user/change_password.html.twig', [
-            'passwordForm' => $form->createView(),
-        ]);
+        return $this->render('user/change_password.html.twig',['passwordForm'=>$form->createView()]);
     }
 
     #[Route('/dashboard/purchases', name: 'user_dashboard_purchases')]
     public function purchases(Request $request, EntityManagerInterface $em): Response
     {
-        /** @var User $user */
         $user = $this->getUser();
-
         $status = $request->query->get('status');
         $fromDate = $request->query->get('from');
         $toDate = $request->query->get('to');
 
-        $repo = $em->getRepository(Purchase::class);
-        $qb = $repo->createQueryBuilder('p')
-            ->andWhere('p.user = :user')
-            ->setParameter('user', $user);
+        $repo = $em->getRepository('App\Entity\Purchase');
+        $qb = $repo->createQueryBuilder('p')->andWhere('p.user = :user')->setParameter('user', $user);
 
-        if ($status) {
-            $qb->andWhere('p.status = :status')->setParameter('status', $status);
-        }
-
-        if ($fromDate) {
-            $from = new \DateTime($fromDate);
-            $qb->andWhere('p.createdAt >= :from')->setParameter('from', $from);
-        }
-
-        if ($toDate) {
-            $to = new \DateTime($toDate);
-            $qb->andWhere('p.createdAt <= :to')->setParameter('to', $to);
-        }
+        if ($status) $qb->andWhere('p.status = :status')->setParameter('status', $status);
+        if ($fromDate) $qb->andWhere('p.createdAt >= :from')->setParameter('from', new \DateTime($fromDate));
+        if ($toDate) $qb->andWhere('p.createdAt <= :to')->setParameter('to', new \DateTime($toDate));
 
         $purchases = $qb->orderBy('p.createdAt', 'DESC')->getQuery()->getResult();
-
-        // --- Calcul du premier cours non complété pour chaque cursus ---
-        foreach ($purchases as $purchase) {
-            foreach ($purchase->getItems() as $item) {
-                if ($item->getCursus()) {
-                    $completedLessonIds = $user->getCompletedLessons()->map(fn($l) => $l->getId())->toArray();
-                    $firstIncompleteLesson = null;
-
-                    // On cherche la première leçon non complétée
-                    foreach ($item->getCursus()->getLessons() as $lesson) {
-                        if (!in_array($lesson->getId(), $completedLessonIds)) {
-                            $firstIncompleteLesson = $lesson;
-                            break;
-                        }
-                    }
-
-                    // Si tout est complété, on prend la première leçon
-                    if (!$firstIncompleteLesson) {
-                        $firstIncompleteLesson = $item->getCursus()->getLessons()->first();
-                    }
-
-                    // On ajoute une propriété temporaire pour Twig
-                    $item->firstIncompleteLesson = $firstIncompleteLesson;
-                }
-            }
-        }
 
         return $this->render('user/purchases.html.twig', [
             'purchases' => $purchases,
@@ -199,18 +120,20 @@ class UserController extends AbstractController
     #[Route('/dashboard/certifications', name: 'user_dashboard_certifications')]
     public function certifications(Request $request, EntityManagerInterface $em): Response
     {
-        /** @var User $user */
         $user = $this->getUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
 
         $filterCursusId = $request->query->get('cursus');
         $filterFrom = $request->query->get('from');
         $filterTo = $request->query->get('to');
 
-        $certRepo = $em->getRepository(Certification::class);
-        $cursusRepo = $em->getRepository(Cursus::class);
-
+        $certRepo = $em->getRepository(\App\Entity\Certification::class);
+        $cursusRepo = $em->getRepository(\App\Entity\Cursus::class);
         $allCursus = $cursusRepo->findAll();
 
+        // Construction du QueryBuilder pour filtrer les certifications
         $qb = $certRepo->createQueryBuilder('c')
             ->andWhere('c.user = :user')
             ->setParameter('user', $user);
@@ -219,21 +142,23 @@ class UserController extends AbstractController
             $cursus = $cursusRepo->find($filterCursusId);
             if ($cursus) {
                 $qb->andWhere('c.cursus = :cursus')
-                   ->setParameter('cursus', $cursus);
+                ->setParameter('cursus', $cursus);
             }
         }
 
         if ($filterFrom) {
-            $from = new \DateTime($filterFrom);
-            $qb->andWhere('c.issuedAt >= :from')->setParameter('from', $from);
+            $qb->andWhere('c.issuedAt >= :from')
+            ->setParameter('from', new \DateTime($filterFrom));
         }
 
         if ($filterTo) {
-            $to = new \DateTime($filterTo);
-            $qb->andWhere('c.issuedAt <= :to')->setParameter('to', $to);
+            $qb->andWhere('c.issuedAt <= :to')
+            ->setParameter('to', new \DateTime($filterTo));
         }
 
-        $certifications = $qb->orderBy('c.issuedAt', 'DESC')->getQuery()->getResult();
+        $certifications = $qb->orderBy('c.issuedAt', 'DESC')
+                            ->getQuery()
+                            ->getResult();
 
         return $this->render('user/certifications.html.twig', [
             'certifications' => $certifications,
@@ -244,32 +169,24 @@ class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/validate/{lessonId}', name: 'validate')]
-    public function validateLesson(
-        int $lessonId,
-        LessonValidatedService $lessonService,
-        LessonRepository $lessonRepository
-    ): Response {
-        /** @var User $user */
+    #[Route('/dashboard/certification/{id}', name: 'certification_show')]
+    public function show(Certification $certification): Response
+    {
         $user = $this->getUser();
-
-        $lesson = $lessonRepository->find($lessonId);
-        if (!$lesson) {
-            $this->addFlash('error', 'Leçon introuvable.');
-            return $this->redirectToRoute('user_dashboard');
+        if ($certification->getUser()->getId() !== $user->getId()) {
+            $this->addFlash('warning', 'Vous n’êtes pas autorisé à voir cette certification.');
+            return $this->redirectToRoute('user_dashboard_certifications');
         }
 
-        $validation = $lessonService->validateLesson($user, $lesson);
-
-        // Vérifier le theme pour éviter null
-        $theme = $lesson->getCursus()?->getTheme();
-        $allCompleted = $theme ? $lessonService->isThemeCompleted($user, $theme) : false;
-
-        $this->addFlash('success', 'Leçon validée !');
-
-        return $this->render('lesson/validated.html.twig', [
-            'lessonValidated' => $validation,
-            'allCompleted' => $allCompleted,
+        return $this->render('user/certification_show.html.twig', [
+            'certification' => $certification,
         ]);
+    }
+
+    #[Route('/validate/{lessonId}', name: 'validate_lesson')]
+    public function validateLesson(int $lessonId): Response
+    {
+        // Redirection vers la vraie route de validation dans LessonController
+        return $this->redirectToRoute('lesson_validate', ['lessonId' => $lessonId]);
     }
 }
