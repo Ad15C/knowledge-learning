@@ -9,15 +9,15 @@
 {% block body %}
 <div class="lesson-validated-container">
     <div class="lesson-validated-card">
-        <h1>Bravo {{ app.user.firstName ?? app.user.username }} !</h1>
+        <h1>Bravo {{ app.user.firstname ?? app.user.username }} !</h1>
 
         {% if lessonValidated.lesson %}
             <p>Vous avez terminé la leçon : <strong>{{ lessonValidated.lesson.title }}</strong> ✅</p>
 
-            {% set theme = lessonValidated.lesson.theme %}
+            {% set theme = lessonValidated.lesson.cursus?->theme %}
             {% if theme %}
                 {% set totalLessons = theme.lessons|length %}
-                {% set completedLessons = lessonValidated.user.lessonValidated|filter(lv => lv.lesson.theme.id == theme.id)|length %}
+                {% set completedLessons = app.user.completedLessons|filter(l => l.cursus.theme.id == theme.id)|length %}
                 {% set progressPercent = (completedLessons / totalLessons * 100)|round(0, 'floor') %}
 
                 <!-- Cercle de progression -->
@@ -31,34 +31,24 @@
                 <p class="progress-text">{{ completedLessons }}/{{ totalLessons }} leçons terminées</p>
 
                 {% if allCompleted %}
-                    <p>Félicitations ! Vous avez complété le thème : 
-                        <strong>{{ theme.title }}</strong> et obtenu votre certification.</p>
+                    <p style="color:green; font-weight:bold;">
+                        Félicitations ! Vous avez complété toutes les leçons de ce thème : <strong>{{ theme.title }}</strong> et obtenu votre certification 🎓
+                    </p>
                 {% else %}
                     <p>Continuez à valider les leçons pour compléter le thème et obtenir votre certification.</p>
                 {% endif %}
 
-                {% if theme.cursus %}
-                    <a href="{{ path('lesson_list', {'cursusId': theme.cursus.id}) }}" class="btn btn-primary">
-                        Retour aux leçons
-                    </a>
-                {% else %}
-                    <p>Cursus introuvable pour ce thème.</p>
-                    <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">
-                        Retour au tableau de bord
-                    </a>
-                {% endif %}
+                <a href="{{ path('lesson_list', {'cursusId': lessonValidated.lesson.cursus.id}) }}" class="btn btn-primary">
+                    Retour aux leçons
+                </a>
             {% else %}
                 <p>Thème introuvable pour cette leçon.</p>
-                <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">
-                    Retour au tableau de bord
-                </a>
+                <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">Retour au tableau de bord</a>
             {% endif %}
 
         {% else %}
             <p>Leçon introuvable.</p>
-            <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">
-                Retour au tableau de bord
-            </a>
+            <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">Retour au tableau de bord</a>
         {% endif %}
     </div>
 </div>
@@ -76,9 +66,7 @@ document.querySelectorAll('.progress-circle').forEach(circle => {
     circleProgress.style.strokeDashoffset = circumference;
 
     const offset = circumference - (progress / 100) * circumference;
-    setTimeout(() => {
-        circleProgress.style.strokeDashoffset = offset;
-    }, 200);
+    setTimeout(() => { circleProgress.style.strokeDashoffset = offset; }, 200);
 });
 </script>
 {% endblock %}

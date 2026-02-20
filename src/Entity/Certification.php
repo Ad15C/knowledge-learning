@@ -18,12 +18,16 @@ class Certification
     private ?User $user = null;
 
     #[ORM\ManyToOne(targetEntity: Cursus::class)]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     private ?Cursus $cursus = null;
 
     #[ORM\ManyToOne(targetEntity: Theme::class)]
     #[ORM\JoinColumn(nullable: true)]
     private ?Theme $theme = null;
+
+    #[ORM\ManyToOne(targetEntity: Lesson::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Lesson $lesson = null;
 
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $issuedAt = null;
@@ -48,6 +52,9 @@ class Certification
 
     public function getTheme(): ?Theme { return $this->theme; }
     public function setTheme(?Theme $theme): static { $this->theme = $theme; return $this; }
+
+    public function getLesson(): ?Lesson { return $this->lesson; }
+    public function setLesson(?Lesson $lesson): static { $this->lesson = $lesson; return $this; }
 
     public function getIssuedAt(): ?\DateTimeInterface { return $this->issuedAt; }
     public function setIssuedAt(\DateTimeInterface $issuedAt): static { $this->issuedAt = $issuedAt; return $this; }

@@ -47,4 +47,5 @@ class PurchaseItem
     public function setUnitPrice(float $price): static { $this->unitPrice = number_format($price, 2, '.', ''); return $this; }
 
     public function getTotal(): float { return $this->getUnitPrice() * $this->quantity; }
+
 }

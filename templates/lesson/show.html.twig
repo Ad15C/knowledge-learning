@@ -2,12 +2,16 @@
 
 {% block title %}{{ lesson.title }}{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ asset('css/lesson.css') }}">
+{% endblock %}
+
 {% block body %}
 <div class="lesson-page">
     <h1>{{ lesson.title }}</h1>
 
     {% if lesson.image %}
-        <img src="{{ asset(lesson.image) }}" alt="{{ lesson.title }}" style="max-width:300px; margin-bottom:20px;">
+        <img src="{{ asset(lesson.image) }}" alt="{{ lesson.title }}" class="lesson-image">
     {% endif %}
 
     {% if lesson.fiche %}
@@ -18,23 +22,29 @@
         <p>Pas encore de contenu disponible pour cette leçon.</p>
     {% endif %}
 
-    {% set hasAccess = attribute(userHasAccess, lesson.id) is defined ? attribute(userHasAccess, lesson.id) : false %}
-    {% set hasCompleted = attribute(userHasCompleted, lesson.id) is defined ? attribute(userHasCompleted, lesson.id) : false %}
+    {# Statut d'accès et complétion #}
+    {% set hasAccess = userHasAccess[lesson.id]|default(false) %}
+    {% set hasCompleted = userHasCompleted[lesson.id]|default(false) %}
 
     {% if hasAccess and not hasCompleted %}
         <form method="post" action="{{ path('lesson_complete', {'id': lesson.id}) }}">
-            <button type="submit" class="btn btn-outline">Marquer comme complété </button>
+            <button type="submit" class="btn btn-outline">Marquer comme complétée</button>
         </form>
     {% elseif hasCompleted %}
         <p style="color:green; font-weight:bold;">Vous avez déjà complété cette leçon.</p>
 
-        <a href="{{ path('lesson_validated', {'id': lesson.id}) }}" class="btn btn-success mt-2">
-            Voir ma progression et la certification 🎓
-        </a>
+        {% if certification %}
+            <p style="color:green; font-weight:bold;">
+                Certificat : <strong>{{ certification.certificateCode }}</strong>
+            </p>
+            <p>Date : {{ certification.issuedAt|date('d/m/Y') }}</p>
+        {% endif %}
+    {% else %}
+        <p style="color:red;">Vous n'avez pas encore accès à cette leçon.</p>
     {% endif %}
 
     <div class="mt-3">
-        <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">Retour au tableau de bord</a>
+        <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">← Retour au tableau de bord</a>
     </div>
 </div>
 {% endblock %}

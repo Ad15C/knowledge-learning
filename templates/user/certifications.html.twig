@@ -3,7 +3,6 @@
 {% block title %}Mes Certifications{% endblock %}
 
 {% block body %}
-
 <div class="dashboard-layout">
 
     <!-- SIDEBAR -->
@@ -40,7 +39,7 @@
             <label for="to">À :</label>
             <input type="date" name="to" id="to" value="{{ filter_to|default('') }}">
 
-            <button type="submit">Filtrer</button>
+            <button type="submit" class="btn">Filtrer</button>
         </form>
 
         {% if certifications is empty %}
@@ -48,23 +47,30 @@
         {% else %}
             <div class="dashboard-cards">
                 {% for cert in certifications %}
-                    <div class="dashboard-card">
-                        <h2>{{ cert.cursus.name }}</h2>
-                        <p>
-                            Code du certificat : <strong>{{ cert.certificateCode }}</strong>
-                        </p>
-                        <p>
-                            Date : {{ cert.issuedAt|date('d/m/Y') }}
-                        </p>
+                    <div class="dashboard-card card-white">
+                        <h2>
+                            {% if cert.lesson %}
+                                Leçon : {{ cert.lesson.title }}
+                            {% elseif cert.cursus %}
+                                Cursus : {{ cert.cursus.name }}
+                            {% elseif cert.theme %}
+                                Thème : {{ cert.theme.name }}
+                            {% else %}
+                                Certification
+                            {% endif %}
+                        </h2>
+                        <p>Code : <strong>{{ cert.certificateCode }}</strong></p>
+                        <p>Émise le : {{ cert.issuedAt|date('d/m/Y') }}</p>
+
+                        <a href="{{ path('certification_show', {'id': cert.id}) }}" class="card-link-detail">
+                            Voir le détail →
+                        </a>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
 
-        <a href="{{ path('user_dashboard') }}" class="btn-back">
-            ← Retour au dashboard
-        </a>
+        <a href="{{ path('user_dashboard') }}" class="btn-back">← Retour au dashboard</a>
     </div>
 </div>
-
 {% endblock %}
