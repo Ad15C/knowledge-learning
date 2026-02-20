@@ -1,27 +1,40 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Leçon {{ lesson.title }}{% endblock %}
+{% block title %}{{ lesson.title }}{% endblock %}
 
 {% block body %}
-<div class="lesson-container">
+<div class="lesson-page">
     <h1>{{ lesson.title }}</h1>
 
-    <div class="lesson-content">
-        <p>Contenu de la leçon...</p>
-    </div>
+    {% if lesson.image %}
+        <img src="{{ asset(lesson.image) }}" alt="{{ lesson.title }}" style="max-width:300px; margin-bottom:20px;">
+    {% endif %}
 
-    <div class="lesson-actions">
-        {% if userHasAccess[lesson.id] is defined %}
-            {% if userHasCompleted[lesson.id] is not defined %}
-                <a href="{{ path('lesson_validate', {'id': lesson.id}) }}" class="btn btn-success">
-                    Valider la leçon
-                </a>
-            {% else %}
-                <span class="lesson-validated">Leçon validée ✔</span>
-            {% endif %}
-        {% else %}
-            <span class="locked">Vous devez acheter la leçon ou le cursus pour y accéder</span>
-        {% endif %}
+    {% if lesson.fiche %}
+        {% for paragraph in lesson.fiche|split('<br><br>') %}
+            <p>{{ paragraph|raw }}</p>
+        {% endfor %}
+    {% else %}
+        <p>Pas encore de contenu disponible pour cette leçon.</p>
+    {% endif %}
+
+    {% set hasAccess = attribute(userHasAccess, lesson.id) is defined ? attribute(userHasAccess, lesson.id) : false %}
+    {% set hasCompleted = attribute(userHasCompleted, lesson.id) is defined ? attribute(userHasCompleted, lesson.id) : false %}
+
+    {% if hasAccess and not hasCompleted %}
+        <form method="post" action="{{ path('lesson_complete', {'id': lesson.id}) }}">
+            <button type="submit" class="btn btn-outline">Marquer comme complété </button>
+        </form>
+    {% elseif hasCompleted %}
+        <p style="color:green; font-weight:bold;">Vous avez déjà complété cette leçon.</p>
+
+        <a href="{{ path('lesson_validated', {'id': lesson.id}) }}" class="btn btn-success mt-2">
+            Voir ma progression et la certification 🎓
+        </a>
+    {% endif %}
+
+    <div class="mt-3">
+        <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">Retour au tableau de bord</a>
     </div>
 </div>
 {% endblock %}

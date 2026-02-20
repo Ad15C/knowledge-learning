@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Contact;
-use App\Form\ContactFormType; // nouveau nom
+use App\Form\ContactFormType; 
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;

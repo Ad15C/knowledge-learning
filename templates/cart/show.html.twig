@@ -26,8 +26,7 @@
 
                 <div class="cart-item-actions">
                     <span class="cart-price">{{ item.getTotal()|number_format(2, '.', ' ') }} €</span>
-
-                    <span>Quantité : {{ item.quantity|default(1) }}</span>
+                    <span>Quantité : {{ item.getQuantity() }}</span>
 
                     <a href="{{ path('cart_remove', {
                         'type': item.cursus ? 'cursus' : 'lesson',
@@ -38,7 +37,6 @@
         {% endfor %}
     </div>
 
-    {# WRAPPER POUR LE TOTAL ET BOUTONS #}
     <div class="cart-summary-wrapper">
         <div class="cart-summary">
             <div class="cart-total">

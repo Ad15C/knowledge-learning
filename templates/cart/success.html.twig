@@ -1,47 +1,64 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Commande réussie{% endblock %}
+{% block title %}Paiement réussi{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/cart-success.css') }}">
+{% endblock %}
 
 {% block body %}
 
-<h1>Merci pour votre achat !</h1>
+<main class="cart-success premium">
+    <h1>Paiement réussi </h1>
+    <p>Commande : <strong>{{ purchase.orderNumber }}</strong></p>
 
-{% if purchase %}
+    <ul class="cart-success-list">
+    {% for item in purchase.items %}
+        <li class="cart-item-row">
+            {% if item.lesson %}
+                <div class="cart-item-info">
+                    <span class="item-name">{{ item.lesson.title }}</span>
+                    <span class="item-type">Leçon</span>
+                </div>
+                <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}"
+                   class="cart-link">
+                   Accéder <span class="arrow">→</span>
+                </a>
+            {% endif %}
 
-    <p>
-        Numéro de commande :
-        <strong>{{ purchase.orderNumber }}</strong>
-    </p>
+            {% if item.cursus %}
+                <div class="cart-item-info">
+                    <span class="item-name">{{ item.cursus.name }}</span>
+                    <span class="item-type">Cursus</span>
+                </div>
 
-    <p>
-        Total payé :
-        <strong>{{ purchase.total|number_format(2, '.', ' ') }} €</strong>
-    </p>
-
-    <h3>Contenu :</h3>
-
-    <ul>
-        {% for item in purchase.items %}
-            <li>
-
-                {% if item.cursus %}
-                    Cursus : {{ item.cursus.title }}
-
-                {% elseif item.lesson %}
-                    Leçon : {{ item.lesson.title }}
-
+                {% if item.cursus.lessons|length > 0 %}
+                    <ul class="cursus-lessons">
+                    {% for lesson in item.cursus.lessons %}
+                        <li class="cart-item-row">
+                            <div class="cart-item-info">
+                                <span class="item-name">{{ lesson.title }}</span>
+                                <span class="item-type">Leçon</span>
+                            </div>
+                            <a href="{{ path('lesson_show', {'id': lesson.id}) }}"
+                               class="cart-link">
+                               Accéder <span class="arrow">→</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="no-lessons">Aucune leçon disponible</p>
                 {% endif %}
-
-                — {{ item.price|number_format(2, '.', ' ') }} €
-
-            </li>
-        {% endfor %}
+            {% endif %}
+        </li>
+    {% endfor %}
     </ul>
 
-{% endif %}
-
-<a href="{{ path('homepage') }}" class="btn btn-primary">
-    Retour à l'accueil
-</a>
+    <a href="{{ path('homepage') }}" class="cart-link-back">
+        ← Retour à l'accueil
+    </a>
+</main>
 
 {% endblock %}

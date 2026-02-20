@@ -1,0 +1,107 @@
+.cart-success.premium {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+    font-family: "Comic Sans MS", cursive, sans-serif;
+    color: #384050;
+}
+
+.cart-success-list {
+    list-style: none;
+    margin: 20px 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cart-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background-color: #fdfdfd;
+    border: 1px solid #d6e4f0;
+    transition: all 0.2s ease;
+}
+
+.cart-item-row:hover {
+    background-color: #e8f1fb;
+    box-shadow: 0 2px 6px rgba(0, 116, 199, 0.1);
+}
+
+.cart-item-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.item-name {
+    font-weight: 600;
+    color: #00497c;
+}
+
+.item-type {
+    font-size: 0.8rem;
+    color: #0074c7;
+}
+
+.cart-link {
+    font-size: 0.85rem;
+    color: #0074c7;
+    text-decoration: none;
+    font-weight: bold;
+    border-bottom: 1px dotted #0074c7;
+    transition: all 0.2s ease;
+}
+
+.cart-link:hover {
+    color: #00497c;
+    border-bottom: 1px solid #00497c;
+}
+
+.cart-link .arrow {
+    margin-left: 4px;
+    font-weight: bold;
+}
+
+.cursus-lessons {
+    list-style: none;
+    padding-left: 20px;
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.no-lessons {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.cart-link-back {
+    display: inline-block;
+    margin-top: 25px;
+    font-size: 0.9rem;
+    color: #0074c7;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.cart-link-back:hover {
+    color: #00497c;
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .cart-item-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .cart-link {
+        margin-top: 3px;
+    }
+}

@@ -1,5 +1,5 @@
 <?php
-// src/Controller/PurchaseController.php
+
 namespace App\Controller;
 
 use App\Entity\Purchase;
@@ -23,8 +23,9 @@ class PurchaseController extends AbstractController
     public function show(): Response
     {
         $user = $this->getUser();
+
         if (!$user) {
-            throw $this->createAccessDeniedException();
+            return $this->redirectToRoute('app_login');
         }
 
         $purchase = $this->purchaseRepo->findOneBy([
@@ -41,8 +42,9 @@ class PurchaseController extends AbstractController
     public function addLesson(Lesson $lesson): Response
     {
         $user = $this->getUser();
+
         if (!$user) {
-            throw $this->createAccessDeniedException();
+            return $this->redirectToRoute('app_login');
         }
 
         $purchase = $this->purchaseRepo->findOneBy([
@@ -53,19 +55,31 @@ class PurchaseController extends AbstractController
         if (!$purchase) {
             $purchase = new Purchase();
             $purchase->setUser($user);
+            $purchase->setStatus('cart'); 
             $this->em->persist($purchase);
         }
 
+        // éviter doublons
+        foreach ($purchase->getItems() as $existingItem) {
+            if ($existingItem->getLesson() === $lesson) {
+                $this->addFlash('info', 'Cette leçon est déjà dans le panier.');
+                return $this->redirectToRoute('cart_show');
+            }
+        }
+
         $item = new PurchaseItem();
+        $item->setPurchase($purchase);
         $item->setLesson($lesson);
         $item->setUnitPrice($lesson->getPrice());
+
+        $this->em->persist($item);
 
         $purchase->addItem($item);
         $purchase->calculateTotal();
 
         $this->em->flush();
 
-        $this->addFlash('success', 'Leçon ajoutée au panier !');
+        $this->addFlash('success', 'Leçon ajoutée au panier.');
 
         return $this->redirectToRoute('cart_show');
     }
@@ -74,8 +88,9 @@ class PurchaseController extends AbstractController
     public function addCursus(Cursus $cursus): Response
     {
         $user = $this->getUser();
+
         if (!$user) {
-            throw $this->createAccessDeniedException();
+            return $this->redirectToRoute('app_login');
         }
 
         $purchase = $this->purchaseRepo->findOneBy([
@@ -86,19 +101,30 @@ class PurchaseController extends AbstractController
         if (!$purchase) {
             $purchase = new Purchase();
             $purchase->setUser($user);
+            $purchase->setStatus('cart');
             $this->em->persist($purchase);
         }
 
+        foreach ($purchase->getItems() as $existingItem) {
+            if ($existingItem->getCursus() === $cursus) {
+                $this->addFlash('info', 'Ce cursus est déjà dans le panier.');
+                return $this->redirectToRoute('cart_show');
+            }
+        }
+
         $item = new PurchaseItem();
+        $item->setPurchase($purchase);
         $item->setCursus($cursus);
         $item->setUnitPrice($cursus->getPrice());
+
+        $this->em->persist($item);
 
         $purchase->addItem($item);
         $purchase->calculateTotal();
 
         $this->em->flush();
 
-        $this->addFlash('success', 'Cursus ajouté au panier !');
+        $this->addFlash('success', 'Cursus ajouté au panier.');
 
         return $this->redirectToRoute('cart_show');
     }
@@ -107,8 +133,9 @@ class PurchaseController extends AbstractController
     public function remove(string $type, int $id): Response
     {
         $user = $this->getUser();
+
         if (!$user) {
-            throw $this->createAccessDeniedException();
+            return $this->redirectToRoute('app_login');
         }
 
         $purchase = $this->purchaseRepo->findOneBy([
@@ -117,19 +144,18 @@ class PurchaseController extends AbstractController
         ]);
 
         if (!$purchase) {
-            $this->addFlash('warning', 'Panier vide.');
             return $this->redirectToRoute('cart_show');
         }
 
-        // Cherche l'item à supprimer
         foreach ($purchase->getItems() as $item) {
-            if ($type === 'lesson' && $item->getLesson() && $item->getLesson()->getId() === $id) {
+
+            if ($type === 'lesson' && $item->getLesson()?->getId() === $id) {
                 $purchase->removeItem($item);
                 $this->em->remove($item);
                 break;
             }
 
-            if ($type === 'cursus' && $item->getCursus() && $item->getCursus()->getId() === $id) {
+            if ($type === 'cursus' && $item->getCursus()?->getId() === $id) {
                 $purchase->removeItem($item);
                 $this->em->remove($item);
                 break;
@@ -137,19 +163,22 @@ class PurchaseController extends AbstractController
         }
 
         $purchase->calculateTotal();
+
         $this->em->flush();
 
-        $this->addFlash('success', 'Item supprimé du panier.');
+        $this->addFlash('success', 'Item supprimé.');
 
         return $this->redirectToRoute('cart_show');
     }
 
+    /* Simulation Stripe */
     #[Route('/cart/pay', name: 'cart_pay')]
     public function pay(): Response
     {
         $user = $this->getUser();
+
         if (!$user) {
-            throw $this->createAccessDeniedException();
+            return $this->redirectToRoute('app_login');
         }
 
         $purchase = $this->purchaseRepo->findOneBy([
@@ -157,18 +186,19 @@ class PurchaseController extends AbstractController
             'status' => 'cart'
         ]);
 
-        if (!$purchase || count($purchase->getItems()) === 0) {
-            $this->addFlash('warning', 'Votre panier est vide.');
+        if (!$purchase || $purchase->getItems()->isEmpty()) {
+
+            $this->addFlash('error', 'Panier vide.');
+
             return $this->redirectToRoute('cart_show');
         }
 
+        // simulation paiement Stripe
         $purchase->calculateTotal();
         $purchase->setStatus('paid');
         $purchase->setPaidAt(new \DateTimeImmutable());
 
         $this->em->flush();
-
-        $this->addFlash('success', 'Paiement effectué !');
 
         return $this->redirectToRoute('cart_success', [
             'orderNumber' => $purchase->getOrderNumber()
@@ -179,8 +209,9 @@ class PurchaseController extends AbstractController
     public function success(string $orderNumber): Response
     {
         $user = $this->getUser();
+
         if (!$user) {
-            throw $this->createAccessDeniedException();
+            return $this->redirectToRoute('app_login');
         }
 
         $purchase = $this->purchaseRepo->findOneBy([
@@ -190,7 +221,7 @@ class PurchaseController extends AbstractController
         ]);
 
         if (!$purchase) {
-            throw $this->createNotFoundException('Achat introuvable.');
+            throw $this->createNotFoundException();
         }
 
         return $this->render('cart/success.html.twig', [

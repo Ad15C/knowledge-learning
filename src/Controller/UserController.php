@@ -162,6 +162,32 @@ class UserController extends AbstractController
 
         $purchases = $qb->orderBy('p.createdAt', 'DESC')->getQuery()->getResult();
 
+        // --- Calcul du premier cours non complété pour chaque cursus ---
+        foreach ($purchases as $purchase) {
+            foreach ($purchase->getItems() as $item) {
+                if ($item->getCursus()) {
+                    $completedLessonIds = $user->getCompletedLessons()->map(fn($l) => $l->getId())->toArray();
+                    $firstIncompleteLesson = null;
+
+                    // On cherche la première leçon non complétée
+                    foreach ($item->getCursus()->getLessons() as $lesson) {
+                        if (!in_array($lesson->getId(), $completedLessonIds)) {
+                            $firstIncompleteLesson = $lesson;
+                            break;
+                        }
+                    }
+
+                    // Si tout est complété, on prend la première leçon
+                    if (!$firstIncompleteLesson) {
+                        $firstIncompleteLesson = $item->getCursus()->getLessons()->first();
+                    }
+
+                    // On ajoute une propriété temporaire pour Twig
+                    $item->firstIncompleteLesson = $firstIncompleteLesson;
+                }
+            }
+        }
+
         return $this->render('user/purchases.html.twig', [
             'purchases' => $purchases,
             'filter_status' => $status,

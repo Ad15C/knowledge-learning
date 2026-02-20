@@ -91,6 +91,21 @@ body {
     transform: translateY(-2px);
 }
 
+/* --- Centrer les boutons dans les leçons et espacer correctement --- */
+.lesson-actions {
+    display: flex;
+    justify-content: center;  /* centre horizontalement */
+    gap: 10px;                /* espace entre plusieurs boutons */
+    margin-top: 15px;         /* espace au-dessus du bouton */
+    flex-wrap: wrap;           /* permet de passer à la ligne si écran trop petit */
+}
+
+.lesson-actions .btn {
+    margin: 0;                /* supprime marges latérales éventuelles */
+    min-width: 160px;         /* largeur minimum pour le bouton */
+    text-align: center;       /* texte centré */
+}
+
 /* --- GRILLE DES CURSUS --- */
 .cursus-grid {
     display: grid;
@@ -145,5 +160,14 @@ body {
     .btn-secondary {
         width: 100%;
         text-align: center;
+    }
+
+    .lesson-actions {
+        flex-direction: column; /* boutons empilés verticalement sur petit écran */
+        align-items: center;    /* centrer verticalement */
+    }
+
+    .lesson-actions .btn {
+        width: 90%;             /* bouton presque plein écran */
     }
 }

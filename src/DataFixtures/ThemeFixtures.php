@@ -7,16 +7,19 @@ use App\Entity\Cursus;
 use App\Entity\Lesson;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
+use Faker\Factory;
 
 class ThemeFixtures extends Fixture
 {
     public function load(ObjectManager $manager): void
     {
+        $faker = Factory::create('fr_FR'); // Faker français
+
         // === Thème Musique ===
         $theme = new Theme();
         $theme->setName('Musique')
               ->setDescription('Apprenez la guitare et le piano')
-              ->setImage('images/themes/musique/cours_musique.jpg'); 
+              ->setImage('images/themes/musique/cours_musique.jpg');
         $manager->persist($theme);
 
         // Cursus guitare
@@ -33,7 +36,7 @@ class ThemeFixtures extends Fixture
                 ->setPrice(26)
                 ->setCursus($cursusGuitare)
                 ->setImage('images/themes/musique/cours_guitare.jpg')
-                ->setFiche('Fiche technique 1')
+                ->setFiche($this->generateArticles($faker))
                 ->setVideoUrl('https://youtu.be/example1');
         $manager->persist($lesson1);
 
@@ -42,7 +45,7 @@ class ThemeFixtures extends Fixture
                 ->setPrice(26)
                 ->setCursus($cursusGuitare)
                 ->setImage('images/themes/musique/accords_et_gammes.jpg')
-                ->setFiche('Fiche technique 2')
+                ->setFiche($this->generateArticles($faker))
                 ->setVideoUrl('https://youtu.be/example2');
         $manager->persist($lesson2);
 
@@ -59,14 +62,16 @@ class ThemeFixtures extends Fixture
         $lesson3->setTitle('Découverte du piano')
                 ->setPrice(26)
                 ->setCursus($cursusPiano)
-                ->setImage('images/themes/musique/cours_piano.jpg');
+                ->setImage('images/themes/musique/cours_piano.jpg')
+                ->setFiche($this->generateArticles($faker));
         $manager->persist($lesson3);
 
         $lesson4 = new Lesson();
         $lesson4->setTitle('Les accords et gammes au piano')
                 ->setPrice(26)
                 ->setCursus($cursusPiano)
-                ->setImage('images/themes/musique/accords_et_gammes.jpg');
+                ->setImage('images/themes/musique/accords_et_gammes.jpg')
+                ->setFiche($this->generateArticles($faker));
         $manager->persist($lesson4);
 
         // === Thème Informatique ===
@@ -87,14 +92,16 @@ class ThemeFixtures extends Fixture
         $lesson5->setTitle('Les langages HTML et CSS')
                 ->setPrice(32)
                 ->setCursus($cursusWeb)
-                ->setImage('images/themes/informatique/les_langages_html_css.jpg');
+                ->setImage('images/themes/informatique/les_langages_html_css.jpg')
+                ->setFiche($this->generateArticles($faker));
         $manager->persist($lesson5);
 
         $lesson6 = new Lesson();
         $lesson6->setTitle('Dynamiser votre site avec JavaScript')
                 ->setPrice(32)
                 ->setCursus($cursusWeb)
-                ->setImage('images/themes/informatique/dynamiser_site_javascript.jpg');
+                ->setImage('images/themes/informatique/dynamiser_site_javascript.jpg')
+                ->setFiche($this->generateArticles($faker));
         $manager->persist($lesson6);
 
         // === Thème Jardinage ===
@@ -115,14 +122,16 @@ class ThemeFixtures extends Fixture
         $lesson7->setTitle('Les outils du jardinier')
                 ->setPrice(16)
                 ->setCursus($cursusJardin)
-                ->setImage('images/themes/jardinage/outils_du_jardinier.jpg');
+                ->setImage('images/themes/jardinage/outils_du_jardinier.jpg')
+                ->setFiche($this->generateArticles($faker));
         $manager->persist($lesson7);
 
         $lesson8 = new Lesson();
         $lesson8->setTitle('Jardiner avec la lune')
                 ->setPrice(16)
                 ->setCursus($cursusJardin)
-                ->setImage('images/themes/jardinage/jardiner_avec_la_lune.jpg');
+                ->setImage('images/themes/jardinage/jardiner_avec_la_lune.jpg')
+                ->setFiche($this->generateArticles($faker));
         $manager->persist($lesson8);
 
         // === Thème Cuisine ===
@@ -143,14 +152,16 @@ class ThemeFixtures extends Fixture
         $lesson9->setTitle('Les modes de cuisson')
                 ->setPrice(23)
                 ->setCursus($cursusCuisine1)
-                ->setImage('images/themes/cuisine/modes_cuisson.jpg');
+                ->setImage('images/themes/cuisine/modes_cuisson.jpg')
+                ->setFiche($this->generateArticles($faker));
         $manager->persist($lesson9);
 
         $lesson10 = new Lesson();
         $lesson10->setTitle('Les saveurs')
                  ->setPrice(23)
                  ->setCursus($cursusCuisine1)
-                 ->setImage('images/themes/cuisine/saveurs.jpg');
+                 ->setImage('images/themes/cuisine/saveurs.jpg')
+                 ->setFiche($this->generateArticles($faker));
         $manager->persist($lesson10);
 
         $cursusCuisine2 = new Cursus();
@@ -164,17 +175,35 @@ class ThemeFixtures extends Fixture
         $lesson11->setTitle('Mettre en œuvre le style dans l’assiette')
                  ->setPrice(26)
                  ->setCursus($cursusCuisine2)
-                 ->setImage('images/themes/cuisine/style_dans_assiette.jpg');
+                 ->setImage('images/themes/cuisine/style_dans_assiette.jpg')
+                 ->setFiche($this->generateArticles($faker));
         $manager->persist($lesson11);
 
         $lesson12 = new Lesson();
         $lesson12->setTitle('Harmoniser un repas à quatre plats')
                  ->setPrice(26)
                  ->setCursus($cursusCuisine2)
-                 ->setImage('images/themes/cuisine/quatre_plats.jpg');
+                 ->setImage('images/themes/cuisine/quatre_plats.jpg')
+                 ->setFiche($this->generateArticles($faker));
         $manager->persist($lesson12);
 
         // === Flush final ===
         $manager->flush();
     }
+
+    /**
+     * Génère plusieurs « articles » Lorem pour une leçon.
+     * Chaque article = 2 paragraphes, séparés par "---"
+     */
+    private function generateArticles($faker, int $nbArticles = 3): string
+        {
+        $articles = [];
+        for ($i = 0; $i < $nbArticles; $i++) {
+                $paragraphs = $faker->paragraphs(2, true); // 2 paragraphes concaténés
+                $articles[] = '<p>' . str_replace("\n", '</p><p>', $paragraphs) . '</p>';
+        }
+
+        // Séparer les articles par un petit espace
+        return implode("\n<br><br>\n", $articles);
+        }
 }
