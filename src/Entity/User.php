@@ -55,6 +55,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\JoinTable(name: "user_completed_lessons")]
     private Collection $completedLessons;
 
+    #[ORM\OneToMany(mappedBy: "user", targetEntity: LessonValidated::class, cascade: ["remove"], orphanRemoval: true)]
+    private Collection $lessonValidated;
+
     public function __construct()
     {
         $this->purchases = new ArrayCollection();
