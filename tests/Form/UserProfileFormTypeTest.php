@@ -182,7 +182,9 @@ class UserProfileFormTypeTest extends WebTestCase
 
         $crawler = $client->request('GET', '/dashboard/edit');
 
-        $link = $crawler->selectLink('← Retour au dashboard')->link();
+        $this->assertSelectorExists('.btn-back');
+
+        $link = $crawler->filter('.btn-back')->link();
         $client->click($link);
 
         $this->assertResponseIsSuccessful();

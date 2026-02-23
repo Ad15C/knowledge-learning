@@ -62,34 +62,48 @@ class UserController extends AbstractController
     public function editProfile(Request $request, EntityManagerInterface $em): Response
     {
         $user = $this->getUser();
-        $form = $this->createForm(UserProfileFormType::class,$user);
+
+        $form = $this->createForm(UserProfileFormType::class, $user);
         $form->handleRequest($request);
 
-        if($form->isSubmitted() && $form->isValid()){
+        if ($form->isSubmitted() && $form->isValid()) {
+
             $em->flush();
-            $this->addFlash('success','Profil mis à jour avec succès !');
+
+            $this->addFlash('success', 'Profil mis à jour avec succès !');
+
             return $this->redirectToRoute('user_dashboard');
         }
 
-        return $this->render('user/edit.html.twig',['editProfileForm'=>$form->createView()]);
+        return $this->render('user/edit.html.twig', [
+        'editProfileForm' => $form->createView(), 
+        'back_path' => $this->generateUrl('user_dashboard'),
+        'title' => 'Modifier mon profil',
+        'button_label' => 'Mettre à jour',
+        ]);
     }
 
-    #[Route('/dashboard/password', name: 'user_dashboard_password')]
-    public function changePassword(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $em): Response
+    #[Route('/dashboard/password', name: 'app_change_password')]
+    public function changePassword(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $em ): Response
     {
         $user = $this->getUser();
-        $form = $this->createForm(ChangePasswordFormType::class);
+
+        $form = $this->createForm(ChangePasswordFormType::class, $user);
         $form->handleRequest($request);
 
-        if($form->isSubmitted() && $form->isValid()){
+        if ($form->isSubmitted() && $form->isValid()) {
             $newPassword = $form->get('plainPassword')->getData();
-            $user->setPassword($passwordHasher->hashPassword($user,$newPassword));
+            $user->setPassword($passwordHasher->hashPassword($user, $newPassword));
             $em->flush();
-            $this->addFlash('success','Mot de passe mis à jour !');
+
+            $this->addFlash('success', 'Mot de passe mis à jour !');
+
             return $this->redirectToRoute('user_dashboard');
         }
 
-        return $this->render('user/change_password.html.twig',['passwordForm'=>$form->createView()]);
+        return $this->render('user/change_password.html.twig', [
+            'passwordForm' => $form->createView(),
+        ]);
     }
 
     #[Route('/dashboard/purchases', name: 'user_dashboard_purchases')]
