@@ -1,5 +1,6 @@
 framework:
-    default_locale: en
+    default_locale: 'fr'      # langue par défaut du site
     translator:
         default_path: '%kernel.project_dir%/translations'
-        providers:
+        fallbacks:
+            - 'en'           # si une traduction n'existe pas en français, Symfony utilisera l'anglais

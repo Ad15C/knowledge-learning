@@ -18,14 +18,14 @@ class RegistrationFormType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('firstname', TextType::class, [
+            ->add('firstName', TextType::class, [
                 'label' => 'Prénom',
                 'constraints' => [
                     new Assert\NotBlank(['message' => 'Veuillez saisir votre prénom.']),
                     new Assert\Length(['max' => 255, 'maxMessage' => 'Le prénom ne peut pas dépasser {{ limit }} caractères.'])
                 ],
             ])
-            ->add('lastname', TextType::class, [
+            ->add('lastName', TextType::class, [
                 'label' => 'Nom',
                 'constraints' => [
                     new Assert\NotBlank(['message' => 'Veuillez saisir votre nom.']),
