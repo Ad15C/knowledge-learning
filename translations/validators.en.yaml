@@ -1,0 +1,34 @@
+# NotBlank
+This value should not be blank: This value should not be blank.
+
+# Length
+This value is too short. It should have {{ limit }} character or more.: This value is too short. It should have {{ limit }} character or more.
+This value is too long. It should have {{ limit }} character or less.: This value is too long. It should have {{ limit }} character or less.
+
+# Email
+This value is not a valid email address.: This value is not a valid email address.
+
+# Choice
+The value you selected is not a valid choice.: The value you selected is not a valid choice.
+
+# Regex
+This value is not valid.: This value is not valid.
+
+# Unique
+This value is already used.: This value is already used.
+
+# Url
+This value is not a valid URL.: This value is not a valid URL.
+
+# Date
+This value is not a valid date.: This value is not a valid date.
+
+# Range
+This value should be {{ limit }} or more.: This value should be {{ limit }} or more.
+This value should be {{ limit }} or less.: This value should be {{ limit }} or less.
+
+# Type
+This value should be of type {{ type }}.: This value should be of type {{ type }}.
+
+# Blank
+This value should be blank.: This value should be blank.

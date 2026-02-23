@@ -40,8 +40,8 @@ class RegistrationControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/register');
 
         $form = $crawler->selectButton('S\'inscrire')->form();
-        $form['registration_form[firstname]'] = 'Test';
-        $form['registration_form[lastname]'] = 'User';
+        $form['registration_form[firstName]'] = 'Test';
+        $form['registration_form[lastName]'] = 'User';
         $form['registration_form[email]'] = 'testuser@example.com';
         $form['registration_form[plainPassword][first]'] = 'Test@1234';
         $form['registration_form[plainPassword][second]'] = 'Test@1234';
@@ -70,8 +70,8 @@ class RegistrationControllerTest extends WebTestCase
     {
         // Créer un utilisateur existant
         $existingUser = new User();
-        $existingUser->setFirstname('Exist');
-        $existingUser->setLastname('User');
+        $existingUser->setFirstName('Exist');
+        $existingUser->setLastName('User');
         $existingUser->setEmail('duplicate@example.com');
         $existingUser->setPassword('hashedpassword');
         $existingUser->setRoles(['ROLE_USER']);
@@ -83,8 +83,8 @@ class RegistrationControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/register');
         $form = $crawler->selectButton('S\'inscrire')->form();
 
-        $form['registration_form[firstname]'] = 'Test';
-        $form['registration_form[lastname]'] = 'User';
+        $form['registration_form[firstName]'] = 'Test';
+        $form['registration_form[lastName]'] = 'User';
         $form['registration_form[email]'] = 'duplicate@example.com';
         $form['registration_form[plainPassword][first]'] = 'Test@1234';
         $form['registration_form[plainPassword][second]'] = 'Test@1234';

@@ -18,8 +18,8 @@ class Cursus
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    #[ORM\Column(type: 'decimal', precision: 6, scale: 2)]
-    private ?float $price = null;
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
+    private ?string $price = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $description = null;
@@ -44,8 +44,8 @@ class Cursus
     public function getName(): ?string { return $this->name; }
     public function setName(string $name): static { $this->name = $name; return $this; }
 
-    public function getPrice(): ?float { return $this->price; }
-    public function setPrice(float $price): static { $this->price = $price; return $this; }
+    public function getPrice(): ?float { return $this->price !== null ? (float)$this->price : null; }
+    public function setPrice(float $price): static { $this->price = (string)$price; return $this; }
 
     public function getDescription(): ?string { return $this->description; }
     public function setDescription(?string $description): static { $this->description = $description; return $this; }

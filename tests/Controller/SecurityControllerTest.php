@@ -14,17 +14,21 @@ class SecurityControllerTest extends WebTestCase
     // -----------------------------
     // UTILITAIRES
     // -----------------------------
-    private function createTestUser($client, $email = 'test@example.com', $password = 'Password1!')
+    private function createTestUser($client, $email = null, $password = 'Password1!')
     {
         $container = $client->getContainer();
         $passwordHasher = $container->get(UserPasswordHasherInterface::class);
 
+        if (!$email) {
+            $email = 'test_' . uniqid() . '@example.com';
+        }
+
         $user = new User();
         $user->setEmail($email)
-             ->setFirstname('Test')
-             ->setLastname('User')
-             ->setPassword($passwordHasher->hashPassword($user, $password))
-             ->setIsVerified(true);
+            ->setFirstName('Test')
+            ->setLastName('User')
+            ->setPassword($passwordHasher->hashPassword($user, $password))
+            ->setIsVerified(true);
 
         $em = $container->get('doctrine')->getManager();
         $em->persist($user);
@@ -96,8 +100,8 @@ class SecurityControllerTest extends WebTestCase
         $this->assertResponseRedirects('/login');
 
         $client->followRedirect();
-        $this->assertSelectorExists('.flash-error');
-        $this->assertSelectorTextContains('.flash-error', 'Invalid credentials');
+        $this->assertSelectorTextContains('.flash-error', 'invalid');
+        $this->assertSelectorTextContains('.flash-error', 'Identifiants invalides');
 
         // Session persistante après refresh
         $client->loginUser($user);

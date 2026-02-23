@@ -12,17 +12,17 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class UserProfileFormType extends AbstractType
 {
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('firstname', TextType::class, [
+            ->add('firstName', TextType::class, [
                 'label' => 'Prénom',
                 'constraints' => [
                     new Assert\NotBlank(),
                     new Assert\Length(['min' => 2, 'max' => 50])
                 ],
             ])
-            ->add('lastname', TextType::class, [
+            ->add('lastName', TextType::class, [
                 'label' => 'Nom',
                 'constraints' => [
                     new Assert\NotBlank(),
@@ -38,7 +38,7 @@ class UserProfileFormType extends AbstractType
             ]);
     }
 
-    public function configureOptions(OptionsResolver $resolver)
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'data_class' => User::class,
@@ -46,5 +46,10 @@ class UserProfileFormType extends AbstractType
             'csrf_field_name' => '_token',
             'csrf_token_id'   => 'user_profile',
         ]);
+    }
+
+    public function getBlockPrefix(): string
+    {
+        return 'editProfileForm';
     }
 }

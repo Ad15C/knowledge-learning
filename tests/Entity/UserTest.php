@@ -20,10 +20,11 @@ class UserTest extends TestCase
         $this->assertSame('test@example.com', $user->getUserIdentifier());
 
         // --- Firstname / Lastname ---
-        $user->setFirstname('John');
-        $user->setLastname('Doe');
-        $this->assertSame('John', $user->getFirstname());
-        $this->assertSame('Doe', $user->getLastname());
+        // --- Firstname / Lastname ---
+        $user->setFirstName('John');
+        $user->setLastName('Doe');
+        $this->assertSame('John', $user->getFirstName());
+        $this->assertSame('Doe', $user->getLastName());
 
         // --- Roles ---
         $user->setRoles(['ROLE_ADMIN']);

@@ -28,8 +28,8 @@ class RegistrationFormTypeTest extends WebTestCase
         $crawler = $this->client->request('GET', '/register');
 
         $form = $crawler->selectButton('S\'inscrire')->form([
-            'registration_form[firstname]' => 'John',
-            'registration_form[lastname]' => 'Doe',
+            'registration_form[firstName]' => 'John',
+            'registration_form[lastName]' => 'Doe',
             'registration_form[email]' => 'john.doe@example.com',
             'registration_form[plainPassword][first]' => 'Password123!',
             'registration_form[plainPassword][second]' => 'Password123!',
@@ -44,23 +44,23 @@ class RegistrationFormTypeTest extends WebTestCase
         $user = $this->entityManager->getRepository(User::class)
             ->findOneBy(['email' => 'john.doe@example.com']);
         $this->assertNotNull($user);
-        $this->assertSame('John', $user->getFirstname());
-        $this->assertSame('Doe', $user->getLastname());
+        $this->assertSame('John', $user->getFirstName());
+        $this->assertSame('Doe', $user->getLastName());
     }
 
     public function testDuplicateEmailFails(): void
     {
         // Crée déjà un utilisateur
         $user = new User();
-        $user->setFirstname('Jane')->setLastname('Doe')->setEmail('jane@example.com')->setPassword('Password123!');
+        $user->setFirstName('Jane')->setLastName('Doe')->setEmail('jane@example.com')->setPassword('Password123!');
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
         $crawler = $this->client->request('GET', '/register');
 
         $form = $crawler->selectButton('S\'inscrire')->form([
-            'registration_form[firstname]' => 'John',
-            'registration_form[lastname]' => 'Doe',
+            'registration_form[firstName]' => 'John',
+            'registration_form[lastName]' => 'Doe',
             'registration_form[email]' => 'jane@example.com',
             'registration_form[plainPassword][first]' => 'Password123!',
             'registration_form[plainPassword][second]' => 'Password123!',
