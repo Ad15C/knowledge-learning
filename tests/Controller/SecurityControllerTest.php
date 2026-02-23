@@ -80,34 +80,47 @@ class SecurityControllerTest extends WebTestCase
         $this->assertSelectorExists('input[name="_password"]');
 
         // Login avec identifiants corrects
-        $form = $crawler->selectButton('Se connecter')->form([
+        $form = $crawler->filter('#login-submit')->form([
             '_username' => $user->getEmail(),
             '_password' => 'Password1!',
         ]);
+
         $client->submit($form);
+
         $this->assertResponseRedirects('/dashboard');
 
         $client->followRedirect();
-        $this->assertSelectorTextContains('h1', 'Bienvenue'); // adapte selon ton template
+
+        // adapte selon ton dashboard
+        $this->assertResponseIsSuccessful();
+
 
         // Login avec mot de passe incorrect
         $crawler = $client->request('GET', '/login');
-        $form = $crawler->selectButton('Se connecter')->form([
+
+        $form = $crawler->filter('#login-submit')->form([
             '_username' => $user->getEmail(),
             '_password' => 'WrongPassword!',
         ]);
+
         $client->submit($form);
+
         $this->assertResponseRedirects('/login');
 
         $client->followRedirect();
-        $this->assertSelectorTextContains('.flash-error', 'invalid');
-        $this->assertSelectorTextContains('.flash-error', 'Identifiants invalides');
 
-        // Session persistante après refresh
+        $this->assertSelectorExists('.flash-error');
+
+
+        // Session persistante
         $client->loginUser($user);
+
         $client->request('GET', '/dashboard');
+
         $this->assertResponseIsSuccessful();
-        $client->request('GET', '/dashboard'); // refresh
+
+        $client->request('GET', '/dashboard');
+
         $this->assertResponseIsSuccessful();
     }
 

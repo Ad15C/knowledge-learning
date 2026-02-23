@@ -37,7 +37,10 @@
                 Se souvenir de moi
             </label>
 
-            <button type="submit">Se connecter</button>
+            <div style="margin: 15px 0;">
+                {% set button_label = 'Se connecter' %}
+                <button type="submit" id="login-submit">Se connecter</button>
+            </div>
         </form>
        <a href="{{ path('homepage') }}" class="btn-back">← Retour à l'accueil</a>
     </div>

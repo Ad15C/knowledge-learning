@@ -1,10 +1,12 @@
 <div class="form-page-wrapper">
     <div class="form-container">
-        <a href="{{ path('user_dashboard') }}" class="btn-back">
-            ← Retour au dashboard
-        </a>
+        {% if back_path is defined %}
+            <a href="{{ back_path }}" class="btn-back">← Retour</a>
+        {% endif %}
 
-        <h1>{{ title }}</h1>
+        {% if title is defined %}
+            <h1>{{ title }}</h1>
+        {% endif %}
 
         {# Flash messages #}
         {% for label, messages in app.flashes %}
@@ -29,12 +31,7 @@
                 </div>
             {% else %}
                 <div class="form-group {% if is_invalid %}is-invalid{% endif %}">
-                    {# Pré-remplir last_username si nécessaire #}
-                    {% if child.vars.name == '_username' %}
-                        {{ form_widget(child, {'value': last_username|default('')}) }}
-                    {% else %}
-                        {{ form_widget(child) }}
-                    {% endif %}
+                    {{ form_widget(child) }}
                     {{ form_label(child) }}
                     {% for error in child.vars.errors %}
                         <div class="form-error">{{ error.message }}</div>
@@ -43,9 +40,12 @@
             {% endif %}
         {% endfor %}
 
-        <div style="margin: 15px 0;">
-            <button type="submit">{{ button_label }}</button>
-        </div>
+        {# Bouton submit fourni par le template parent #}
+        {% if button_label is defined %}
+            <div style="margin: 15px 0;">
+                <button type="submit" id="{{ button_id|default('form-submit') }}">{{ button_label }}</button>
+            </div>
+        {% endif %}
 
         {{ form_end(form) }}
     </div>

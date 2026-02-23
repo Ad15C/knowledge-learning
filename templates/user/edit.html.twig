@@ -8,10 +8,12 @@
 {% endblock %}
 
 {% block body %}
-    {% set title = 'Modifier mon profil' %}
-    {% set form = editProfileForm %}
-    {% set button_label = 'Mettre à jour' %}
-    {% set form_action = 'app_profile_edit' %}
 
-    {% include 'form/_form_container.html.twig' %}
+    {% include 'form/_form_container.html.twig' with {
+        form: editProfileForm,
+        title: 'Modifier mon profil',
+        button_label: 'Mettre à jour',
+        back_path: path('user_dashboard')
+    } %}
+
 {% endblock %}

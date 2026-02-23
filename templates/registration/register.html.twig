@@ -11,6 +11,8 @@
     {% set title = 'Inscription' %}
     {% set form = registrationForm %}
     {% set button_label = 'S\'inscrire' %}
+    {% set button_id = 'register-submit' %}
+    {% set back_path = path('homepage') %}
 
     {% include 'form/_form_container.html.twig' %}
 {% endblock %}

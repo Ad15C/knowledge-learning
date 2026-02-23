@@ -92,6 +92,16 @@ class UserTest extends TestCase
         $this->assertNotContains($lesson, $user->getCompletedLessons());
     }
 
+    public function testPlainPassword()
+    {
+        $user = new User();
+
+        $this->assertNull($user->getPlainPassword(), 'plainPassword should initially be null');
+
+        $user->setPlainPassword('MyNewPassword123!');
+        $this->assertSame('MyNewPassword123!', $user->getPlainPassword());
+    }
+
     public function testIdInitiallyNull()
     {
         $user = new User();
