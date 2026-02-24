@@ -35,10 +35,8 @@ class CertificationRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('c')
             ->andWhere('c.user = :user')
             ->andWhere('c.cursus = :cursus')
-            ->setParameters([
-                'user' => $user,
-                'cursus' => $cursus,
-            ])
+            ->setParameter('user', $user)
+            ->setParameter('cursus', $cursus)
             ->orderBy('c.issuedAt', 'DESC')
             ->getQuery()
             ->getResult();
@@ -50,11 +48,9 @@ class CertificationRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('c')
             ->andWhere('c.user = :user')
             ->andWhere('c.issuedAt BETWEEN :from AND :to')
-            ->setParameters([
-                'user' => $user,
-                'from' => $from,
-                'to' => $to,
-            ])
+            ->setParameter('user', $user)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
             ->orderBy('c.issuedAt', 'DESC')
             ->getQuery()
             ->getResult();
