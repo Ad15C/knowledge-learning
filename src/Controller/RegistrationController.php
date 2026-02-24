@@ -27,13 +27,6 @@ class RegistrationController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
 
-            // Vérifier que l'email n'existe pas déjà
-            $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $user->getEmail()]);
-            if ($existingUser) {
-                $this->addFlash('error', 'Cet email est déjà utilisé.');
-                return $this->redirectToRoute('app_register');
-            }
-
             // Hash du mot de passe
             $user->setPassword(
                 $passwordHasher->hashPassword(
@@ -45,7 +38,7 @@ class RegistrationController extends AbstractController
             // Génération du token de vérification
             $user->setVerificationToken(bin2hex(random_bytes(32)));
             $user->setVerificationTokenExpiresAt(new \DateTime('+1 day'));
-            $user->setIsVerified(false); // compte non vérifié
+            $user->setIsVerified(false);
 
             // Role par défaut
             $user->setRoles(['ROLE_USER']);
