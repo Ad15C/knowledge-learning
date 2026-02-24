@@ -34,13 +34,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?string $password = null;
 
-    // --- Plain password for form only, not persisted ---
-    #[Assert\NotBlank(message: 'Veuillez saisir un mot de passe.')]
-    #[Assert\Length(min: 8, minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères.')]
-    #[Assert\Regex(pattern: '/[A-Z]/', message: 'Le mot de passe doit contenir au moins une majuscule.')]
-    #[Assert\Regex(pattern: '/[a-z]/', message: 'Le mot de passe doit contenir au moins une minuscule.')]
-    #[Assert\Regex(pattern: '/[0-9]/', message: 'Le mot de passe doit contenir au moins un chiffre.')]
-    #[Assert\Regex(pattern: '/[\W_]/', message: 'Le mot de passe doit contenir au moins un caractère spécial.')]
+    // PAS DE #[ORM\Column]
     private ?string $plainPassword = null;
 
     #[ORM\Column(length: 255)]
@@ -99,7 +93,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getPassword(): ?string { return $this->password; }
     public function setPassword(string $password): static { $this->password = $password; return $this; }
     #[\Deprecated] public function eraseCredentials(): void {}
-
+    // --- Plain password (NON persisté) ---
     public function setPlainPassword(?string $password): self { $this->plainPassword = $password; return $this; }
     public function getPlainPassword(): ?string { return $this->plainPassword; }
 

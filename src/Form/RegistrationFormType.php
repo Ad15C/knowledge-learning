@@ -11,7 +11,6 @@ use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 class RegistrationFormType extends AbstractType
 {
@@ -22,21 +21,21 @@ class RegistrationFormType extends AbstractType
                 'label' => 'Prénom',
                 'constraints' => [
                     new Assert\NotBlank(['message' => 'Veuillez saisir votre prénom.']),
-                    new Assert\Length(['max' => 255, 'maxMessage' => 'Le prénom ne peut pas dépasser {{ limit }} caractères.'])
+                    new Assert\Length(['max' => 255]),
                 ],
             ])
             ->add('lastName', TextType::class, [
                 'label' => 'Nom',
                 'constraints' => [
                     new Assert\NotBlank(['message' => 'Veuillez saisir votre nom.']),
-                    new Assert\Length(['max' => 255, 'maxMessage' => 'Le nom ne peut pas dépasser {{ limit }} caractères.'])
+                    new Assert\Length(['max' => 255]),
                 ],
             ])
             ->add('email', EmailType::class, [
                 'label' => 'Email',
                 'constraints' => [
                     new Assert\NotBlank(['message' => 'Veuillez saisir votre email.']),
-                    new Assert\Email(['message' => 'Format d’email invalide.'])
+                    new Assert\Email(['message' => 'Format d’email invalide.']),
                 ],
             ])
             ->add('plainPassword', RepeatedType::class, [
@@ -63,12 +62,6 @@ class RegistrationFormType extends AbstractType
             'csrf_protection' => true,
             'csrf_field_name' => '_token',
             'csrf_token_id'   => 'registration',
-            'constraints' => [
-                new UniqueEntity([
-                    'fields' => ['email'],
-                    'message' => 'Cet email est déjà utilisé.',
-                ])
-            ],
         ]);
     }
 }

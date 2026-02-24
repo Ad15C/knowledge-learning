@@ -5,12 +5,20 @@ namespace App\DataFixtures;
 use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 
 class TestUserFixtures extends Fixture
 {
+    private UserPasswordHasherInterface $passwordHasher;
+
     public const USER_EMAIL = 'testuser@example.com';
     public const USER_PASSWORD = 'TestPassword123!';
+
+    public function __construct(UserPasswordHasherInterface $passwordHasher)
+    {
+        $this->passwordHasher = $passwordHasher;
+    }
 
     public function load(ObjectManager $manager): void
     {
@@ -26,7 +34,11 @@ class TestUserFixtures extends Fixture
         $user->setFirstName('Addie');
         $user->setLastName('C');
         $user->setRoles(['ROLE_USER']);
-        $user->setPassword('plain_password'); 
+
+        // Hache le mot de passe correctement
+        $user->setPassword(
+            $this->passwordHasher->hashPassword($user, self::USER_PASSWORD)
+        );
 
         $manager->persist($user);
         $manager->flush();

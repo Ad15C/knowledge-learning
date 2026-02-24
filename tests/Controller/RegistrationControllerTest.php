@@ -68,12 +68,13 @@ class RegistrationControllerTest extends WebTestCase
 
     public function testDuplicateEmailRegistrationFails(): void
     {
-        // Créer un utilisateur existant
+        // Créer un utilisateur existant avec mot de passe hashé
         $existingUser = new User();
         $existingUser->setFirstName('Exist');
         $existingUser->setLastName('User');
         $existingUser->setEmail('duplicate@example.com');
-        $existingUser->setPassword('hashedpassword');
+        $hashedPassword = $this->passwordHasher->hashPassword($existingUser, 'Test@1234');
+        $existingUser->setPassword($hashedPassword);
         $existingUser->setRoles(['ROLE_USER']);
         $existingUser->setIsVerified(true);
 
@@ -94,7 +95,7 @@ class RegistrationControllerTest extends WebTestCase
         // La page reste accessible (pas de redirection)
         $this->assertResponseStatusCodeSame(200);
 
-        // Le message d'erreur UniqueEntity est affiché
+        // Le message d'erreur de validation est affiché
         $this->assertSelectorTextContains(
             '.form-error',
             'Cet email est déjà utilisé.'
