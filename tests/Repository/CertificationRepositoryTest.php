@@ -8,6 +8,8 @@ use App\Entity\Certification;
 use App\Entity\Cursus;
 use App\Entity\User;
 use App\Repository\CertificationRepository;
+use Doctrine\Common\DataFixtures\Executor\ORMExecutor;
+use Doctrine\Common\DataFixtures\Loader;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -20,32 +22,39 @@ class CertificationRepositoryTest extends KernelTestCase
 
     protected function setUp(): void
     {
+        parent::setUp();
         self::bootKernel();
 
         $this->em = self::getContainer()->get('doctrine')->getManager();
         $this->repo = $this->em->getRepository(Certification::class);
 
-        // Recrée un schéma propre en SQLite (test)
+        // Recréer le schéma propre (SQLite test)
         $metadata = $this->em->getMetadataFactory()->getAllMetadata();
         $tool = new SchemaTool($this->em);
         $tool->dropSchema($metadata);
         $tool->createSchema($metadata);
 
-        // Purge (sécurité)
-        $purger = new ORMPurger($this->em);
-        $purger->purge();
+        // Charger les fixtures PROPREMENT (ReferenceRepository ok)
+        $loader = new Loader();
+        $loader->addFixture(self::getContainer()->get(TestUserFixtures::class));
+        $loader->addFixture(self::getContainer()->get(ThemeFixtures::class));
 
-        // Charge fixtures via le container (nécessite services_test.yaml public:true)
-        /** @var TestUserFixtures $testUserFixtures */
-        $testUserFixtures = self::getContainer()->get(TestUserFixtures::class);
-        /** @var ThemeFixtures $themeFixtures */
-        $themeFixtures = self::getContainer()->get(ThemeFixtures::class);
+        $executor = new ORMExecutor($this->em, new ORMPurger($this->em));
+        $executor->execute($loader->getFixtures());
 
-        $testUserFixtures->load($this->em);
-        $themeFixtures->load($this->em);
-
-        // Important : reset de l'EntityManager pour ne pas garder des objets en cache
+        // On repart avec un EM "clean"
         $this->em->clear();
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
+
+        unset($this->em);
     }
 
     private function getFixtureUser(): User
@@ -55,6 +64,7 @@ class CertificationRepositoryTest extends KernelTestCase
         ]);
 
         $this->assertNotNull($user, 'TestUserFixtures doit créer ' . TestUserFixtures::USER_EMAIL);
+
         return $user;
     }
 
@@ -62,6 +72,7 @@ class CertificationRepositoryTest extends KernelTestCase
     {
         $cursus = $this->em->getRepository(Cursus::class)->findOneBy([]);
         $this->assertNotNull($cursus, 'ThemeFixtures doit créer au moins 1 cursus');
+
         return $cursus;
     }
 
@@ -69,6 +80,7 @@ class CertificationRepositoryTest extends KernelTestCase
     {
         $all = $this->em->getRepository(Cursus::class)->findBy([], null, 2);
         $this->assertCount(2, $all, 'ThemeFixtures doit créer au moins 2 cursus');
+
         return $all;
     }
 
@@ -87,6 +99,7 @@ class CertificationRepositoryTest extends KernelTestCase
         $cert->setType($type);
 
         $this->em->persist($cert);
+
         return $cert;
     }
 
