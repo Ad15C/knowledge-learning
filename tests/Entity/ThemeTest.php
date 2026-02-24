@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Entity;
+namespace App\Tests\Unit\Entity;
 
 use App\Entity\Theme;
 use App\Entity\Cursus;
@@ -8,47 +8,38 @@ use PHPUnit\Framework\TestCase;
 
 class ThemeTest extends TestCase
 {
-    public function testThemeProperties()
+    public function testThemeDefaults(): void
     {
         $theme = new Theme();
 
-        // --- Name ---
-        $theme->setName('Développement Web');
-        $this->assertSame('Développement Web', $theme->getName());
-
-        // --- Description ---
-        $theme->setDescription('Cours de PHP, Symfony, JS...');
-        $this->assertSame('Cours de PHP, Symfony, JS...', $theme->getDescription());
-
-        // --- Image ---
-        $theme->setImage('theme.jpg');
-        $this->assertSame('theme.jpg', $theme->getImage());
-
-        // --- CreatedAt ---
-        $now = new \DateTime();
-        $theme->setCreatedAt($now);
-        $this->assertSame($now, $theme->getCreatedAt());
+        $this->assertNull($theme->getId());
+        $this->assertInstanceOf(\DateTimeInterface::class, $theme->getCreatedAt());
+        $this->assertCount(0, $theme->getCursus());
     }
 
-    public function testCursusRelation()
+    public function testSettersAndGetters(): void
+    {
+        $theme = new Theme();
+        $theme->setName('Musique')
+            ->setDescription('desc')
+            ->setImage('img.jpg');
+
+        $this->assertSame('Musique', $theme->getName());
+        $this->assertSame('desc', $theme->getDescription());
+        $this->assertSame('img.jpg', $theme->getImage());
+    }
+
+    public function testAddRemoveCursusMaintainsOwningSide(): void
     {
         $theme = new Theme();
         $cursus = new Cursus();
 
-        // Ajouter un cursus
         $theme->addCursus($cursus);
-        $this->assertContains($cursus, $theme->getCursus());
+        $this->assertCount(1, $theme->getCursus());
         $this->assertSame($theme, $cursus->getTheme());
 
-        // Retirer un cursus
         $theme->removeCursus($cursus);
-        $this->assertNotContains($cursus, $theme->getCursus());
+        $this->assertCount(0, $theme->getCursus());
         $this->assertNull($cursus->getTheme());
-    }
-
-    public function testIdInitiallyNull()
-    {
-        $theme = new Theme();
-        $this->assertNull($theme->getId());
     }
 }
