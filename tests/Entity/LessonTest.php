@@ -52,4 +52,34 @@ class LessonTest extends TestCase
         $lesson = new Lesson();
         $this->assertNull($lesson->getId());
     }
+
+    public function testGettersSetters(): void
+    {
+        $lesson = new Lesson();
+
+        $lesson->setTitle('Ma leçon');
+        self::assertSame('Ma leçon', $lesson->getTitle());
+
+        // price: setPrice(float) stocke un string formaté, getPrice() retourne ?float
+        $lesson->setPrice(12);
+        self::assertSame(12.00, $lesson->getPrice());
+
+        $lesson->setPrice(12.3456);
+        self::assertSame(12.35, $lesson->getPrice());
+
+        $lesson->setFiche("Ligne 1<br><br>Ligne 2");
+        self::assertSame("Ligne 1<br><br>Ligne 2", $lesson->getFiche());
+
+        $lesson->setVideoUrl('https://example.com/video');
+        self::assertSame('https://example.com/video', $lesson->getVideoUrl());
+
+        $lesson->setImage('uploads/lesson.png');
+        self::assertSame('uploads/lesson.png', $lesson->getImage());
+    }
+
+    public function testPriceNullByDefault(): void
+    {
+        $lesson = new Lesson();
+        self::assertNull($lesson->getPrice());
+    }
 }
