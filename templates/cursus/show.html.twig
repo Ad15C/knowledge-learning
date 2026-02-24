@@ -29,9 +29,9 @@
                 {% if userHasAccess[lesson.id] is defined %}
                     {# L'utilisateur a accès à la leçon #}
                     {% if userHasCompleted[lesson.id] is not defined %}
-                        <a href="{{ path('lesson_validate', {id: lesson.id}) }}" class="btn btn-success">
-                            Valider la leçon
-                        </a>
+                        <form method="post" action="{{ path('lesson_complete', {id: lesson.id}) }}">
+                            <button type="submit" class="btn btn-success">Valider la leçon</button>
+                        </form>
                     {% else %}
                         <span class="lesson-validated">Leçon validée ✔</span>
                     {% endif %}

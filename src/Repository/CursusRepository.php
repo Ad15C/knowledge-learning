@@ -12,4 +12,15 @@ class CursusRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Cursus::class);
     }
+
+    public function findWithLessons(int $id): ?Cursus
+    {
+        return $this->createQueryBuilder('c')
+            ->leftJoin('c.lessons', 'l')
+            ->addSelect('l')
+            ->andWhere('c.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

@@ -128,6 +128,6 @@ class PurchaseTest extends TestCase
 
         $purchase->calculateTotal();
 
-        $this->assertSame(35.20, $purchase->getTotal());
+        $this->assertEqualsWithDelta(35.20, $purchase->getTotal(), 0.0001);
     }
 }

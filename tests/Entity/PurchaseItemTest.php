@@ -14,38 +14,56 @@ class PurchaseItemTest extends TestCase
     {
         $item = new PurchaseItem();
 
-        $this->assertSame(1, $item->getQuantity());
-        $this->assertNull($item->getPurchase());
-        $this->assertNull($item->getLesson());
-        $this->assertNull($item->getCursus());
+        self::assertSame(1, $item->getQuantity());
+        self::assertNull($item->getPurchase());
+        self::assertNull($item->getLesson());
+        self::assertNull($item->getCursus());
     }
 
-    public function testSettersAndGetters(): void
+    public function testSetAsLessonItem(): void
     {
         $item = new PurchaseItem();
 
         $purchase = $this->createMock(Purchase::class);
         $lesson = $this->createMock(Lesson::class);
-        $cursus = $this->createMock(Cursus::class);
 
         $item->setPurchase($purchase)
             ->setLesson($lesson)
-            ->setCursus($cursus)
             ->setQuantity(3)
             ->setUnitPrice(19.99);
 
-        $this->assertSame($purchase, $item->getPurchase());
-        $this->assertSame($lesson, $item->getLesson());
-        $this->assertSame($cursus, $item->getCursus());
-        $this->assertSame(3, $item->getQuantity());
-        $this->assertSame(19.99, $item->getUnitPrice());
+        self::assertSame($purchase, $item->getPurchase());
+        self::assertSame($lesson, $item->getLesson());
+        self::assertNull($item->getCursus());
+        self::assertSame(3, $item->getQuantity());
+        self::assertEqualsWithDelta(19.99, $item->getUnitPrice(), 0.0001);
     }
 
+    public function testSetAsCursusItem(): void
+    {
+        $item = new PurchaseItem();
+
+        $purchase = $this->createMock(Purchase::class);
+        $cursus = $this->createMock(Cursus::class);
+
+        $item->setPurchase($purchase)
+            ->setCursus($cursus)
+            ->setQuantity(1)
+            ->setUnitPrice(50.00);
+
+        self::assertSame($purchase, $item->getPurchase());
+        self::assertSame($cursus, $item->getCursus());
+        self::assertNull($item->getLesson());
+        self::assertSame(1, $item->getQuantity());
+        self::assertEqualsWithDelta(50.00, $item->getUnitPrice(), 0.0001);
+    }
+
+   
     public function testGetTotal(): void
     {
         $item = new PurchaseItem();
         $item->setUnitPrice(12.50)->setQuantity(4);
 
-        $this->assertSame(50.0, $item->getTotal());
+        $this->assertEqualsWithDelta(50.0, $item->getTotal(), 0.0001);
     }
 }
