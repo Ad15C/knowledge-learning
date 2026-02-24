@@ -31,7 +31,8 @@ class PurchaseRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('p')
             ->andWhere('p.user = :user')
             ->andWhere('p.status = :status')
-            ->setParameters(['user' => $user, 'status' => $status])
+            ->setParameter('user', $user)
+            ->setParameter('status', $status)
             ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
@@ -43,11 +44,9 @@ class PurchaseRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('p')
             ->andWhere('p.user = :user')
             ->andWhere('p.createdAt BETWEEN :from AND :to')
-            ->setParameters([
-                'user' => $user,
-                'from' => $from,
-                'to' => $to,
-            ])
+            ->setParameter('user', $user)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
             ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();

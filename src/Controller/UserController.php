@@ -18,6 +18,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 #[IsGranted('ROLE_USER')]
 class UserController extends AbstractController
@@ -88,7 +90,7 @@ class UserController extends AbstractController
     {
         $user = $this->getUser();
 
-        $form = $this->createForm(ChangePasswordFormType::class, $user);
+        $form = $this->createForm(\App\Form\ChangePasswordFormType::class);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -194,6 +196,34 @@ class UserController extends AbstractController
 
         return $this->render('user/certification_show.html.twig', [
             'certification' => $certification,
+        ]);
+    }
+
+    #[Route('/dashboard/certification/{id}/pdf', name: 'app_certification_pdf', methods: ['GET'])]
+    public function certificationPdf(Certification $certification): Response
+    {
+        $user = $this->getUser();
+
+        if ($certification->getUser()->getId() !== $user->getId()) {
+            $this->addFlash('danger', 'Vous n’êtes pas autorisé à accéder à ce certificat.');
+            return $this->redirectToRoute('user_dashboard_certifications');
+        }
+
+        $html = $this->renderView('user/certification_pdf.html.twig', [
+            'cert' => $certification,
+        ]);
+
+        $options = new Options();
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return new Response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="certificat-'.$certification->getCertificateCode().'.pdf"',
         ]);
     }
 
