@@ -1,52 +1,77 @@
 <div class="form-page-wrapper">
-    <div class="form-container">
-        {% if back_path is defined %}
-            <a href="{{ back_path }}" class="btn-back">← Retour</a>
-        {% endif %}
+  <div class="form-container">
+    {% if back_path is defined %}
+      <a href="{{ back_path }}" class="btn-back">← Retour</a>
+    {% endif %}
 
-        {% if title is defined %}
-            <h1>{{ title }}</h1>
-        {% endif %}
+    {% if title is defined %}
+      <h1>{{ title }}</h1>
+    {% endif %}
 
-        {# Flash messages #}
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="flash flash-{{ label }}">{{ message }}</div>
-            {% endfor %}
-        {% endfor %}
+    {# Flash messages #}
+    {% for label, messages in app.flashes %}
+      {% for message in messages %}
+        <div class="flash flash-{{ label }}">{{ message }}</div>
+      {% endfor %}
+    {% endfor %}
 
-        {{ form_start(form) }}
+    {{ form_start(form) }}
 
-        {% for child in form %}
-            {% set field_type = child.vars.block_prefixes[1] %}
-            {% set is_invalid = child.vars.errors|length > 0 %}
+    {{ form_errors(form) }}
 
-            {% if field_type == 'checkbox' %}
-                <div class="checkbox-container {% if is_invalid %}is-invalid{% endif %}">
-                    {{ form_widget(child) }}
-                    {{ form_label(child) }}
-                    {% for error in child.vars.errors %}
-                        <div class="form-error">{{ error.message }}</div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="form-group {% if is_invalid %}is-invalid{% endif %}">
-                    {{ form_widget(child) }}
-                    {{ form_label(child) }}
-                    {% for error in child.vars.errors %}
-                        <div class="form-error">{{ error.message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endfor %}
+    {% for child in form %}
+      {% set field_type = child.vars.block_prefixes[1] %}
+      {% set is_invalid = child.vars.errors|length > 0 %}
 
-        {# Bouton submit fourni par le template parent #}
-        {% if button_label is defined %}
-            <div style="margin: 15px 0;">
-                <button type="submit" id="{{ button_id|default('form-submit') }}">{{ button_label }}</button>
-            </div>
-        {% endif %}
+      {# cas spécial repeated password #}
+      {% if child.vars.name == 'plainPassword' %}
+        <div class="form-group {% if is_invalid %}is-invalid{% endif %}">
+          {{ form_label(child.first) }}
+          {{ form_widget(child.first) }}
+          {% for error in child.first.vars.errors %}
+            <div class="form-error">{{ error.message }}</div>
+          {% endfor %}
 
-        {{ form_end(form) }}
+          {{ form_label(child.second) }}
+          {{ form_widget(child.second) }}
+          {% for error in child.second.vars.errors %}
+            <div class="form-error">{{ error.message }}</div>
+          {% endfor %}
+
+          {% for error in child.vars.errors %}
+            <div class="form-error">{{ error.message }}</div>
+          {% endfor %}
+        </div>
+
+      {% elseif field_type == 'checkbox' %}
+        <div class="checkbox-container {% if is_invalid %}is-invalid{% endif %}">
+          {{ form_widget(child) }}
+          {{ form_label(child) }}
+          {% for error in child.vars.errors %}
+            <div class="form-error">{{ error.message }}</div>
+          {% endfor %}
+        </div>
+
+      {% else %}
+        <div class="form-group {% if is_invalid %}is-invalid{% endif %}">
+          {{ form_label(child) }}
+          {{ form_widget(child) }}
+          {% for error in child.vars.errors %}
+            <div class="form-error">{{ error.message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    {# CSRF + hidden fields non rendus #}
+    {{ form_rest(form) }}
+
+    <div class="form-actions" style="margin: 15px 0;">
+      <button type="submit" id="{{ button_id|default('form-submit') }}">
+        {{ button_label|default('Envoyer') }}
+      </button>
     </div>
+
+    {{ form_end(form, { render_rest: false }) }}
+  </div>
 </div>

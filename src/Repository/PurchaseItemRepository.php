@@ -32,10 +32,8 @@ class PurchaseItemRepository extends ServiceEntityRepository
             ->join('pi.purchase', 'p')
             ->andWhere('p.user = :user')
             ->andWhere('pi.cursus = :cursus')
-            ->setParameters([
-                'user' => $user,
-                'cursus' => $cursus,
-            ])
+            ->setParameter('user', $user)
+            ->setParameter('cursus', $cursus)
             ->getQuery()
             ->getResult();
     }
@@ -47,10 +45,8 @@ class PurchaseItemRepository extends ServiceEntityRepository
             ->join('pi.purchase', 'p')
             ->andWhere('p.user = :user')
             ->andWhere('p.status = :status')
-            ->setParameters([
-                'user' => $user,
-                'status' => $status,
-            ])
+            ->setParameter('user', $user)
+            ->setParameter('status', $status)
             ->getQuery()
             ->getResult();
     }
@@ -62,11 +58,9 @@ class PurchaseItemRepository extends ServiceEntityRepository
             ->join('pi.purchase', 'p')
             ->andWhere('p.user = :user')
             ->andWhere('p.createdAt BETWEEN :from AND :to')
-            ->setParameters([
-                'user' => $user,
-                'from' => $from,
-                'to' => $to,
-            ])
+            ->setParameter('user', $user)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
             ->getQuery()
             ->getResult();
     }

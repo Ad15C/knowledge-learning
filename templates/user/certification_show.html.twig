@@ -45,7 +45,7 @@
                         </p>
 
                         <p class="certificate-user">
-                            {{ app.user.firstname }} {{ app.user.lastname }}
+                            {{ certification.user.firstName }} {{ certification.user.lastName }}
                         </p>
 
                         <p class="certificate-label">
@@ -96,6 +96,12 @@
                 <button onclick="window.print()" class="btn btn-primary">
                     🖨 Imprimer
                 </button>
+
+                <a class="btn btn-secondary"
+                   href="{{ path('app_certification_pdf', {id: certification.id}) }}"
+                    target="_blank">
+                    Télécharger PDF
+                </a>
 
                 <a href="{{ path('user_dashboard_certifications') }}" class="btn btn-secondary">
                     ← Retour aux certifications

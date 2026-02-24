@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: DejaVu Sans, sans-serif; }
+    .wrap { text-align: center; margin-top: 120px; }
+    h1 { font-size: 40px; margin-bottom: 10px; }
+    .code { margin-top: 30px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>CERTIFICAT OFFICIEL</h1>
+    <p>Knowledge Learning certifie que</p>
+
+    <h2>{{ cert.user.firstName }} {{ cert.user.lastName }}</h2>
+
+    {% if cert.cursus %}
+        <p>a validé le cursus : <strong>{{ cert.cursus.name }}</strong></p>
+    {% endif %}
+
+    <p>Délivré le : {{ cert.issuedAt|date('d/m/Y') }}</p>
+
+    <div class="code">
+      Code certificat : {{ cert.certificateCode }}
+    </div>
+  </div>
+</body>
+</html>
