@@ -18,6 +18,10 @@ class PurchaseItemTest extends TestCase
         self::assertNull($item->getPurchase());
         self::assertNull($item->getLesson());
         self::assertNull($item->getCursus());
+
+        // ⚠️ Ne PAS appeler getUnitPrice() / getTotal() ici
+        // car unitPrice n'a pas de valeur par défaut dans l'entité
+        // (sinon "Typed property ... must not be accessed before initialization").
     }
 
     public function testSetAsLessonItem(): void
@@ -58,12 +62,25 @@ class PurchaseItemTest extends TestCase
         self::assertEqualsWithDelta(50.00, $item->getUnitPrice(), 0.0001);
     }
 
-   
+    public function testUnitPriceIsFormattedToTwoDecimals(): void
+    {
+        $item = new PurchaseItem();
+
+        $item->setUnitPrice(10);
+        self::assertEqualsWithDelta(10.00, $item->getUnitPrice(), 0.0001);
+
+        $item->setUnitPrice(10.5);
+        self::assertEqualsWithDelta(10.50, $item->getUnitPrice(), 0.0001);
+
+        $item->setUnitPrice(10.999);
+        self::assertEqualsWithDelta(11.00, $item->getUnitPrice(), 0.0001);
+    }
+
     public function testGetTotal(): void
     {
         $item = new PurchaseItem();
         $item->setUnitPrice(12.50)->setQuantity(4);
 
-        $this->assertEqualsWithDelta(50.0, $item->getTotal(), 0.0001);
+        self::assertEqualsWithDelta(50.00, $item->getTotal(), 0.0001);
     }
 }
