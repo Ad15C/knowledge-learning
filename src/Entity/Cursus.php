@@ -69,12 +69,4 @@ class Cursus
         return $this;
     }
 
-    public function removeLesson(Lesson $lesson): static
-    {
-        if ($this->lessons->removeElement($lesson) && $lesson->getCursus() === $this) {
-            $lesson->setCursus(null);
-        }
-        return $this;
-    }
-
 }
