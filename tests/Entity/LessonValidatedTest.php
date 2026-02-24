@@ -25,9 +25,9 @@ class LessonValidatedTest extends TestCase
     {
         $lv = new LessonValidated();
 
-        $user = $this->createMock(User::class);
-        $lesson = $this->createMock(Lesson::class);
-        $pi = $this->createMock(PurchaseItem::class);
+        $user = new User();
+        $lesson = new Lesson();
+        $pi = new PurchaseItem();
 
         $lv->setUser($user)->setLesson($lesson)->setPurchaseItem($pi);
 
@@ -36,17 +36,18 @@ class LessonValidatedTest extends TestCase
         $this->assertSame($pi, $lv->getPurchaseItem());
     }
 
-    public function testMarkCompletedSetsCompletedTrueAndRefreshesValidatedAt(): void
+    public function testMarkCompletedRefreshesValidatedAt(): void
     {
         $lv = new LessonValidated();
         $before = $lv->getValidatedAt();
 
-        // petite pause logique : pas nécessaire d'attendre, on compare "différent"
-        $lv->markCompleted();
+        $this->assertSame($lv, $lv->markCompleted());
         $after = $lv->getValidatedAt();
 
         $this->assertTrue($lv->isCompleted());
         $this->assertInstanceOf(\DateTimeImmutable::class, $after);
+
+        // robuste : on compare la référence objet (nouvelle instance)
         $this->assertNotSame($before, $after);
     }
 }
