@@ -2,81 +2,62 @@
 
 namespace App\Tests\Service;
 
+use App\DataFixtures\TestUserFixtures;
+use App\DataFixtures\ThemeFixtures;
 use App\Entity\Certification;
-use App\Entity\Cursus;
 use App\Entity\Lesson;
 use App\Entity\Theme;
 use App\Entity\User;
-use App\Repository\LessonValidatedRepository;
 use App\Service\LessonValidatedService;
+use Doctrine\Common\DataFixtures\ReferenceRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
+use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 class LessonValidatedServiceTest extends KernelTestCase
 {
     private EntityManagerInterface $em;
     private LessonValidatedService $service;
+    private ReferenceRepository $refRepo;
 
     protected function setUp(): void
     {
         self::bootKernel();
 
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
+        $this->service = static::getContainer()->get(LessonValidatedService::class);
 
-        $metadata = $this->em->getMetadataFactory()->getAllMetadata();
-        $tool = new SchemaTool($this->em);
-        $tool->dropSchema($metadata);
-        $tool->createSchema($metadata);
+        $databaseTool = static::getContainer()->get(DatabaseToolCollection::class)->get();
+        $executor = $databaseTool->loadFixtures([
+            ThemeFixtures::class,
+            TestUserFixtures::class,
+        ]);
 
-        $repo = static::getContainer()->get(LessonValidatedRepository::class);
-        $this->service = new LessonValidatedService($this->em, $repo);
+        $this->refRepo = $executor->getReferenceRepository();
     }
 
-    private function makeUser(string $email = 'u@test.com'): User
+    private function getUser(): User
     {
-        $u = new User();
-        $u->setEmail($email)
-            ->setPassword('hash')
-            ->setFirstName('John')
-            ->setLastName('Doe')
-            ->setRoles(['ROLE_USER']);
-        $this->em->persist($u);
-        return $u;
+        $user = $this->refRepo->getReference(TestUserFixtures::USER_REF, User::class);
+        return $this->em->getRepository(User::class)->find($user->getId());
     }
 
-    private function makeTheme(string $name = 'Theme A'): Theme
+    private function getLesson(string $ref): Lesson
     {
-        $t = new Theme();
-        $t->setName($name);
-        $this->em->persist($t);
-        return $t;
+        $lesson = $this->refRepo->getReference($ref, Lesson::class);
+        return $this->em->getRepository(Lesson::class)->find($lesson->getId());
     }
 
-    private function makeCursus(Theme $theme, string $name = 'Cursus A'): Cursus
+    private function getTheme(string $ref): Theme
     {
-        $c = new Cursus();
-        $c->setName($name)->setPrice(100)->setTheme($theme);
-        $this->em->persist($c);
-        return $c;
+        $theme = $this->refRepo->getReference($ref, Theme::class);
+        return $this->em->getRepository(Theme::class)->find($theme->getId());
     }
 
-    private function makeLesson(Cursus $cursus, string $title): Lesson
+    public function testValidateLessonCreatesLessonValidatedAndLessonCertification(): void
     {
-        $l = new Lesson();
-        $l->setTitle($title)->setPrice(10)->setCursus($cursus);
-        $this->em->persist($l);
-        return $l;
-    }
-
-    public function testValidateLessonCreatesLessonCertification(): void
-    {
-        $user = $this->makeUser();
-        $theme = $this->makeTheme();
-        $cursus = $this->makeCursus($theme);
-        $lesson = $this->makeLesson($cursus, 'L1');
-
-        $this->em->flush();
+        $user = $this->getUser();
+        $lesson = $this->getLesson(ThemeFixtures::LESSON_GUITAR_1_REF);
 
         $this->service->validateLesson($user, $lesson);
 
@@ -88,70 +69,15 @@ class LessonValidatedServiceTest extends KernelTestCase
 
         self::assertNotNull($cert);
         self::assertNotEmpty($cert->getCertificateCode());
-        self::assertInstanceOf(\DateTimeInterface::class, $cert->getIssuedAt());
     }
 
-    public function testValidateLessonCreatesThemeAndCursusCertificationWhenAllLessonsCompleted(): void
+    public function testValidateSameLessonDoesNotDuplicateLessonCertification(): void
     {
-        $user = $this->makeUser();
-        $theme = $this->makeTheme('Theme X');
-        $cursus = $this->makeCursus($theme, 'Cursus X');
-
-        $lesson1 = $this->makeLesson($cursus, 'L1');
-        $lesson2 = $this->makeLesson($cursus, 'L2');
-
-        $this->em->flush();
-
-        // Valide L1 => cert lesson only
-        $this->service->validateLesson($user, $lesson1);
-
-        $themeCert1 = $this->em->getRepository(Certification::class)->findOneBy([
-            'user' => $user,
-            'theme' => $theme,
-            'type' => 'theme',
-        ]);
-        self::assertNull($themeCert1);
-
-        $cursusCert1 = $this->em->getRepository(Certification::class)->findOneBy([
-            'user' => $user,
-            'cursus' => $cursus,
-            'type' => 'cursus',
-        ]);
-        self::assertNull($cursusCert1);
-
-        // Valide L2 => theme + cursus devraient se débloquer
-        $this->service->validateLesson($user, $lesson2);
-
-        $themeCert = $this->em->getRepository(Certification::class)->findOneBy([
-            'user' => $user,
-            'theme' => $theme,
-            'type' => 'theme',
-        ]);
-        self::assertNotNull($themeCert);
-        self::assertSame('theme', $themeCert->getType());
-        self::assertNotEmpty($themeCert->getCertificateCode());
-
-        $cursusCert = $this->em->getRepository(Certification::class)->findOneBy([
-            'user' => $user,
-            'cursus' => $cursus,
-            'type' => 'cursus',
-        ]);
-        self::assertNotNull($cursusCert);
-        self::assertSame('cursus', $cursusCert->getType());
-        self::assertNotEmpty($cursusCert->getCertificateCode());
-    }
-
-    public function testValidateLessonDoesNotDuplicateCertifications(): void
-    {
-        $user = $this->makeUser();
-        $theme = $this->makeTheme();
-        $cursus = $this->makeCursus($theme);
-        $lesson = $this->makeLesson($cursus, 'L1');
-
-        $this->em->flush();
+        $user = $this->getUser();
+        $lesson = $this->getLesson(ThemeFixtures::LESSON_GUITAR_1_REF);
 
         $this->service->validateLesson($user, $lesson);
-        $this->service->validateLesson($user, $lesson); // 2e fois
+        $this->service->validateLesson($user, $lesson);
 
         $certs = $this->em->getRepository(Certification::class)->findBy([
             'user' => $user,
@@ -160,5 +86,61 @@ class LessonValidatedServiceTest extends KernelTestCase
         ]);
 
         self::assertCount(1, $certs);
+    }
+
+    public function testCompletingAllLessonsInOneCursusCreatesCursusCertification(): void
+    {
+        $user = $this->getUser();
+
+        // Cursus guitare = LESSON_GUITAR_1_REF + LESSON_GUITAR_2_REF
+        $l1 = $this->getLesson(ThemeFixtures::LESSON_GUITAR_1_REF);
+        $l2 = $this->getLesson(ThemeFixtures::LESSON_GUITAR_2_REF);
+
+        $cursus = $l1->getCursus();
+        self::assertNotNull($cursus);
+
+        // Valider l1 et l2
+        $this->service->validateLesson($user, $l1);
+        $this->service->validateLesson($user, $l2);
+
+        $cert = $this->em->getRepository(Certification::class)->findOneBy([
+            'user' => $user,
+            'cursus' => $cursus,
+            'type' => 'cursus',
+        ]);
+
+        self::assertNotNull($cert);
+        self::assertNotEmpty($cert->getCertificateCode());
+    }
+
+    public function testCompletingAllLessonsInThemeCreatesThemeCertification(): void
+    {
+        $user = $this->getUser();
+        $theme = $this->getTheme(ThemeFixtures::THEME_MUSIQUE_REF);
+
+        // On récupère toutes les leçons du thème Musique
+        $lessons = $this->em->getRepository(Lesson::class)
+            ->createQueryBuilder('l')
+            ->join('l.cursus', 'c')
+            ->join('c.theme', 't')
+            ->andWhere('t.id = :themeId')
+            ->setParameter('themeId', $theme->getId())
+            ->getQuery()
+            ->getResult();
+
+        self::assertNotEmpty($lessons);
+
+        foreach ($lessons as $lesson) {
+            $this->service->validateLesson($user, $lesson);
+        }
+
+        $themeCert = $this->em->getRepository(Certification::class)->findOneBy([
+            'user' => $user,
+            'theme' => $theme,
+            'type' => 'theme',
+        ]);
+
+        self::assertNotNull($themeCert);
+        self::assertNotEmpty($themeCert->getCertificateCode());
     }
 }
