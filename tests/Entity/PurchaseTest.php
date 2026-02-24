@@ -130,4 +130,25 @@ class PurchaseTest extends TestCase
 
         $this->assertEqualsWithDelta(35.20, $purchase->getTotal(), 0.0001);
     }
+
+    public function testCalculateTotalRoundsToTwoDecimals(): void
+    {
+        $purchase = new Purchase();
+
+        $item = new PurchaseItem();
+        $item->setUnitPrice(10.005)->setQuantity(1); // selon number_format => 10.01
+        $purchase->addItem($item);
+
+        $purchase->calculateTotal();
+
+        $this->assertEqualsWithDelta(10.01, $purchase->getTotal(), 0.0001);
+    }
+
+    public function testCalculateTotalWithNoItems(): void
+    {
+        $purchase = new Purchase();
+        $purchase->calculateTotal();
+
+        $this->assertSame(0.0, $purchase->getTotal());
+    }
 }
