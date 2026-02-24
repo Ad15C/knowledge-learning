@@ -1,5 +1,13 @@
+# config/services_test.yaml
 services:
     # Alias pour le test : l’interface pointe vers le service concret
     Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface:
         alias: 'security.user_password_hasher'
+        public: true
+
+    # Rendre les fixtures récupérables via le container dans les tests
+    App\DataFixtures\:
+        resource: '../src/DataFixtures/'
+        autowire: true
+        autoconfigure: true
         public: true
