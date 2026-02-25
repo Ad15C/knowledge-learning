@@ -49,63 +49,114 @@
     <div class="menu-toggle" onclick="toggleMenu()">☰</div>
 
     <nav class="main-nav">
-        {% set menuItems = [
-            {'label':'Accueil', 'path': path('homepage'), 'active': app.request.attributes.get('_route') == 'homepage' ? 'active' : ''},
-            {'label':'Thèmes', 'path': path('themes_index'), 'active': app.request.attributes.get('_route') starts with 'theme' ? 'active' : ''},
-            {'label':'Panier', 'path': path('cart_show'), 'active': app.request.attributes.get('_route') starts with 'cart' ? 'active' : '', 'count': cartCount},
-            {'label':'Contact', 'path': path('contact_index'), 'active': app.request.attributes.get('_route') starts with 'contact' ? 'active' : '', 'submenu': [
-                {'label':'Question sur un thème', 'path': path('contact_index', {'subject':'theme'})},
-                {'label':'Question sur un cursus', 'path': path('contact_index', {'subject':'cursus'})},
-                {'label':'Question sur une leçon', 'path': path('contact_index', {'subject':'lesson'})},
-                {'label':'Question sur le paiement', 'path': path('contact_index', {'subject':'payment'})},
-                {'label':'Question sur la validation du cours', 'path': path('contact_index', {'subject':'validation'})},
-                {'label':'Question sur la certification', 'path': path('contact_index', {'subject':'certification'})},
-                {'label':'Question sur l\'inscription', 'path': path('contact_index', {'subject':'registration'})},
-                {'label':'Question sur la connexion', 'path': path('contact_index', {'subject':'login'})},
-                {'label':'Autre question', 'path': path('contact_index', {'subject':'other'})}
-            ]}
-        ] %}
+        {% set route = app.request.attributes.get('_route') %}
 
-        {% if app.user %}
-            {% if is_granted('ROLE_ADMIN') %}
-                {% set adminMenu = {
-                    'label':'Admin',
+        {# Helper pour l'onglet Thèmes actif (themes_ + theme_) #}
+        {% set themesActive = (route starts with 'theme_' or route starts with 'themes_') ? 'active' : '' %}
+
+        {# --- ADMIN --- #}
+        {% if is_granted('ROLE_ADMIN') %}
+
+            {% set menuItems = [
+                {
+                    'label':'Accueil',
+                    'path': path('homepage'),
+                    'active': route == 'homepage' ? 'active' : ''
+                },
+                {
+                    'label':'Admin dashboard',
+                    'path': path('admin_dashboard'),
+                    'active': route starts with 'admin_' ? 'active' : '',
                     'submenu': [
                         {'label':'Dashboard', 'path': path('admin_dashboard')},
-                        {'label':'Utilisateurs', 'path':'#'},
-                        {'label':'Thèmes', 'path':'#'},
-                        {'label':'Cursus', 'path':'#'},
-                        {'label':'Leçons', 'path':'#'},
-                        {'label':'Panier (' ~ cartCount ~ ')', 'path':'#'},
-                        {'label':'Messages Contact','submenu': [
-                            {'label':'Tous les messages', 'path': path('admin_contact_index')},
-                            {'label':'Non traités', 'path': path('admin_contact_unhandled')},
-                            {'label':'Traités', 'path': path('admin_contact_handled')}
-                        ]},
-                        {'label':'Certifications', 'path':'#'}
+                        {'label':'Clients', 'path': path('admin_user_index')},
+                        {'label':'Thèmes', 'path': path('admin_theme_index')},
+                        {'label':'Cursus', 'path': path('admin_cursus_index')},
+                        {'label':'Leçons', 'path': path('admin_lesson_index')},
+                        {'label':'Commandes', 'path': path('admin_purchase_index')},
+                        {'label':'Messages contact', 'path': path('admin_contact_index')}
                     ]
-                } %}
-                {% set menuItems = menuItems|merge([adminMenu]) %}
-            {% else %}
-                {% set userMenu = {
-                    'label':'Dashboard',
-                    'path': path('user_dashboard'),
-                    'submenu': [
-                        {'label':'Vue d\'ensemble', 'path': path('user_dashboard')},
-                        {'label':'Modifier profil', 'path': path('user_dashboard_edit')},
-                        {'label':'Mot de passe', 'path': path('app_change_password')},
-                        {'label':'Mes achats', 'path': path('user_dashboard_purchases')},
-                        {'label':'Certifications', 'path': path('user_dashboard_certifications')}
-                    ]
-                } %}
-                {% set menuItems = menuItems|merge([userMenu]) %}
-            {% endif %}
-            {% set menuItems = menuItems|merge([{'label':'Déconnexion','path': path('app_logout')}]) %}
+                },
+                {
+                    'label':'Déconnexion',
+                    'path': path('app_logout')
+                }
+            ] %}
+
+        {# --- USER CONNECTÉ (NON ADMIN) --- #}
+        {% elseif app.user %}
+
+            {% set userMenu = {
+                'label':'Dashboard User',
+                'path': path('user_dashboard'),
+                'active': route starts with 'user_dashboard' ? 'active' : '',
+                'submenu': [
+                    {'label':'Vue d\'ensemble', 'path': path('user_dashboard')},
+                    {'label':'Modifier profil', 'path': path('user_dashboard_edit')},
+                    {'label':'Mot de passe', 'path': path('app_change_password')},
+                    {'label':'Mes achats', 'path': path('user_dashboard_purchases')},
+                    {'label':'Certifications', 'path': path('user_dashboard_certifications')}
+                ]
+            } %}
+
+            {# --- Contact --- #}
+            {% set contactMenu = {
+                'label':'Contact',
+                'path': path('contact_index'),
+                'active': route starts with 'contact' ? 'active' : ''
+            } %}
+
+            {% set menuItems = [
+                {
+                    'label':'Accueil',
+                    'path': path('homepage'),
+                    'active': route == 'homepage' ? 'active' : ''
+                },
+                {
+                    'label':'Thèmes',
+                    'path': path('themes_index'),
+                    'active': themesActive
+                },
+                {
+                    'label':'Panier',
+                    'path': path('cart_show'),
+                    'active': route starts with 'cart' ? 'active' : '',
+                    'count': cartCount
+                },
+                userMenu,
+                contactMenu,
+                {
+                    'label':'Déconnexion',
+                    'path': path('app_logout')
+                }
+            ] %}
+
+        {# --- VISITEUR --- #}
         {% else %}
-            {% set menuItems = menuItems|merge([
-                {'label':'Connexion','path': path('app_login')},
-                {'label':'Inscription','path': path('app_register')}
-            ]) %}
+
+            {% set menuItems = [
+                {
+                    'label':'Accueil',
+                    'path': path('homepage'),
+                    'active': route == 'homepage' ? 'active' : ''
+                },
+                {
+                    'label':'Thèmes',
+                    'path': path('themes_index'),
+                    'active': themesActive
+                },
+                {
+                    'label':'S\'inscrire',
+                    'path': path('app_register'),
+                    'active': route == 'app_register' ? 'active' : ''
+                },
+                {
+                    'label':'Se connecter',
+                    'path': path('app_login'),
+                    'active': route == 'app_login' ? 'active' : ''
+                }
+            ] %}
+
         {% endif %}
 
         {{ macros.renderMenu(menuItems) }}
@@ -117,24 +168,27 @@
 <footer>&copy; {{ "now"|date("Y") }} Knowledge Learning - Tous droits réservés</footer>
 
 <script>
-    function toggleMenu() {
-        document.querySelector('.main-nav ul').classList.toggle('show');
-    }
+  function toggleMenu() {
+    document.querySelector('.main-nav > ul')?.classList.toggle('show');
+  }
 
-    document.querySelectorAll('.has-submenu').forEach(item => {
-        item.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768) {
-                e.preventDefault();
-                item.parentElement.classList.toggle('open');
-            }
-        });
+  document.addEventListener('DOMContentLoaded', () => {
+
+    // Sous-menu : clic uniquement en mobile/tablette
+    document.querySelectorAll('.has-submenu > a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        if (window.innerWidth <= 992) {
+          e.preventDefault();
+          link.parentElement.classList.toggle('open');
+        }
+      });
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => {
-            document.querySelectorAll('.flash').forEach(flash => flash.remove());
-        }, 4000);
-    });
+    // Auto-suppression des flash
+    setTimeout(() => {
+      document.querySelectorAll('.flash').forEach(flash => flash.remove());
+    }, 4000);
+  });
 </script>
 
 {% block javascripts %}

@@ -11,7 +11,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/admin', name: 'admin_')]
 class AdminController extends AbstractController
 {
-    #[Route('', name: 'dashboard', methods: ['GET'])]
+    #[Route('', name: 'dashboard')]
     public function dashboard(): Response
     {
         return $this->render('admin/dashboard.html.twig');

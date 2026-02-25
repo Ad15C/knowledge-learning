@@ -1,17 +1,21 @@
 {% macro renderMenu(items) %}
-    <ul>
-        {% for item in items %}
-            <li class="{{ item.submenu is defined ? 'has-submenu' : '' }}">
-                <a href="{{ item.path ?? '#' }}" class="{{ item.active ?? '' }}">
-                    {{ item.label }}
-                    {% if item.count is defined %}
-                        <span class="menu-badge">{{ item.count }}</span>
-                    {% endif %}
-                </a>
-                {% if item.submenu is defined %}
-                    {{ _self.renderMenu(item.submenu) }}
-                {% endif %}
-            </li>
-        {% endfor %}
-    </ul>
+  <ul>
+    {% for item in items %}
+      {% set hasSubmenu = item.submenu is defined and item.submenu is not empty %}
+
+      <li class="{{ hasSubmenu ? 'has-submenu' : '' }}">
+        <a href="{{ item.path ?? '#' }}" class="{{ item.active ?? '' }}">
+          {{ item.label }}
+
+          {% if item.count is defined and item.count > 0 %}
+            <span class="menu-badge">{{ item.count }}</span>
+          {% endif %}
+        </a>
+
+        {% if hasSubmenu %}
+          {{ _self.renderMenu(item.submenu) }}
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
 {% endmacro %}

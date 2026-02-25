@@ -25,40 +25,45 @@ use Dompdf\Options;
 class UserController extends AbstractController
 {
     #[Route('/dashboard', name: 'user_dashboard')]
-    public function dashboard(
-        PurchaseRepository $purchaseRepository,
-        CertificationRepository $certificationRepository
-    ): Response {
-        $user = $this->getUser();
-        $purchases = $purchaseRepository->findBy(['user' => $user], ['createdAt' => 'DESC']);
-        $totalOrders = count($purchases);
-        $totalSpent = $purchaseRepository->getTotalSpent($user);
+        public function dashboard(
+            PurchaseRepository $purchaseRepository,
+            CertificationRepository $certificationRepository
+        ): Response {
+            // Si admin, on renvoie vers /admin (route admin_dashboard)
+            if ($this->isGranted('ROLE_ADMIN')) {
+                return $this->redirectToRoute('admin_dashboard');
+            }
 
-        // Niveaux de fidélité
-        $tiers = ['Bronze'=>0, 'Silver'=>100, 'Gold'=>300, 'Platinum'=>600];
-        $status = 'Bronze'; $nextStatus = 'Silver'; $currentMin=0; $currentMax=100;
-        foreach ($tiers as $tier => $minAmount) {
-            if ($totalSpent >= $minAmount) { $status = $tier; $currentMin = $minAmount; }
-            else { $nextStatus=$tier; $currentMax=$minAmount; break; }
+            $user = $this->getUser();
+            $purchases = $purchaseRepository->findBy(['user' => $user], ['createdAt' => 'DESC']);
+            $totalOrders = count($purchases);
+            $totalSpent = $purchaseRepository->getTotalSpent($user);
+
+            // Niveaux de fidélité
+            $tiers = ['Bronze'=>0, 'Silver'=>100, 'Gold'=>300, 'Platinum'=>600];
+            $status = 'Bronze'; $nextStatus = 'Silver'; $currentMin=0; $currentMax=100;
+            foreach ($tiers as $tier => $minAmount) {
+                if ($totalSpent >= $minAmount) { $status = $tier; $currentMin = $minAmount; }
+                else { $nextStatus=$tier; $currentMax=$minAmount; break; }
+            }
+            $progressPercent = $currentMax>$currentMin ? min(100, round((($totalSpent-$currentMin)/($currentMax-$currentMin))*100)) : 0;
+
+            $certifications = $certificationRepository->findBy(['user'=>$user]);
+            $certificationsCount = $certificationRepository->countByUser($user);
+            $latestPurchases = array_slice($purchases, 0, 5);
+
+            return $this->render('user/dashboard.html.twig', [
+                'user' => $user,
+                'orders' => $latestPurchases,
+                'totalOrders' => $totalOrders,
+                'totalSpent' => $totalSpent,
+                'status' => $status,
+                'nextStatus' => $nextStatus,
+                'progressPercent' => $progressPercent,
+                'certifications' => $certifications,
+                'certificationsCount' => $certificationsCount,
+            ]);
         }
-        $progressPercent = $currentMax>$currentMin ? min(100, round((($totalSpent-$currentMin)/($currentMax-$currentMin))*100)) : 0;
-
-        $certifications = $certificationRepository->findBy(['user'=>$user]);
-        $certificationsCount = $certificationRepository->countByUser($user);
-        $latestPurchases = array_slice($purchases, 0, 5);
-
-        return $this->render('user/dashboard.html.twig', [
-            'user' => $user,
-            'orders' => $latestPurchases,
-            'totalOrders' => $totalOrders,
-            'totalSpent' => $totalSpent,
-            'status' => $status,
-            'nextStatus' => $nextStatus,
-            'progressPercent' => $progressPercent,
-            'certifications' => $certifications,
-            'certificationsCount' => $certificationsCount,
-        ]);
-    }
 
     #[Route('/dashboard/edit', name: 'user_dashboard_edit')]
     public function editProfile(Request $request, EntityManagerInterface $em): Response
