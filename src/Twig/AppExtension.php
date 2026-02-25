@@ -24,6 +24,6 @@ class AppExtension extends AbstractExtension
 
     public function getCartItemCount(): int
     {
-        return $this->cartService->getItemCount();
+        return $this->cartService->getCartItemCount();
     }
 }

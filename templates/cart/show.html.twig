@@ -10,28 +10,46 @@
 {% block body %}
 <h1>Mon Panier</h1>
 
-{% if purchase and purchase.items|length > 0 %}
+{% if purchase and purchase.items is not empty %}
+
+    {# (Optionnel) statut de la purchase #}
+    <p>
+        <span class="{{ purchase_status_class(purchase.status) }}">
+            {{ purchase_status_label(purchase.status) }}
+        </span>
+    </p>
+
+    {# Récap items #}
+    <p class="cart-meta">
+        {{ purchase_items_count(purchase) }} produits —
+        {{ purchase_items_quantity(purchase) }} articles
+    </p>
+
     <div class="cart-items">
         {% for item in purchase.items %}
             <div class="cart-item-card">
                 <div class="cart-item-info">
+                    <h3>{{ purchase_item_title(item) }}</h3>
+
                     {% if item.cursus %}
-                        <h3>{{ item.cursus.name }}</h3>
                         <span class="cart-type">Cursus</span>
                     {% elseif item.lesson %}
-                        <h3>{{ item.lesson.title }}</h3>
                         <span class="cart-type">Leçon</span>
                     {% endif %}
                 </div>
 
                 <div class="cart-item-actions">
-                    <span class="cart-price">{{ item.getTotal()|number_format(2, '.', ' ') }} €</span>
-                    <span>Quantité : {{ item.getQuantity() }}</span>
+                    {# Prix total de la ligne #}
+                    <span class="cart-price">{{ item.total|money }}</span>
 
-                    <a href="{{ path('cart_remove', {
-                        'type': item.cursus ? 'cursus' : 'lesson',
-                        'id': item.cursus ? item.cursus.id : item.lesson.id
-                    }) }}" class="btn-remove">Supprimer</a>
+                    <span>Quantité : {{ item.quantity }}</span>
+
+                    {% if item.cursus or item.lesson %}
+                        <a href="{{ path('cart_remove', {
+                            'type': item.cursus ? 'cursus' : 'lesson',
+                            'id': item.cursus ? item.cursus.id : item.lesson.id
+                        }) }}" class="btn-remove">Supprimer</a>
+                    {% endif %}
                 </div>
             </div>
         {% endfor %}
@@ -40,7 +58,7 @@
     <div class="cart-summary-wrapper">
         <div class="cart-summary">
             <div class="cart-total">
-                Total : <strong>{{ purchase.total|number_format(2, '.', ' ') }} €</strong>
+                Total : <strong>{{ purchase.total|money }}</strong>
             </div>
 
             <a href="{{ path('themes_index') }}" class="btn btn-outline">
