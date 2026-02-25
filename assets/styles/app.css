@@ -16,6 +16,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 16px;
     padding: 15px 20px;
     background-color: #f1f8fc;
     border-bottom: 2px solid #0074c7;
@@ -23,6 +24,7 @@ body {
 
 .logo img {
     height: 60px;
+    display: block;
 }
 
 /* =======================
@@ -33,11 +35,16 @@ body {
     font-size: 28px;
     cursor: pointer;
     color: #00497c;
+    user-select: none;
 }
 
 /* =======================
-   MAIN NAV
+   MAIN NAV (DESKTOP DEFAULT)
 ======================= */
+.main-nav {
+    position: relative;
+}
+
 .main-nav ul {
     list-style: none;
     margin: 0;
@@ -59,6 +66,9 @@ body {
     padding: 10px 5px;
     position: relative;
     transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
 /* Hover */
@@ -66,7 +76,7 @@ body {
     color: #0074c7;
 }
 
-/* Active link underline */
+/* Active underline */
 .main-nav a.active::after {
     content: "";
     position: absolute;
@@ -79,16 +89,10 @@ body {
 }
 
 /* =======================
-   SUBMENU
+   SUBMENU (DESKTOP)
+   -> on vise .has-submenu > ul pour éviter d'impacter le UL principal
 ======================= */
-.has-submenu::after {
-    content: "▾";
-    margin-left: 5px;
-    font-size: 0.7em;
-}
-
-/* Sous-menu */
-.main-nav ul li ul {
+.has-submenu > ul {
     position: absolute;
     top: calc(100% + 12px);
     left: 0;
@@ -96,7 +100,7 @@ body {
     flex-direction: column;
     background-color: #f1f8fc;
     min-width: 260px;
-    padding: 20px 0;
+    padding: 12px 0;
     border-radius: 8px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     opacity: 0;
@@ -106,37 +110,41 @@ body {
     z-index: 100;
 }
 
-.main-nav ul li:hover ul {
+/* Hover desktop pour ouvrir */
+.has-submenu:hover > ul {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
 }
 
-.main-nav ul li ul li a {
-    padding: 12px 20px;
+.has-submenu > ul li a {
+    padding: 12px 18px;
     color: #00497c;
     transition: all 0.2s;
     white-space: nowrap;
+    display: block;
 }
 
-.main-nav ul li ul li a:hover {
+.has-submenu > ul li a:hover {
     color: #f1f8fc;
     background-color: #0074c7;
     border-radius: 6px;
 }
 
+
 /* =======================
-   CART COUNT BADGE
+   BADGE (panier)
+   -> compatible .menu-badge ET .cart-badge
 ======================= */
+.menu-badge,
 .cart-badge {
-    background-color: #dc3545;
+    background-color: #0074c7;
     color: #fff;
     font-size: 0.8em;
     font-weight: bold;
-    padding: 2px 6px;
+    padding: 2px 7px;
     border-radius: 12px;
-    margin-left: 5px;
-    vertical-align: middle;
+    line-height: 1;
 }
 
 /* =======================
@@ -191,49 +199,123 @@ main {
 @keyframes fadeOut { to { opacity: 0; transform: translateY(-20px); } }
 
 /* =======================
-   RESPONSIVE
+   RESPONSIVE TABLET + MOBILE
 ======================= */
+
+/* Tablette / Mobile */
 @media (max-width: 992px) {
     .menu-toggle {
         display: block;
     }
 
-    .main-nav ul {
-        flex-direction: column;
-        width: 100%;
+    /* Le UL devient un panneau dropdown */
+    .main-nav > ul {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 10px);
+        width: min(92vw, 420px);
         display: none;
+        flex-direction: column;
+        gap: 0;
         background-color: #f1f8fc;
+        border: 1px solid rgba(0, 116, 199, 0.25);
+        border-radius: 12px;
         padding: 10px 0;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+        z-index: 200;
     }
 
-    .main-nav ul.show {
+    .main-nav > ul.show {
         display: flex;
     }
 
-    .main-nav ul li {
+    .main-nav > ul > li {
         width: 100%;
     }
 
-    .main-nav ul li a {
-        padding: 12px 20px;
+    .main-nav > ul > li > a {
         width: 100%;
+        padding: 14px 18px;
+        justify-content: space-between; /* label à gauche, caret/badge à droite */
     }
 
-    .main-nav ul li ul {
+    /* Sous-menu : statique (pas absolute) */
+    .has-submenu > ul {
         position: static;
         opacity: 1;
         transform: none;
+        pointer-events: auto;
         display: none;
         box-shadow: none;
-        padding-left: 15px;
+        border-radius: 0;
+        min-width: 100%;
+        padding: 0 0 10px 0;
+        margin: 0;
     }
 
-    .main-nav ul li.open ul {
+    /* Affiché seulement quand <li class="open"> */
+    .has-submenu.open > ul {
         display: flex;
         flex-direction: column;
     }
 
-    .main-nav ul li ul li a {
-        padding: 10px 15px;
+    .has-submenu > ul li a {
+        padding: 12px 24px;
+        white-space: normal;
+    }
+
+    /* underline active sur mobile: évite que ça dépasse visuellement */
+    .main-nav a.active::after {
+        display: none;
+    }
+
+    /* Flash messages plus petits */
+    .flash-messages {
+        top: 12px;
+        right: 12px;
+        left: 12px;
+        align-items: flex-end;
+    }
+
+    .flash {
+        min-width: auto;
+        width: 100%;
+        max-width: 520px;
+    }
+
+    main {
+        padding: 20px;
+    }
+}
+
+/* Mobile étroit */
+@media (max-width: 480px) {
+    .main-header {
+        padding: 12px 14px;
+    }
+
+    .logo img {
+        height: 50px;
+    }
+
+    .main-nav > ul {
+        width: 92vw;
+    }
+
+    .main-nav > ul > li > a {
+        padding: 14px 16px;
+    }
+
+    .has-submenu.open > ul {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .has-submenu > ul li a {
+        padding: 12px 20px;
+    }
+
+    main {
+        padding: 16px;
     }
 }
