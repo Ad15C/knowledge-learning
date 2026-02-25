@@ -1,13 +1,28 @@
 # config/services_test.yaml
+
 services:
-    # Alias pour le test : l’interface pointe vers le service concret
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: true   # En test, on autorise l'accès aux services
+
+    #
+    # Password Hasher accessible dans les tests
+    #
     Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface:
         alias: 'security.user_password_hasher'
-        public: true
 
-    # Rendre les fixtures récupérables via le container dans les tests
+    #
+    # Fixtures accessibles dans les tests
+    #
     App\DataFixtures\:
         resource: '../src/DataFixtures/'
         autowire: true
         autoconfigure: true
-        public: true
+
+    #
+    # Mailer en test (optionnel mais recommandé)
+    # Permet d’éviter les vrais envois SMTP
+    #
+    Symfony\Component\Mailer\MailerInterface:
+        alias: 'mailer.mailer'
