@@ -12,11 +12,31 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
-    App\Twig\CartExtension:
-        tags:
-            - { name: twig.extension }
+    App\Twig\AppExtension:
+        tags: [ 'twig.extension' ]
+
+    App\Twig\MoneyExtension:
+        tags: [ 'twig.extension' ]
+
+    App\Twig\PurchaseExtension:
+        tags: [ 'twig.extension' ]
+
+    App\Twig\PurchaseItemsExtension:
+        tags: [ 'twig.extension' ]
 
     # Force le listener Doctrine à être enregistré
     App\EventListener\ContactSentAtListener:
         tags:
             - { name: doctrine.event_listener, event: prePersist }
+
+    App\Command\CreateAdminCommand:
+        arguments:
+            $appEnv: '%kernel.environment%'
+
+    App\Command\DeleteTestUserCommand:
+        arguments:
+            $appEnv: '%kernel.environment%'
+
+    App\Command\ResetUsersCommand:
+        arguments:
+            $appEnv: '%kernel.environment%'
