@@ -3,35 +3,60 @@
 namespace App\Tests\Entity;
 
 use App\Entity\Contact;
-use PHPUnit\Framework\TestCase;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class ContactTest extends TestCase
+class ContactTest extends KernelTestCase
 {
-    public function testDefaultsOnConstruct(): void
-    {
-        $contact = new Contact();
+    private ValidatorInterface $validator;
 
-        $this->assertInstanceOf(\DateTime::class, $contact->getSentAt());
-        $this->assertFalse($contact->isHandled());
+    protected function setUp(): void
+    {
+        self::bootKernel();
+        $this->validator = self::getContainer()->get(ValidatorInterface::class);
     }
 
-    public function testSettersAndGetters(): void
+    public function testValidContactHasNoViolations(): void
     {
-        $contact = new Contact();
-        $sentAt = new \DateTime('2026-02-24 12:00:00');
+        $c = new Contact();
+        $c->setFullname('Valid Name');
+        $c->setEmail('valid@example.com');
+        $c->setSubject('theme');
+        $c->setMessage('Message suffisamment long.');
 
-        $contact->setFullname('John Doe')
-            ->setEmail('john@example.com')
-            ->setSubject('Sujet')
-            ->setMessage('Message')
-            ->setSentAt($sentAt)
-            ->setHandled(true);
+        $violations = $this->validator->validate($c);
 
-        $this->assertSame('John Doe', $contact->getFullname());
-        $this->assertSame('john@example.com', $contact->getEmail());
-        $this->assertSame('Sujet', $contact->getSubject());
-        $this->assertSame('Message', $contact->getMessage());
-        $this->assertSame($sentAt, $contact->getSentAt());
-        $this->assertTrue($contact->isHandled());
+        // sentAt est rempli au persist (subscriber), pas à la validation => aucune contrainte dessus
+        $this->assertCount(0, $violations);
+    }
+
+    public function testInvalidEmailTriggersViolation(): void
+    {
+        $c = new Contact();
+        $c->setFullname('Name');
+        $c->setEmail('not-an-email');
+        $c->setSubject('theme');
+        $c->setMessage('Message suffisamment long.');
+
+        $violations = $this->validator->validate($c);
+
+        $this->assertGreaterThan(0, $violations->count());
+
+        $messages = [];
+        foreach ($violations as $v) {
+            $messages[] = $v->getMessage();
+        }
+
+        $this->assertContains('Veuillez renseigner un e-mail valide.', $messages);
+    }
+
+    public function testBlankFieldsTriggerViolations(): void
+    {
+        $c = new Contact();
+        // tout vide
+
+        $violations = $this->validator->validate($c);
+
+        $this->assertGreaterThan(0, $violations->count());
     }
 }
