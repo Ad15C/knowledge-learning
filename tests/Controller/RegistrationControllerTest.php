@@ -3,109 +3,127 @@
 namespace App\Tests\Controller;
 
 use App\Entity\User;
+use App\Tests\DoctrineSchemaTrait;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class RegistrationControllerTest extends WebTestCase
 {
-    private $client;
-    private $em;
-    private $passwordHasher;
+    use DoctrineSchemaTrait;
+
+    private KernelBrowser $client;
+    private EntityManagerInterface $em;
+    private UserPasswordHasherInterface $passwordHasher;
 
     protected function setUp(): void
     {
-        $this->client = static::createClient();
-        $this->em = self::getContainer()->get('doctrine')->getManager();
+        self::ensureKernelShutdown();
+
+        $this->client = self::createClient();
+        $this->client->disableReboot();
+
+        $this->em = self::getContainer()->get(EntityManagerInterface::class);
         $this->passwordHasher = self::getContainer()->get(UserPasswordHasherInterface::class);
 
-        // Nettoyer la table User avant chaque test
-        $users = $this->em->getRepository(User::class)->findAll();
-        foreach ($users as $user) {
-            $this->em->remove($user);
-        }
-        $this->em->flush();
+        // Base propre et complète à chaque test (plus robuste)
+        $this->resetDatabaseSchema($this->em);
     }
 
     public function testRegistrationPageIsAccessible(): void
     {
-        $crawler = $this->client->request('GET', '/register');
+        $this->client->request('GET', '/register');
 
         $this->assertResponseIsSuccessful();
         $this->assertSelectorExists('form[name="registration_form"]');
         $this->assertSelectorTextContains('h1', 'Inscription');
     }
 
-    public function testValidRegistrationCreatesUser(): void
+    public function testValidRegistrationCreatesUserWithVerificationToken(): void
     {
         $crawler = $this->client->request('GET', '/register');
+        $this->assertResponseIsSuccessful();
 
-        $form = $crawler->selectButton('S\'inscrire')->form();
-        $form['registration_form[firstName]'] = 'Test';
-        $form['registration_form[lastName]'] = 'User';
-        $form['registration_form[email]'] = 'testuser@example.com';
-        $form['registration_form[plainPassword][first]'] = 'Test@1234';
-        $form['registration_form[plainPassword][second]'] = 'Test@1234';
+        $form = $crawler->selectButton("S'inscrire")->form([
+            'registration_form[firstName]' => 'Test',
+            'registration_form[lastName]' => 'User',
+            'registration_form[email]' => 'testuser@example.com',
+            'registration_form[plainPassword][first]' => 'Test@1234',
+            'registration_form[plainPassword][second]' => 'Test@1234',
+        ]);
 
         $this->client->submit($form);
 
-        // Redirection après inscription réussie
+        // Redirect after successful registration
         $this->assertResponseRedirects('/login');
-
         $this->client->followRedirect();
 
-        $this->assertSelectorTextContains('.flash-success', 'Inscription réussie');
+        // Flash success (dans base.html.twig: .flash.flash-success)
+        $this->assertSelectorExists('.flash-success, .flash.flash-success');
+        $this->assertSelectorTextContains('.flash-success, .flash.flash-success', 'Inscription réussie');
 
-        // Vérifier que l'utilisateur a bien été créé
+        // User created
+        /** @var User|null $user */
         $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'testuser@example.com']);
         $this->assertNotNull($user);
 
-        // Vérifier que le mot de passe est hashé
+        // Password hashed and valid
         $this->assertTrue($this->passwordHasher->isPasswordValid($user, 'Test@1234'));
 
-        // Vérifier que l'utilisateur a le rôle par défaut
+        // Role default
         $this->assertContains('ROLE_USER', $user->getRoles());
+
+        // NEW: verification requirements
+        $this->assertFalse($user->isVerified());
+        $this->assertNotEmpty($user->getVerificationToken());
+        $this->assertNotNull($user->getVerificationTokenExpiresAt());
+
+        // Optional: in test env, we should see the "Lien de vérification (dev)" flash
+        // (On ne teste pas l'URL exacte, juste la présence du message)
+        $this->assertSelectorExists('.flash-info, .flash.flash-info');
+        $this->assertSelectorTextContains('.flash-info, .flash.flash-info', 'Lien de vérification');
     }
 
     public function testDuplicateEmailRegistrationFails(): void
     {
-        // Créer un utilisateur existant avec mot de passe hashé
+        // Existing user
         $existingUser = new User();
         $existingUser->setFirstName('Exist');
         $existingUser->setLastName('User');
         $existingUser->setEmail('duplicate@example.com');
-        $hashedPassword = $this->passwordHasher->hashPassword($existingUser, 'Test@1234');
-        $existingUser->setPassword($hashedPassword);
         $existingUser->setRoles(['ROLE_USER']);
         $existingUser->setIsVerified(true);
+
+        $hashedPassword = $this->passwordHasher->hashPassword($existingUser, 'Test@1234');
+        $existingUser->setPassword($hashedPassword);
 
         $this->em->persist($existingUser);
         $this->em->flush();
 
         $crawler = $this->client->request('GET', '/register');
-        $form = $crawler->selectButton('S\'inscrire')->form();
+        $this->assertResponseIsSuccessful();
 
-        $form['registration_form[firstName]'] = 'Test';
-        $form['registration_form[lastName]'] = 'User';
-        $form['registration_form[email]'] = 'duplicate@example.com';
-        $form['registration_form[plainPassword][first]'] = 'Test@1234';
-        $form['registration_form[plainPassword][second]'] = 'Test@1234';
+        $form = $crawler->selectButton("S'inscrire")->form([
+            'registration_form[firstName]' => 'Test',
+            'registration_form[lastName]' => 'User',
+            'registration_form[email]' => 'duplicate@example.com',
+            'registration_form[plainPassword][first]' => 'Test@1234',
+            'registration_form[plainPassword][second]' => 'Test@1234',
+        ]);
 
         $this->client->submit($form);
 
-        // La page reste accessible (pas de redirection)
+        // stays on page (no redirect)
         $this->assertResponseStatusCodeSame(200);
 
-        // Le message d'erreur de validation est affiché
-        $this->assertSelectorTextContains(
-            '.form-error',
-            'Cet email est déjà utilisé.'
-        );
+        // validation error
+        $this->assertSelectorTextContains('.form-error', 'Cet email est déjà utilisé.');
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
         $this->em->close();
-        $this->em = null; // éviter les fuites de mémoire
     }
 }

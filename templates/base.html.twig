@@ -25,6 +25,8 @@
 </head>
 <body>
 
+{% set cartCount = cartCount|default(0) %}
+
 {# Flash messages #}
 <div class="flash-messages">
     {% for label, messages in app.flashes %}

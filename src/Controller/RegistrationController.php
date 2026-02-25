@@ -5,12 +5,12 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Form\RegistrationFormType;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class RegistrationController extends AbstractController
 {
@@ -19,34 +19,36 @@ class RegistrationController extends AbstractController
         Request $request,
         UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $em
-    ): Response
-    {
+    ): Response {
         $user = new User();
         $form = $this->createForm(RegistrationFormType::class, $user);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-
-            // Hash du mot de passe
             $user->setPassword(
-                $passwordHasher->hashPassword(
-                    $user,
-                    $form->get('plainPassword')->getData()
-                )
+                $passwordHasher->hashPassword($user, $form->get('plainPassword')->getData())
             );
 
-            // Génération du token de vérification
             $user->setVerificationToken(bin2hex(random_bytes(32)));
             $user->setVerificationTokenExpiresAt(new \DateTime('+1 day'));
             $user->setIsVerified(false);
-
-            // Role par défaut
             $user->setRoles(['ROLE_USER']);
 
             $em->persist($user);
             $em->flush();
 
             $this->addFlash('success', 'Inscription réussie ! Vérifiez votre email pour activer votre compte.');
+
+            // Dev/Test uniquement : afficher le lien
+            if (in_array($this->getParameter('kernel.environment'), ['dev', 'test'], true)) {
+                $verifyUrl = $this->generateUrl(
+                    'app_verify_email',
+                    ['token' => $user->getVerificationToken()],
+                    UrlGeneratorInterface::ABSOLUTE_URL
+                );
+                $this->addFlash('info', 'Lien de vérification (dev) : ' . $verifyUrl);
+            }
+
             return $this->redirectToRoute('app_login');
         }
 
