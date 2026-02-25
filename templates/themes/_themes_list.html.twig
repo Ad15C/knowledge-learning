@@ -1,46 +1,21 @@
-{% extends 'base.html.twig' %}
+<div class="themes-grid">
+    {% for theme in themes %}
+        <div class="theme-card">
+            {% if theme.image %}
+                <img src="{{ asset(theme.image) }}" alt="{{ theme.name }}" class="theme-image">
+            {% endif %}
 
-{% block title %}Thèmes{% endblock %}
+            <h2>{{ theme.name }}</h2>
 
-{% block body %}
-<h1>Liste des Thèmes</h1>
+            {% if theme.description %}
+                <p>{{ theme.description }}</p>
+            {% endif %}
 
-<form id="filter-form" class="filter-form">
-    <input type="text" name="name" placeholder="Nom du thème" value="{{ filter_name|default('') }}">
-    <input type="number" step="0.01" name="minPrice" placeholder="Prix min" value="{{ filter_minPrice|default('') }}">
-    <input type="number" step="0.01" name="maxPrice" placeholder="Prix max" value="{{ filter_maxPrice|default('') }}">
-    <button type="submit">Filtrer</button>
-</form>
-
-<div id="themes-list">
-    {% include 'themes/_themes_list.html.twig' with {'themes': themes} %}
+            <a href="{{ path('theme_show', {'id': theme.id}) }}" class="btn btn-primary">
+                Découvrir
+            </a>
+        </div>
+    {% else %}
+        <p>Aucun thème disponible.</p>
+    {% endfor %}
 </div>
-{% endblock %}
-
-{% block javascripts %}
-{{ parent() }}
-<script>
-document.getElementById('filter-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const formData = new FormData(this);
-    const params = new URLSearchParams(formData).toString();
-
-    fetch('{{ path('themes_index') }}?' + params, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(response => response.text())
-    .then(html => {
-        document.getElementById('themes-list').innerHTML = html;
-
-        // Réinitialiser les listeners de l'accordéon
-        document.querySelectorAll('.accordion-header').forEach(header => {
-            header.addEventListener('click', () => {
-                const content = header.nextElementSibling;
-                content.style.display = content.style.display === 'block' ? 'none' : 'block';
-            });
-        });
-    });
-});
-</script>
-{% endblock %}

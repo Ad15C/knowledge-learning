@@ -4,23 +4,19 @@
 
 {% block stylesheets %}
     {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('styles/themes.css') }}">
+    <link rel="stylesheet" href="{{ asset('build/css/themes.css') }}">
 {% endblock %}
 
 {% block body %}
-
 <div class="dashboard-layout">
-
     <main class="dashboard-content">
 
-        <!-- TITRE ET DESCRIPTION DU THÈME -->
         <h1>{{ theme.name }}</h1>
 
         {% if theme.description %}
             <p style="margin-bottom: 30px;">{{ theme.description }}</p>
         {% endif %}
 
-        <!-- CURSUS DISPONIBLES -->
         <h2>Cursus disponibles</h2>
 
         <div class="cursus-grid">
@@ -34,12 +30,10 @@
                     <p>Prix : <strong>{{ cursus.price }} €</strong></p>
 
                     <div style="margin-top: 10px;">
-                        {# Bouton détails du cursus #}
                         <a href="{{ path('cursus_show', {id: cursus.id}) }}" class="btn-secondary">
                             Détails du cursus
                         </a>
 
-                        {# Bouton ajouter au panier #}
                         <a href="{{ path('cart_add_cursus', {id: cursus.id}) }}" class="btn">
                             Ajouter au panier
                         </a>
@@ -49,9 +43,8 @@
                 <p>Aucun cursus disponible pour ce thème.</p>
             {% endfor %}
         </div>
-    <a href="{{ path('themes_index') }}" class="btn-back">← Retour aux Thèmes</a>
+
+        <a href="{{ path('themes_index') }}" class="btn-back">← Retour aux Thèmes</a>
     </main>
-
 </div>
-
 {% endblock %}

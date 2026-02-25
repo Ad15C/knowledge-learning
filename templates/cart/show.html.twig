@@ -29,7 +29,15 @@
         {% for item in purchase.items %}
             <div class="cart-item-card">
                 <div class="cart-item-info">
-                    <h3>{{ purchase_item_title(item) }}</h3>
+                    <h3>
+                        {% if item.cursus %}
+                            {{ item.cursus.name }}
+                        {% elseif item.lesson %}
+                            {{ item.lesson.title }}
+                        {% else %}
+                            Produit
+                        {% endif %}
+                    </h3>
 
                     {% if item.cursus %}
                         <span class="cart-type">Cursus</span>
