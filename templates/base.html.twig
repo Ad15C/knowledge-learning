@@ -8,20 +8,22 @@
     <title>{% block title %}Plateforme Knowledge Learning{% endblock %}</title>
     <link rel="icon" href="{{ asset('images/knowledge_learning_favicon.png') }}" type="image/x-icon">
 
-    {# Tous les CSS #}
-    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
-    <link rel="stylesheet" href="{{ asset('styles/cart-success') }}">
-    <link rel="stylesheet" href="{{ asset('styles/cart.css') }}">
-    <link rel="stylesheet" href="{{ asset('styles/certification-common') }}">
-    <link rel="stylesheet" href="{{ asset('styles/certification-show') }}">
-    <link rel="stylesheet" href="{{ asset('styles/certification.css') }}">
-    <link rel="stylesheet" href="{{ asset('styles/contact.css') }}">
-    <link rel="stylesheet" href="{{ asset('styles/dashboard.css') }}">
-    <link rel="stylesheet" href="{{ asset('styles/form.css') }}">
-    <link rel="stylesheet" href="{{ asset('styles/lesson_validated.css') }}">
-    <link rel="stylesheet" href="{{ asset('styles/lesson.css') }}">
-    <link rel="stylesheet" href="{{ asset('styles/login.css') }}">
-    <link rel="stylesheet" href="{{ asset('styles/themes.css') }}">
+    {% block stylesheets %}
+        <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/cart-success') }}">
+        <link rel="stylesheet" href="{{ asset('styles/cart.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/certification-common') }}">
+        <link rel="stylesheet" href="{{ asset('styles/certification-show') }}">
+        <link rel="stylesheet" href="{{ asset('styles/certification.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/contact.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/dashboard.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/form.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/lesson_validated.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/lesson.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/login.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/themes.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/admin/dashboard.css') }}">
+    {% endblock %}
 </head>
 <body>
 
@@ -49,7 +51,7 @@
     <nav class="main-nav">
         {% set menuItems = [
             {'label':'Accueil', 'path': path('homepage'), 'active': app.request.attributes.get('_route') == 'homepage' ? 'active' : ''},
-            {'label':'Thèmes', 'path': path('themes_index'), 'active': app.request.attributes.get('_route') starts with 'themes' ? 'active' : ''},
+            {'label':'Thèmes', 'path': path('themes_index'), 'active': app.request.attributes.get('_route') starts with 'theme' ? 'active' : ''},
             {'label':'Panier', 'path': path('cart_show'), 'active': app.request.attributes.get('_route') starts with 'cart' ? 'active' : '', 'count': cartCount},
             {'label':'Contact', 'path': path('contact_index'), 'active': app.request.attributes.get('_route') starts with 'contact' ? 'active' : '', 'submenu': [
                 {'label':'Question sur un thème', 'path': path('contact_index', {'subject':'theme'})},
@@ -69,7 +71,7 @@
                 {% set adminMenu = {
                     'label':'Admin',
                     'submenu': [
-                        {'label':'Dashboard', 'path':'#'},
+                        {'label':'Dashboard', 'path': path('admin_dashboard')},
                         {'label':'Utilisateurs', 'path':'#'},
                         {'label':'Thèmes', 'path':'#'},
                         {'label':'Cursus', 'path':'#'},

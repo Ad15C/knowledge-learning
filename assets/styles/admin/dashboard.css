@@ -1,0 +1,69 @@
+.admin-dashboard {
+  padding: 1rem;
+}
+
+.admin-dashboard__header {
+  margin-bottom: 1rem;
+}
+
+.admin-dashboard__header h1 {
+  margin: 0 0 0.25rem 0;
+}
+
+.admin-dashboard__header p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* Grille responsive : s’adapte automatiquement à la largeur */
+.admin-dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+/* Carte */
+.admin-card {
+  display: block;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 1rem;
+  text-decoration: none;
+  color: inherit;
+  background: #fff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.admin-card h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.admin-card p {
+  margin: 0;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.admin-card:hover,
+.admin-card:focus-visible {
+  background: #f7f7f7;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  outline: none;
+}
+
+/* Mobile : padding un peu plus petit */
+@media (max-width: 480px) {
+  .admin-dashboard {
+    padding: 0.75rem;
+  }
+
+  .admin-dashboard__grid {
+    grid-template-columns: 1fr; /* 1 colonne sur très petits écrans */
+  }
+
+  .admin-card {
+    padding: 0.9rem;
+  }
+}

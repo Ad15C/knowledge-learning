@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Admin - Messages contact{% endblock %}
+
+{% block body %}
+  <h1>Messages de contact</h1>
+
+  <div style="margin: 1rem 0;">
+    <a href="{{ path('admin_contact_index') }}">Tous</a> |
+    <a href="{{ path('admin_contact_unhandled') }}">Non traités</a> |
+    <a href="{{ path('admin_contact_handled') }}">Traités</a>
+  </div>
+
+  {% if messages is empty %}
+    <p>Aucun message.</p>
+  {% else %}
+    <ul>
+      {% for m in messages %}
+        <li>
+          <strong>{{ m.subject ?? 'Sans sujet' }}</strong>
+          — {{ m.email ?? '' }}
+          — {{ m.createdAt ? m.createdAt|date('d/m/Y H:i') : '' }}
+          — {{ m.handled ? 'Traité' : 'Non traité' }}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}
