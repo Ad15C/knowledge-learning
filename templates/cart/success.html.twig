@@ -10,12 +10,32 @@
 {% block body %}
 <div class="cart-success-wrapper">
     <main class="cart-success">
-     <h1>Commande réussie </h1>
+        <h1>Commande réussie</h1>
+
+        <p class="order-number">
+            Numéro de commande : <strong>{{ purchase.orderNumber }}</strong>
+        </p>
+        <p class="order-date">
+            Date : {{ purchase.createdAt|date('d/m/Y H:i') }}
+        </p>
+
+        {# (Optionnel) Badge statut #}
+        <p>
+            <span class="{{ purchase_status_class(purchase.status) }}">
+                {{ purchase_status_label(purchase.status) }}
+            </span>
+        </p>
+
+        {# Récap items #}
+        <p class="cart-meta">
+            {{ purchase_items_count(purchase) }} produits —
+            {{ purchase_items_quantity(purchase) }} articles
+        </p>
+
         {% for item in purchase.items %}
             <div class="cart-item-card">
-                <p class="order-number">Numéro de commande : <strong>{{ purchase.orderNumber }}</strong></p>
-                <p class="order-date">Date : {{ purchase.createdAt|date('d/m/Y H:i') }}</p>
 
+                {# Ligne "Leçon" achetée seule #}
                 {% if item.lesson %}
                     <div class="cart-item-row">
                         <div class="cart-item-info">
@@ -28,14 +48,16 @@
                     </div>
                 {% endif %}
 
+                {# Ligne "Cursus" + liste des leçons du cursus #}
                 {% if item.cursus %}
                     <div class="cart-item-row">
                         <div class="cart-item-info">
                             <span class="item-badge cursus-badge">Cursus</span>
-                            <span class="item-name">{{ item.cursus.name }}</span>
+                            <span class="item-name">{{ item.cursus.title }}</span>
                         </div>
                     </div>
-                    {% if item.cursus.lessons|length > 0 %}
+
+                    {% if item.cursus.lessons is not empty %}
                         <ul class="cursus-lessons">
                             {% for lesson in item.cursus.lessons %}
                                 <li class="cart-item-row">
@@ -53,6 +75,7 @@
                         <p class="no-lessons">Aucune leçon disponible</p>
                     {% endif %}
                 {% endif %}
+
             </div>
         {% endfor %}
 
