@@ -4,6 +4,8 @@ namespace App\Tests\Controller;
 
 use App\Entity\Theme;
 use App\Entity\User;
+use App\Entity\Purchase;
+use App\Entity\PurchaseItem;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -21,6 +23,9 @@ final class HomeControllerTest extends WebTestCase
         $this->em = self::getContainer()->get(EntityManagerInterface::class);
 
         // Nettoyage base avant chaque test
+        // Attention à l'ordre (items avant purchase)
+        $this->em->createQuery('DELETE FROM App\Entity\PurchaseItem')->execute();
+        $this->em->createQuery('DELETE FROM App\Entity\Purchase')->execute();
         $this->em->createQuery('DELETE FROM App\Entity\Theme')->execute();
         $this->em->createQuery('DELETE FROM App\Entity\User')->execute();
     }
@@ -56,6 +61,37 @@ final class HomeControllerTest extends WebTestCase
         $this->em->flush();
 
         return $user;
+    }
+
+    /**
+     * Crée un panier en base : Purchase(status=cart) + N PurchaseItem.
+     * Le CartService renvoie count(items), donc N => badge N.
+     */
+    private function createCartInDb(User $user, int $itemsCount = 1): void
+    {
+        $purchase = (new Purchase())
+            ->setUser($user)
+            ->setStatus('cart');
+
+        $this->em->persist($purchase);
+
+        for ($i = 0; $i < $itemsCount; $i++) {
+            $item = (new PurchaseItem())
+                ->setPurchase($purchase)
+                ->setQuantity(1)
+                ->setUnitPrice(10.00); // obligatoire (non nullable)
+
+            // IMPORTANT : ton PurchaseItem peut avoir lesson/cursus null => OK chez toi
+            $this->em->persist($item);
+
+            // relation bidirectionnelle
+            $purchase->addItem($item);
+        }
+
+        // optionnel : recalcul total si tu l'utilises ailleurs
+        $purchase->calculateTotal();
+
+        $this->em->flush();
     }
 
     /** PAGE ACCESSIBLE */
@@ -101,6 +137,9 @@ final class HomeControllerTest extends WebTestCase
         $this->client->request('GET', '/');
         $this->assertSelectorExists('a[href="/login"]');
         $this->assertSelectorExists('a[href="/register"]');
+
+        // Avec ton base.html.twig actuel, le visiteur n'a PAS "Panier"
+        $this->assertSelectorNotExists('.menu-badge');
     }
 
     /** MENU USER CONNECTÉ */
@@ -111,28 +150,44 @@ final class HomeControllerTest extends WebTestCase
 
         $this->client->request('GET', '/');
 
-        // URL générée dynamiquement pour être sûre
         $urlDashboard = self::getContainer()->get('router')->generate('user_dashboard');
         $this->assertSelectorExists('a[href="' . $urlDashboard . '"]');
 
         $urlLogout = self::getContainer()->get('router')->generate('app_logout');
         $this->assertSelectorExists('a[href="' . $urlLogout . '"]');
+
+        $urlCart = self::getContainer()->get('router')->generate('cart_show');
+        $this->assertSelectorExists('a[href="' . $urlCart . '"]');
     }
 
-    /** MENU ADMIN */
-    /*public function testAdminMenu(): void
+    /**
+     * User connecté + pas de Purchase(status=cart) => badge absent
+     */
+    public function testCartBadgeHiddenWhenEmpty(): void
     {
-        $admin = $this->createUser('ROLE_ADMIN');
-        $this->client->loginUser($admin);
-        $this->client->request('GET', '/');
-        $this->assertSelectorTextContains('body', 'Admin');
-    } */
+        $user = $this->createUser();
+        $this->client->loginUser($user);
 
-    /** PANIER AFFICHÉ */
-    public function testCartVisible(): void
-    {
         $this->client->request('GET', '/');
+
+        $this->assertSelectorNotExists('.menu-badge');
+    }
+
+    /**
+     * User connecté + Purchase(status=cart) avec 2 items => badge "2"
+     */
+    public function testCartBadgeVisibleWhenCartHasItems(): void
+    {
+        $user = $this->createUser();
+        $this->client->loginUser($user);
+
+        // Crée un panier en DB avec 2 items
+        $this->createCartInDb($user, 2);
+
+        $this->client->request('GET', '/');
+
         $this->assertSelectorExists('.menu-badge');
+        $this->assertSelectorTextContains('.menu-badge', '2');
     }
 
     /** PERFORMANCE */
