@@ -27,6 +27,11 @@
                 Vue d’ensemble
             </a>
 
+            <a href="{{ path('admin_users_index') }}"
+              class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_users' ? 'active' : '' }}">
+                Clients
+            </a>
+
             <a href="{{ path('admin_theme_index') }}"
                class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_theme' ? 'active' : '' }}">
                 Thèmes
@@ -63,6 +68,12 @@
 
         <div class="dashboard-cards">
 
+            <a href="{{ path('admin_users_index') }}" class="dashboard-card dashboard-card-clickable">
+                <h2>Clients</h2>
+                <p>Créer / Modifier / Supprimer</p>
+                <span class="card-link-indicator">Gérer →</span>
+            </a>
+            
             <a href="{{ path('admin_theme_index') }}" class="dashboard-card dashboard-card-clickable">
                 <h2>Thèmes</h2>
                 <p>Créer / Modifier / Supprimer</p>

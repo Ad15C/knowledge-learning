@@ -19,9 +19,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         parent::__construct($registry, User::class);
     }
 
-    /**
-     * Used to upgrade (rehash) the user's password automatically over time.
-     */
     public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void
     {
         if (!$user instanceof User) {
@@ -33,4 +30,47 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
+    /**
+     * @return User[]
+     */
+    public function findForAdminList(
+        ?string $search,
+        string $sort = 'name',
+        string $direction = 'ASC',
+        bool $includeArchived = false
+    ): array {
+        $qb = $this->createQueryBuilder('u');
+
+        if (!$includeArchived) {
+            $qb->andWhere('u.archivedAt IS NULL');
+        }
+        // Recherche basique sur nom, prénom, email 
+        if ($search) {
+            $qb->andWhere('LOWER(u.firstName) LIKE :q OR LOWER(u.lastName) LIKE :q OR LOWER(u.email) LIKE :q')
+               ->setParameter('q', '%'.mb_strtolower($search).'%');
+        }
+
+        $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+        // Tri par date de création ou par nom
+        if ($sort === 'recent') {
+            // Si jamais un vieux user a createdAt NULL, on se rabat sur id
+            $qb->addOrderBy('u.createdAt', $direction)
+               ->addOrderBy('u.id', $direction);
+        } else {
+            $qb->orderBy('u.lastName', $direction)
+               ->addOrderBy('u.firstName', $direction);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function findActiveUsers(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.archivedAt IS NULL')
+            ->orderBy('u.lastName', 'ASC')
+            ->addOrderBy('u.firstName', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
