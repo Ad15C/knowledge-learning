@@ -16,4 +16,22 @@ class AdminController extends AbstractController
     {
         return $this->render('admin/dashboard.html.twig');
     }
+
+    #[Route('/admin/themes', name: 'admin_theme_hub')]
+    public function themeHub(): Response
+    {
+        return $this->render('admin/theme/hub.html.twig');
+    }
+
+    #[Route('/admin/cursus', name: 'admin_cursus_hub')]
+    public function cursusHub(): Response
+    {
+        return $this->render('admin/cursus/hub.html.twig');
+    }
+
+    #[Route('/admin/lessons', name: 'admin_lesson_hub')]
+    public function lessonHub(): Response
+    {
+        return $this->render('admin/lesson/hub.html.twig');
+    }
 }

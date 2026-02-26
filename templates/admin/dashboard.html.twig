@@ -4,41 +4,99 @@
 
 {% block stylesheets %}
     {{ parent() }}
+    {# même présentation que user #}
+    <link rel="stylesheet" href="{{ asset('styles/dashboard.css') }}">
+    {# optionnel si tu as des overrides admin #}
     <link rel="stylesheet" href="{{ asset('styles/admin/dashboard.css') }}">
 {% endblock %}
 
 {% block body %}
-  <section class="admin-dashboard">
-    <header class="admin-dashboard__header">
-      <h1>Dashboard Admin</h1>
-      <p>Accès rapide à la gestion de la plateforme.</p>
-    </header>
 
-    <div class="admin-dashboard__grid">
-      <a class="admin-card" href="{{ path('admin_theme_index') }}">
-        <h2>Thèmes</h2>
-        <p>Liste / Ajouter / Modifier / Supprimer</p>
-      </a>
+<div class="dashboard-layout">
 
-      <a class="admin-card" href="{{ path('admin_cursus_index') }}">
-        <h2>Cursus</h2>
-        <p>Liste / Ajouter / Modifier / Supprimer</p>
-      </a>
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
 
-      <a class="admin-card" href="{{ path('admin_lesson_index') }}">
-        <h2>Leçons</h2>
-        <p>Liste / Ajouter / Modifier / Supprimer</p>
-      </a>
+        <div class="sidebar-header">
+            Espace admin
+        </div>
 
-      <a class="admin-card" href="{{ path('admin_purchase_index') }}">
-        <h2>Purchases</h2>
-        <p>Historique des achats</p>
-      </a>
+        <nav class="sidebar-nav">
+            <a href="{{ path('admin_dashboard') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') == 'admin_dashboard' ? 'active' : '' }}">
+                Vue d’ensemble
+            </a>
 
-      <a class="admin-card" href="{{ path('admin_contact_index') }}">
-        <h2>Messages</h2>
-        <p>Voir / Trier / Marquer traité</p>
-      </a>
-    </div>
-  </section>
+            <a href="{{ path('admin_theme_index') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_theme' ? 'active' : '' }}">
+                Thèmes
+            </a>
+
+            <a href="{{ path('admin_cursus_index') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_cursus' ? 'active' : '' }}">
+                Cursus
+            </a>
+
+            <a href="{{ path('admin_lesson_index') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_lesson' ? 'active' : '' }}">
+                Leçons
+            </a>
+
+            <a href="{{ path('admin_purchase_index') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_purchase' ? 'active' : '' }}">
+                Achats
+            </a>
+
+            <a href="{{ path('admin_contact_index') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_contact' ? 'active' : '' }}">
+                Messages
+            </a>
+        </nav>
+
+    </aside>
+
+    <!-- CONTENU -->
+    <main class="dashboard-content">
+
+        <h1>Dashboard Admin</h1>
+        <hr/><br>
+
+        <div class="dashboard-cards">
+
+            <a href="{{ path('admin_theme_index') }}" class="dashboard-card dashboard-card-clickable">
+                <h2>Thèmes</h2>
+                <p>Créer / Modifier / Supprimer</p>
+                <span class="card-link-indicator">Gérer →</span>
+            </a>
+
+            <a href="{{ path('admin_cursus_index') }}" class="dashboard-card dashboard-card-clickable">
+                <h2>Cursus</h2>
+                <p>Créer / Modifier / Supprimer</p>
+                <span class="card-link-indicator">Gérer →</span>
+            </a>
+
+            <a href="{{ path('admin_lesson_index') }}" class="dashboard-card dashboard-card-clickable">
+                <h2>Leçons</h2>
+                <p>Créer / Modifier / Supprimer</p>
+                <span class="card-link-indicator">Gérer →</span>
+            </a>
+
+            <a href="{{ path('admin_purchase_index') }}" class="dashboard-card dashboard-card-clickable">
+                <h2>Achats</h2>
+                <p>Historique des commandes</p>
+                <span class="card-link-indicator">Voir →</span>
+            </a>
+
+            <a href="{{ path('admin_contact_index') }}" class="dashboard-card dashboard-card-clickable">
+                <h2>Messages</h2>
+                <p>Consulter / Trier / Marquer traité</p>
+                <span class="card-link-indicator">Voir →</span>
+            </a>
+
+        </div>
+
+    </main>
+
+</div>
+
 {% endblock %}
