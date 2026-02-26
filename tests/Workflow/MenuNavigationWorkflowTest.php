@@ -32,18 +32,21 @@ class MenuNavigationWorkflowTest extends WebTestCase
         $crawler = $this->client->request('GET', '/');
         $this->assertResponseIsSuccessful();
 
-        // Liens “publics”
+        // Visiteur (selon ton base.html.twig actuel)
         $this->assertLinkExistsWithText($crawler, 'Accueil');
         $this->assertLinkExistsWithText($crawler, 'Thèmes');
-        $this->assertLinkExistsWithText($crawler, 'Panier');
-        $this->assertLinkExistsWithText($crawler, 'Contact');
 
-        // Anonyme => Connexion + Inscription
-        $this->assertLinkExistsWithText($crawler, 'Connexion');
-        $this->assertLinkExistsWithText($crawler, 'Inscription');
+        // Visiteur => PAS de Panier / Contact
+        $this->assertLinkNotExistsWithText($crawler, 'Panier');
+        $this->assertLinkNotExistsWithText($crawler, 'Contact');
 
-        // Anonyme => PAS de Déconnexion / Dashboard
+        // Visiteur => liens auth
+        $this->assertLinkExistsWithText($crawler, "S'inscrire");
+        $this->assertLinkExistsWithText($crawler, 'Se connecter');
+
+        // Visiteur => PAS de Déconnexion / Dashboard
         $this->assertLinkNotExistsWithText($crawler, 'Déconnexion');
+        $this->assertLinkNotExistsWithText($crawler, 'Dashboard User');
         $this->assertLinkNotExistsWithText($crawler, 'Dashboard');
     }
 
@@ -65,26 +68,25 @@ class MenuNavigationWorkflowTest extends WebTestCase
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
-        // On va sur homepage pour tester le menu global
+        // Homepage pour tester le menu global
         $crawler = $this->client->request('GET', '/');
         $this->assertResponseIsSuccessful();
 
-        // Publics toujours présents
+        // Liens présents pour un user connecté (selon ton base.html.twig)
         $this->assertLinkExistsWithText($crawler, 'Accueil');
         $this->assertLinkExistsWithText($crawler, 'Thèmes');
         $this->assertLinkExistsWithText($crawler, 'Panier');
         $this->assertLinkExistsWithText($crawler, 'Contact');
 
-        // Connecté => Dashboard + Déconnexion
-        $this->assertLinkExistsWithText($crawler, 'Dashboard');
+        // Dashboard + Déconnexion
+        $this->assertLinkExistsWithText($crawler, 'Dashboard User');
         $this->assertLinkExistsWithText($crawler, 'Déconnexion');
 
-        // Connecté => plus Connexion/Inscription
-        $this->assertLinkNotExistsWithText($crawler, 'Connexion');
-        $this->assertLinkNotExistsWithText($crawler, 'Inscription');
+        // User connecté => plus Se connecter / S'inscrire
+        $this->assertLinkNotExistsWithText($crawler, 'Se connecter');
+        $this->assertLinkNotExistsWithText($crawler, "S'inscrire");
 
-        // Navigation “Dashboard” (tes sous-liens existent dans le menuItems)
-        // On teste les routes directement (plus fiable que de cliquer un submenu en JS)
+        // Navigation “Dashboard” (routes directes)
         $this->client->request('GET', '/dashboard');
         $this->assertResponseIsSuccessful();
 
@@ -100,7 +102,7 @@ class MenuNavigationWorkflowTest extends WebTestCase
         $this->client->request('GET', '/dashboard/certifications');
         $this->assertResponseIsSuccessful();
 
-        // Logout via menu route
+        // Logout
         $this->client->request('GET', '/logout');
         $this->assertTrue($this->client->getResponse()->isRedirection());
         $this->client->followRedirect();
@@ -120,8 +122,11 @@ class MenuNavigationWorkflowTest extends WebTestCase
 
         $user = new User();
         $user->setEmail($email);
-        $user->setFirstName('Menu');
-        $user->setLastName('User');
+
+        // Adapté à tes setters utilisés ailleurs
+        $user->setFirstname('Menu');
+        $user->setLastname('User');
+
         $user->setRoles(['ROLE_USER']);
         $user->setIsVerified(true);
         $user->setPassword($passwordHasher->hashPassword($user, $plainPassword));
