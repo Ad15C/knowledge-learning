@@ -1,3 +1,15 @@
+/* ==========================================
+   ADMIN CSS (Dashboard + Pages)
+   Palette:
+   #f1f8fc (fond)
+   #0074c7 (primary)
+   #00497c (primary dark)
+   #384050 (text)
+========================================== */
+
+/* =========================
+   ADMIN DASHBOARD (cards grid)
+========================= */
 .admin-dashboard {
   padding: 1rem;
 }
@@ -13,6 +25,7 @@
 .admin-dashboard__header p {
   margin: 0;
   opacity: 0.9;
+  color: #384050;
 }
 
 /* Grille responsive : s’adapte automatiquement à la largeur */
@@ -22,11 +35,11 @@
   gap: 1rem;
 }
 
-/* Carte */
+/* Carte dashboard */
 .admin-card {
   display: block;
-  border: 1px solid #ddd;
-  border-radius: 12px;
+  border: 1px solid rgba(0, 116, 199, 0.18);
+  border-radius: 14px;
   padding: 1rem;
   text-decoration: none;
   color: inherit;
@@ -37,33 +50,246 @@
 .admin-card h2 {
   margin: 0 0 0.5rem 0;
   font-size: 1.1rem;
+  color: #00497c;
 }
 
 .admin-card p {
   margin: 0;
   opacity: 0.85;
   line-height: 1.4;
+  color: #384050;
 }
 
 .admin-card:hover,
 .admin-card:focus-visible {
-  background: #f7f7f7;
+  background: #f1f8fc;
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   outline: none;
 }
 
-/* Mobile : padding un peu plus petit */
+
+/* =========================
+   ADMIN PAGES (list/edit/etc.)
+========================= */
+
+/* Un peu d’air dans les pages admin */
+.dashboard-content{
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Card blanche générique */
+.dashboard-card.card-white{
+  background: #fff;
+  border: 1px solid rgba(0, 116, 199, 0.18);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+/* Stats discrètes */
+.admin-stats-card{
+  display: inline-block;
+  background: #f1f8fc;
+  border: 1px solid rgba(0, 116, 199, 0.25);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-top: 4px;
+}
+
+.admin-stats-card h2{
+  margin: 0;
+  font-size: 26px;
+  color: #00497c;
+  line-height: 1.1;
+}
+
+.admin-stats-card p{
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #384050;
+  opacity: 0.85;
+}
+
+/* Checkbox align */
+.admin-check{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Boutons */
+.btn{
+  background: #0074c7;
+  color: #fff;
+  border: 1px solid #0074c7;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all .2s ease;
+}
+
+.btn:hover{
+  background: #00497c;
+  border-color: #00497c;
+}
+
+.btn-secondary{
+  background: transparent;
+  color: #00497c;
+  border: 1px solid rgba(0, 116, 199, 0.35);
+}
+
+.btn-secondary:hover{
+  background: #f1f8fc;
+  border-color: #0074c7;
+  color: #00497c;
+}
+
+.btn-danger{
+  background: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-danger:hover{
+  background: #b02a37;
+  border-color: #b02a37;
+}
+
+/* Retour */
+.btn-back{
+  display: inline-block;
+  color: #0074c7;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: all .2s ease;
+}
+
+.btn-back:hover{
+  background: #0074c7;
+  color: #f1f8fc; 
+}
+/* Sidebar active */
+.sidebar-link.active{
+  background: #0074c7;
+  color: #fff;
+}
+
+.sidebar-link:hover{
+  background: #f1f8fc;
+  color: #00497c;
+}
+
+/* Table admin */
+.admin-table-card{
+  padding: 0; /* la table gère ses paddings internes */
+  overflow: hidden;
+}
+
+.admin-table{
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table thead th{
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0, 116, 199, 0.18);
+  color: #384050;
+  background: #f1f8fc;
+}
+
+.admin-table tbody td{
+  padding: 12px 14px;
+  border-bottom: 1px solid #f2f2f2;
+  vertical-align: middle;
+}
+
+.admin-table tbody tr:hover{
+  background: #f1f8fc;
+}
+
+/* Badges */
+.badge{
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-right: 6px;
+  border: 1px solid transparent;
+}
+
+.badge-active{
+  background: rgba(0, 116, 199, 0.10);
+  color: #00497c;
+  border-color: rgba(0, 116, 199, 0.25);
+}
+
+.badge-archived{
+  background: rgba(56, 64, 80, 0.08);
+  color: #384050;
+  border-color: rgba(56, 64, 80, 0.18);
+}
+
+.badge-unverified{
+  background: rgba(220, 53, 69, 0.10);
+  color: #b02a37;
+  border-color: rgba(220, 53, 69, 0.25);
+}
+
+/* Actions alignées */
+.admin-actions{
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+/* Mobile : padding un peu plus petit + grille 1 colonne */
 @media (max-width: 480px) {
   .admin-dashboard {
     padding: 0.75rem;
   }
 
   .admin-dashboard__grid {
-    grid-template-columns: 1fr; /* 1 colonne sur très petits écrans */
+    grid-template-columns: 1fr;
   }
 
   .admin-card {
     padding: 0.9rem;
+  }
+
+  .dashboard-card.card-white{
+    padding: 14px;
+  }
+}
+
+/* Table responsive (table scrollable) */
+@media (max-width: 992px) {
+  .admin-table-card{
+    overflow-x: auto;
+  }
+
+  .admin-table{
+    min-width: 780px; /* évite que tout se compresse trop */
+  }
+
+  .admin-actions{
+    gap: 6px;
+  }
+
+  .btn{
+    padding: 7px 12px;
+    border-radius: 10px;
   }
 }

@@ -5,6 +5,8 @@ namespace App\Entity;
 use App\Repository\UserRepository;
 use App\Entity\Lesson;
 use App\Entity\LessonValidated;
+use App\Entity\Purchase;
+use App\Entity\Certification;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -56,6 +58,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime', nullable: true)]
     private ?\DateTimeInterface $verificationTokenExpiresAt = null;
 
+    // On le laisse nullable au début pour faciliter migration sur DB existante,
+    // mais il sera toujours rempli à la création via le constructeur.
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $archivedAt = null;
+
     // --- Relations ---
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: LessonValidated::class, cascade: ["remove"], orphanRemoval: true)]
     private Collection $lessonValidated;
@@ -77,44 +87,75 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->certifications = new ArrayCollection();
         $this->completedLessons = new ArrayCollection();
         $this->roles = [];
+
+        // Important : auto-fill pour les nouveaux users
+        $this->createdAt = new \DateTimeImmutable();
     }
 
     // --- ID & Email ---
     public function getId(): ?int { return $this->id; }
+
     public function getEmail(): ?string { return $this->email; }
     public function setEmail(?string $email): self { $this->email = $email; return $this; }
-    public function getUserIdentifier(): string { return (string)$this->email; }
+
+    public function getUserIdentifier(): string { return (string) $this->email; }
 
     // --- Roles ---
-    public function getRoles(): array { $roles = $this->roles; $roles[] = 'ROLE_USER'; return array_unique($roles); }
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        $roles[] = 'ROLE_USER';
+        return array_unique($roles);
+    }
+
     public function setRoles(array $roles): static { $this->roles = $roles; return $this; }
 
     // --- Password ---
     public function getPassword(): ?string { return $this->password; }
     public function setPassword(string $password): static { $this->password = $password; return $this; }
-    #[\Deprecated] public function eraseCredentials(): void {}
+
+    #[\Deprecated]
+    public function eraseCredentials(): void {}
+
     // --- Plain password (NON persisté) ---
     public function setPlainPassword(?string $password): self { $this->plainPassword = $password; return $this; }
     public function getPlainPassword(): ?string { return $this->plainPassword; }
 
-
     // --- User Info ---
     public function getFirstName(): ?string { return $this->firstName; }
     public function setFirstName(?string $firstName): self { $this->firstName = $firstName; return $this; }
+
     public function getLastName(): ?string { return $this->lastName; }
     public function setLastName(?string $lastName): self { $this->lastName = $lastName; return $this; }
+
     public function isVerified(): bool { return $this->isVerified; }
     public function setIsVerified(bool $isVerified): static { $this->isVerified = $isVerified; return $this; }
 
     // --- Verification Token ---
     public function getVerificationToken(): ?string { return $this->verificationToken; }
     public function setVerificationToken(?string $token): static { $this->verificationToken = $token; return $this; }
+
     public function getVerificationTokenExpiresAt(): ?\DateTimeInterface { return $this->verificationTokenExpiresAt; }
-    public function setVerificationTokenExpiresAt(?\DateTimeInterface $expiresAt): static { $this->verificationTokenExpiresAt = $expiresAt; return $this; }
+    public function setVerificationTokenExpiresAt(?\DateTimeInterface $expiresAt): static
+    {
+        $this->verificationTokenExpiresAt = $expiresAt;
+        return $this;
+    }
+
+    // --- Created & Archived ---
+    public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }
+    public function setCreatedAt(?\DateTimeImmutable $dt): self { $this->createdAt = $dt; return $this; }
+
+    public function getArchivedAt(): ?\DateTimeImmutable { return $this->archivedAt; }
+    public function setArchivedAt(?\DateTimeImmutable $dt): self { $this->archivedAt = $dt; return $this; }
+
+    public function isArchived(): bool { return $this->archivedAt !== null; }
+    public function isActive(): bool { return $this->archivedAt === null; }
 
     // --- LessonValidated ---
     /** @return Collection<int, LessonValidated> */
     public function getLessonValidated(): Collection { return $this->lessonValidated; }
+
     public function addLessonValidated(LessonValidated $lessonValidated): static
     {
         if (!$this->lessonValidated->contains($lessonValidated)) {
@@ -123,6 +164,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
         return $this;
     }
+
     public function removeLessonValidated(LessonValidated $lessonValidated): static
     {
         if ($this->lessonValidated->removeElement($lessonValidated) && $lessonValidated->getUser() === $this) {
@@ -134,6 +176,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     // --- Purchases ---
     /** @return Collection<int, Purchase> */
     public function getPurchases(): Collection { return $this->purchases; }
+
     public function addPurchase(Purchase $purchase): static
     {
         if (!$this->purchases->contains($purchase)) {
@@ -142,6 +185,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
         return $this;
     }
+
     public function removePurchase(Purchase $purchase): static
     {
         if ($this->purchases->removeElement($purchase) && $purchase->getUser() === $this) {
@@ -153,6 +197,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     // --- Certifications ---
     /** @return Collection<int, Certification> */
     public function getCertifications(): Collection { return $this->certifications; }
+
     public function addCertification(Certification $certification): static
     {
         if (!$this->certifications->contains($certification)) {
@@ -161,6 +206,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
         return $this;
     }
+
     public function removeCertification(Certification $certification): static
     {
         if ($this->certifications->removeElement($certification) && $certification->getUser() === $this) {
@@ -172,6 +218,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     // --- Completed Lessons (ManyToMany) ---
     /** @return Collection<int, Lesson> */
     public function getCompletedLessons(): Collection { return $this->completedLessons; }
+
     public function addCompletedLesson(Lesson $lesson): static
     {
         if (!$this->completedLessons->contains($lesson)) {
@@ -179,6 +226,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
         return $this;
     }
+
     public function removeCompletedLesson(Lesson $lesson): static
     {
         $this->completedLessons->removeElement($lesson);

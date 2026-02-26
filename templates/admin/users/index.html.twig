@@ -1,0 +1,159 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Admin - Clients{% endblock %}
+
+{% block body %}
+<div class="dashboard-layout">
+
+    <!-- SIDEBAR ADMIN -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-header">Espace admin</div>
+        <nav class="sidebar-nav">
+            <a href="{{ path('admin_dashboard') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_dashboard' ? 'active' : '' }}">
+                Vue d'ensemble
+            </a>
+
+            <a href="{{ path('admin_users_index') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_users_' ? 'active' : '' }}">
+                Clients
+            </a>
+
+            <a href="{{ path('admin_theme_index') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_theme_' ? 'active' : '' }}">
+                Thèmes
+            </a>
+
+            <a href="{{ path('admin_cursus_index') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_cursus_' ? 'active' : '' }}">
+                Cursus
+            </a>
+
+            <a href="{{ path('admin_lesson_index') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_lesson_' ? 'active' : '' }}">
+                Leçons
+            </a>
+
+            <a href="{{ path('admin_purchase_index') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_purchase_' ? 'active' : '' }}">
+                Commandes
+            </a>
+
+            <a href="{{ path('admin_contact_index') }}"
+               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_contact_' ? 'active' : '' }}">
+                Messages contact
+            </a>
+        </nav>
+    </aside>
+
+    <!-- CONTENU -->
+    <div class="dashboard-content">
+        <h1>Gestion des clients</h1>
+
+        {# Stats discrètes #}
+        <div class="admin-stats-card">
+            <h2>{{ users|length }}</h2>
+            <p>Résultats affichés</p>
+        </div>
+
+        <!-- FILTRES (recherche + tri + archivés) -->
+        <form method="get" class="dashboard-filters">
+            <label for="q">Recherche :</label>
+            <input type="text" id="q" name="q" value="{{ q }}" placeholder="Nom, prénom ou email">
+
+            <label for="sort">Tri :</label>
+            <select name="sort" id="sort">
+                <option value="name" {{ sort == 'name' ? 'selected' : '' }}>Alphabétique</option>
+                <option value="recent" {{ sort == 'recent' ? 'selected' : '' }}>Inscrits plus récents</option>
+            </select>
+
+            <label for="dir">Direction :</label>
+            <select name="dir" id="dir">
+                <option value="ASC" {{ dir == 'ASC' ? 'selected' : '' }}>ASC</option>
+                <option value="DESC" {{ dir == 'DESC' ? 'selected' : '' }}>DESC</option>
+            </select>
+
+            <label for="archived" class="admin-check">
+                <input type="checkbox" id="archived" name="archived" value="1" {{ includeArchived ? 'checked' : '' }}>
+                Inclure archivés
+            </label>
+
+            <button type="submit" class="btn">Appliquer</button>
+            <a href="{{ path('admin_users_index') }}" class="btn btn-secondary" style="text-decoration:none;">Reset</a>
+        </form>
+
+        {% if users is empty %}
+            <p>Aucun utilisateur trouvé.</p>
+        {% else %}
+
+            {# TABLEAU #}
+            <div class="dashboard-card card-white admin-table-card">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Email</th>
+                            <th>Inscription</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for user in users %}
+                        <tr>
+                            <td><strong>{{ user.lastName }} {{ user.firstName }}</strong></td>
+
+                            <td>{{ user.email }}</td>
+
+                            <td>{{ user.createdAt ? user.createdAt|date('d/m/Y H:i') : '—' }}</td>
+
+                            <td>
+                                {% if user.archivedAt %}
+                                    <span class="badge badge-archived">Archivé</span>
+                                {% else %}
+                                    <span class="badge badge-active">Actif</span>
+                                {% endif %}
+
+                                {% if not user.verified %}
+                                    <span class="badge badge-unverified">Non vérifié</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <div class="admin-actions">
+                                    <a href="{{ path('admin_users_edit', {id: user.id}) }}"
+                                       class="btn btn-secondary"
+                                       style="text-decoration:none;">
+                                        Éditer
+                                    </a>
+
+                                    {% if user.archivedAt %}
+                                        <form method="post" action="{{ path('admin_users_restore', {id: user.id}) }}" style="margin:0;">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('restore_user_' ~ user.id) }}">
+                                            <button type="submit" class="btn">Restaurer</button>
+                                        </form>
+                                    {% else %}
+                                        <form method="post" action="{{ path('admin_users_delete', {id: user.id}) }}" style="margin:0;">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('archive_user_' ~ user.id) }}">
+                                            <button type="submit"
+                                                    class="btn btn-danger"
+                                                    onclick="return confirm('Confirmer l\\'archivage de cet utilisateur ?');">
+                                                Archiver
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {% endif %}
+
+        <a href="{{ path('admin_dashboard') }}" class="btn-back">← Retour au dashboard admin</a>
+    </div>
+</div>
+{% endblock %}
