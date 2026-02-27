@@ -24,7 +24,12 @@ class AdminUserController extends AbstractController
         $dir  = (string) $request->query->get('dir', 'ASC');     // ASC|DESC
         $includeArchived = (bool) $request->query->get('archived', false);
 
-        // Désactive le filtre global uniquement si on veut voir les archivés en admin
+        // Action pour afficher un message flash après une opération (edit, delete, restore)
+        $action = (string) $request->query->get('action', '');
+        if (!in_array($action, ['', 'edit', 'delete', 'restore'], true)) {
+            $action = '';
+        }
+
         if ($includeArchived) {
             $filters = $em->getFilters();
             if ($filters->isEnabled('archived_user')) {
@@ -32,7 +37,7 @@ class AdminUserController extends AbstractController
             }
         }
 
-        // Whitelists
+        // Sécurité : valider les paramètres de tri
         if (!in_array($sort, ['name', 'recent'], true)) {
             $sort = 'name';
         }
@@ -46,56 +51,102 @@ class AdminUserController extends AbstractController
             'sort' => $sort,
             'dir' => $dir,
             'includeArchived' => $includeArchived,
+            'action' => $action,
         ]);
     }
 
     #[Route('/{id}/edit', name: 'edit', methods: ['GET', 'POST'])]
-    public function edit(User $user, Request $request, EntityManagerInterface $em): Response
-    {
+    public function edit(
+        User $user,
+        Request $request,
+        EntityManagerInterface $em,
+        UserRepository $repo
+    ): Response {
+        $current = $this->getUser();
+        $isSelf = $current instanceof User && $current->getId() === $user->getId();
+
+        // Rôles réellement stockés en base (sans ROLE_USER automatique)
+        $originalRoles = $user->getStoredRoles();
+        $wasAdmin = in_array('ROLE_ADMIN', $originalRoles, true);
+
         $form = $this->createForm(UserType::class, $user, [
-            'is_admin' => true,
+            'allow_roles_edit' => !$isSelf, // pas de champ rôle sur soi-même
         ]);
+
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+
+            // 1) Sécurité : on ne peut pas modifier ses propres rôles
+            if ($isSelf) {
+                $user->setStoredRoles($originalRoles);
+            }
+
+            // 2) Sécurité : éviter de se retrouver sans admin
+            $isAdminNow = in_array('ROLE_ADMIN', $user->getStoredRoles(), true);
+
+            if ($wasAdmin && !$isAdminNow) {
+                $adminsCount = $repo->countActiveAdmins();
+
+                // adminsCount inclut encore cet admin tant qu'on n'a pas flush
+                if ($adminsCount <= 1) {
+                    $user->setStoredRoles(['ROLE_ADMIN']);
+                    $this->addFlash('danger', "Action refusée : il doit rester au moins un administrateur actif.");
+                    return $this->redirectToRoute('admin_users_edit', ['id' => $user->getId()]);
+                }
+            }
+
             $em->flush();
             $this->addFlash('success', 'Profil mis à jour.');
-            return $this->redirectToRoute('admin_users_index');
+
+            return $this->redirectToRoute('admin_users_index', ['action' => 'edit']);
         }
 
         return $this->render('admin/users/edit.html.twig', [
             'user' => $user,
             'form' => $form->createView(),
+            'isSelf' => $isSelf,
         ]);
     }
 
     #[Route('/{id}/delete', name: 'delete', methods: ['POST'])]
-    public function delete(User $user, Request $request, EntityManagerInterface $em): Response
-    {
+    public function delete(
+        User $user,
+        Request $request,
+        EntityManagerInterface $em,
+        UserRepository $repo
+    ): Response {
         if (!$this->isCsrfTokenValid('archive_user_'.$user->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
         // Empêcher un admin d'archiver son propre compte
-        if ($this->getUser() instanceof User && $this->getUser()->getId() === $user->getId()) {
+        $current = $this->getUser();
+        if ($current instanceof User && $current->getId() === $user->getId()) {
             $this->addFlash('danger', 'Tu ne peux pas archiver ton propre compte.');
             return $this->redirectToRoute('admin_users_index');
         }
 
-        // Empêcher de ré-archiver un user déjà archivé
+        // Déjà archivé ?
         if ($user->isArchived()) {
             $this->addFlash('info', 'Utilisateur déjà archivé.');
             return $this->redirectToRoute('admin_users_index');
         }
 
-        // Soft delete
+        // Empêcher d'archiver le dernier admin actif
+        if (in_array('ROLE_ADMIN', $user->getStoredRoles(), true)) {
+            if ($repo->countActiveAdmins() <= 1) {
+                $this->addFlash('danger', "Action refusée : il doit rester au moins un administrateur actif.");
+                return $this->redirectToRoute('admin_users_index');
+            }
+        }
+
         $user->setArchivedAt(new \DateTimeImmutable());
         $em->flush();
 
         $this->addFlash('success', 'Utilisateur archivé.');
-        return $this->redirectToRoute('admin_users_index');
+        return $this->redirectToRoute('admin_users_index', ['action' => 'delete']);
     }
-    
 
     #[Route('/{id}/restore', name: 'restore', methods: ['POST'])]
     public function restore(User $user, Request $request, EntityManagerInterface $em): Response
@@ -113,6 +164,6 @@ class AdminUserController extends AbstractController
         $em->flush();
 
         $this->addFlash('success', 'Utilisateur restauré.');
-        return $this->redirectToRoute('admin_users_index');
+        return $this->redirectToRoute('admin_users_index', ['action' => 'restore']);
     }
 }

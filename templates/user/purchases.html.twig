@@ -1,92 +1,90 @@
-{% extends 'base.html.twig' %}
+{% extends 'dashboard/user/_base.html.twig' %}
 
 {% block title %}Mes Achats{% endblock %}
 
 {% block stylesheets %}
-    {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('styles/cart.css') }}">
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/cart.css') }}">
 {% endblock %}
 
-{% block body %}
+{% block dashboard_content %}
+
 <h1>Mes Achats</h1>
 
 <form method="get" class="filter-form">
-    <label>
-        Statut :
-        <select name="status">
-            <option value="">Tous</option>
-            <option value="paid" {% if filter_status == 'paid' %}selected{% endif %}>Payé</option>
-            <option value="pending" {% if filter_status == 'pending' %}selected{% endif %}>En attente</option>
-            <option value="cancelled" {% if filter_status == 'cancelled' %}selected{% endif %}>Annulé</option>
-        </select>
-    </label>
+  <label>
+    Statut :
+    <select name="status">
+      <option value="">Tous</option>
+      <option value="paid" {% if filter_status == 'paid' %}selected{% endif %}>Payé</option>
+      <option value="pending" {% if filter_status == 'pending' %}selected{% endif %}>En attente</option>
+      <option value="cancelled" {% if filter_status == 'cancelled' %}selected{% endif %}>Annulé</option>
+    </select>
+  </label>
 
-    <label>
-        De :
-        <input type="date" name="from" value="{{ filter_from }}">
-    </label>
+  <label>
+    De :
+    <input type="date" name="from" value="{{ filter_from }}">
+  </label>
 
-    <label>
-        À :
-        <input type="date" name="to" value="{{ filter_to }}">
-    </label>
+  <label>
+    À :
+    <input type="date" name="to" value="{{ filter_to }}">
+  </label>
 
-    <button type="submit">Filtrer</button>
+  <button type="submit">Filtrer</button>
 </form>
 
 {% if purchases is empty %}
-    <p class="cart-empty">Vous n'avez aucun achat pour le moment.</p>
+  <p class="cart-empty">Vous n'avez aucun achat pour le moment.</p>
 {% else %}
-    <div class="cart-items">
-        {% for purchase in purchases %}
-            <div class="cart-item-card">
-                <div class="cart-item-info">
-                    <h3>Commande #{{ purchase.id }}</h3>
-                    <p><strong>Date :</strong> {{ purchase.createdAt|date('d/m/Y H:i') }}</p>
-                    <p><strong>Total :</strong> {{ purchase.total|number_format(2, '.', ' ') }} €</p>
-                    <p><strong>Statut :</strong> {{ purchase.status|capitalize }}</p>
+  <div class="cart-items">
+    {% for purchase in purchases %}
+      <div class="cart-item-card">
+        <div class="cart-item-info">
+          <h3>Commande #{{ purchase.id }}</h3>
+          <p><strong>Date :</strong> {{ purchase.createdAt|date('d/m/Y H:i') }}</p>
+          <p><strong>Total :</strong> {{ purchase.total|number_format(2, '.', ' ') }} €</p>
+          <p><strong>Statut :</strong> {{ purchase.status|capitalize }}</p>
 
-                    {% if purchase.items|length > 0 %}
-                        <h4>Articles :</h4>
-                        <ul>
-                            {% for item in purchase.items %}
-                                <li>
-                                    {% if item.cursus %}
-                                        {{ item.cursus.name }} - {{ item.getTotal()|number_format(2, '.', ' ') }} € 
-                                        <span class="cart-type">(Cursus)</span>
+          {% if purchase.items|length > 0 %}
+            <h4>Articles :</h4>
+            <ul>
+              {% for item in purchase.items %}
+                <li>
+                  {% if item.cursus %}
+                    {{ item.cursus.name }} - {{ item.getTotal()|number_format(2, '.', ' ') }} €
+                    <span class="cart-type">(Cursus)</span>
 
-                                        {% if item.lesson %}
-                                            <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}" class="cart-link">
-                                                Accéder au cours
-                                            </a>
-                                        {% elseif item.cursus %}
-                                            {% for lesson in item.cursus.lessons %}
-                                                <a href="{{ path('lesson_show', {'id': lesson.id}) }}" class="cart-link">
-                                                    {{ lesson.title }}
-                                                </a>
-                                            {% else %}
-                                                <span class="cart-link disabled">Pas de cours disponible</span>
-                                            {% endfor %}
-                                        {% else %}
-                                            <span class="cart-link disabled">Article indisponible</span>
-                                        {% endif %}
-
-                                    {% elseif item.lesson %}
-                                        {{ item.lesson.title }} - {{ item.getTotal()|number_format(2, '.', ' ') }} € 
-                                        <span class="cart-type">(Leçon)</span> - Quantité : {{ item.getQuantity() }}
-                                        <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}" class="cart-link">Accéder</a>
-                                    {% else %}
-                                        Article inconnu - {{ item.getTotal()|number_format(2, '.', ' ') }} €
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                        </ul>
+                    {% if item.lesson %}
+                      <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}" class="cart-link">Accéder au cours</a>
+                    {% elseif item.cursus %}
+                      {% for lesson in item.cursus.lessons %}
+                        <a href="{{ path('lesson_show', {'id': lesson.id}) }}" class="cart-link">{{ lesson.title }}</a>
+                      {% else %}
+                        <span class="cart-link disabled">Pas de cours disponible</span>
+                      {% endfor %}
+                    {% else %}
+                      <span class="cart-link disabled">Article indisponible</span>
                     {% endif %}
-                </div>
-            </div>
-        {% endfor %}
-    </div>
+
+                  {% elseif item.lesson %}
+                    {{ item.lesson.title }} - {{ item.getTotal()|number_format(2, '.', ' ') }} €
+                    <span class="cart-type">(Leçon)</span> - Quantité : {{ item.getQuantity() }}
+                    <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}" class="cart-link">Accéder</a>
+                  {% else %}
+                    Article inconnu - {{ item.getTotal()|number_format(2, '.', ' ') }} €
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
 {% endif %}
 
 <a href="{{ path('user_dashboard') }}" class="btn-back">← Retour au dashboard</a>
+
 {% endblock %}

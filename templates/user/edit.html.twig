@@ -1,4 +1,4 @@
-{% extends 'base.html.twig' %}
+{% extends 'dashboard/user/_base.html.twig' %}
 
 {% block title %}Modifier mon profil{% endblock %}
 
@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ asset('styles/form.css') }}">
 {% endblock %}
 
-{% block body %}
+{% block dashboard_content %}
 
     {% include 'form/_form_container.html.twig' with {
         form: editProfileForm,

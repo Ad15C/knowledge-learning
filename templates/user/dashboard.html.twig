@@ -1,69 +1,45 @@
-{% extends 'base.html.twig' %}
+{% extends 'dashboard/user/_base.html.twig' %}
 
 {% block title %}Mon Dashboard{% endblock %}
 
 {% block stylesheets %}
-    {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('styles/dashboard.css') }}">
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/dashboard.css') }}">
 {% endblock %}
 
-{% block body %}
+{% block dashboard_content %}
 
-<div class="dashboard-layout">
+  <h1>Bienvenue, {{ user.firstName }} {{ user.lastName }} !</h1>
 
-    <!-- SIDEBAR -->
-    <aside class="dashboard-sidebar">
+  <div class="dashboard-cards">
 
-        <div class="sidebar-header">
-            Espace membre
-        </div>
+    <!-- STATUT ET PROGRESSION -->
+    <div class="dashboard-card">
+      <h2>Mon statut et progression</h2>
+      <p>Statut actuel : <strong>{{ status }}</strong></p>
 
-        <nav class="sidebar-nav">
-            <a href="{{ path('user_dashboard') }}" class="sidebar-link active">Dashboard</a>
-            <a href="{{ path('user_dashboard_edit') }}" class="sidebar-link">Modifier profil</a>
-            <a href="{{ path('app_change_password') }}" class="sidebar-link">Mot de passe</a>
-            <a href="{{ path('user_dashboard_purchases') }}" class="sidebar-link">Mes commandes</a>
-            <a href="{{ path('user_dashboard_certifications') }}" class="sidebar-link">Mes certifications</a>
-        </nav>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ progressPercent }}%"></div>
+      </div>
 
-    </aside>
+      <small>{{ progressPercent }}% vers {{ nextStatus }}</small>
+    </div>
 
-    <!-- CONTENU -->
-    <main class="dashboard-content">
+    <!-- COMMANDES -->
+    <a href="{{ path('user_dashboard_purchases') }}" class="dashboard-card dashboard-card-clickable">
+      <h2>Mes commandes</h2>
+      <p>Total commandes : <strong>{{ totalOrders }}</strong></p>
+      <p>Total dépensé : <strong>{{ totalSpent }} €</strong></p>
+      <span class="card-link-indicator">Voir mes commandes →</span>
+    </a>
 
-        <h1>Bienvenue, {{ user.firstName }} {{ user.lastName }} !</h1>
+    <!-- CERTIFICATIONS -->
+    <a href="{{ path('user_dashboard_certifications') }}" class="dashboard-card dashboard-card-clickable">
+      <h2>Mes certifications</h2>
+      <p>Certifications obtenues : <strong>{{ certificationsCount }}</strong></p>
+      <span class="card-link-indicator">Voir mes certifications →</span>
+    </a>
 
-        <div class="dashboard-cards">
-
-            <!-- STATUT ET PROGRESSION -->
-            <div class="dashboard-card">
-                <h2>Mon statut et progression</h2>
-                <p>Statut actuel : <strong>{{ status }}</strong></p>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ progressPercent }}%"></div>
-                </div>
-                <small>{{ progressPercent }}% vers {{ nextStatus }}</small>
-            </div>
-
-            <!-- COMMANDES (CARTE CLIQUABLE) -->
-            <a href="{{ path('user_dashboard_purchases') }}" class="dashboard-card dashboard-card-clickable">
-                <h2>Mes commandes</h2>
-                <p>Total commandes : <strong>{{ totalOrders }}</strong></p>
-                <p>Total dépensé : <strong>{{ totalSpent }} €</strong></p>
-                <span class="card-link-indicator">Voir mes commandes →</span>
-            </a>
-
-            <!-- CERTIFICATIONS (CARTE CLIQUABLE) -->
-            <a href="{{ path('user_dashboard_certifications') }}" class="dashboard-card dashboard-card-clickable">
-                <h2>Mes certifications</h2>
-                <p>Certifications obtenues : <strong>{{ certificationsCount }}</strong></p>
-                <span class="card-link-indicator">Voir mes certifications →</span>
-            </a>
-
-        </div>
-
-    </main>
-
-</div>
+  </div>
 
 {% endblock %}

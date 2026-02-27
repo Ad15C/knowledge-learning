@@ -1,122 +1,86 @@
-{% extends 'base.html.twig' %}
+{% extends 'dashboard/user/_base.html.twig' %}
 
 {% block title %}Certification officielle{% endblock %}
 
 {% block stylesheets %}
-    {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('build/css/certification-show.css') }}">
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('build/css/certification-show.css') }}">
 {% endblock %}
 
-{% block body %}
-<div class="dashboard-layout">
+{% block dashboard_content %}
 
-    <!-- SIDEBAR -->
-    <aside class="dashboard-sidebar">
-        <div class="sidebar-header">Espace membre</div>
-        <nav class="sidebar-nav">
-            <a href="{{ path('user_dashboard') }}" class="sidebar-link">Dashboard</a>
-            <a href="{{ path('user_dashboard_edit') }}" class="sidebar-link">Modifier profil</a>
-            <a href="{{ path('app_change_password') }}" class="sidebar-link">Mot de passe</a>
-            <a href="{{ path('user_dashboard_purchases') }}" class="sidebar-link">Mes commandes</a>
-            <a href="{{ path('user_dashboard_certifications') }}" class="sidebar-link active">Mes certifications</a>
-        </nav>
-    </aside>
+  {% if certification %}
 
-    <!-- CONTENU -->
-    <div class="dashboard-content">
+    <div class="certification-wrapper">
+      <div class="certificate-official">
 
-        {% if certification %}
+        <!-- Header -->
+        <div class="certificate-header">
+          <h1>CERTIFICAT OFFICIEL</h1>
+          <p class="certificate-org">Knowledge Learning</p>
+        </div>
 
-            <div class="certification-wrapper">
+        <!-- Body -->
+        <div class="certificate-body">
+          <p class="certificate-label">Ce certificat est décerné à</p>
 
-                <div class="certificate-official">
+          <p class="certificate-user">
+            {{ certification.user.firstName }} {{ certification.user.lastName }}
+          </p>
 
-                    <!-- Header -->
-                    <div class="certificate-header">
-                        <h1>CERTIFICAT OFFICIEL</h1>
-                        <p class="certificate-org">Knowledge Learning</p>
-                    </div>
+          <p class="certificate-label">pour la réussite du programme</p>
 
-                    <!-- Body -->
-                    <div class="certificate-body">
+          <p class="certificate-course">
+            {% if certification.cursus %}
+              {{ certification.cursus.name }}
+            {% elseif certification.lesson %}
+              {{ certification.lesson.title }}
+            {% elseif certification.theme %}
+              {{ certification.theme.name }}
+            {% endif %}
+          </p>
 
-                        <p class="certificate-label">
-                            Ce certificat est décerné à
-                        </p>
+          <p class="certificate-date">
+            Délivré le {{ certification.issuedAt|date('d/m/Y') }}
+          </p>
 
-                        <p class="certificate-user">
-                            {{ certification.user.firstName }} {{ certification.user.lastName }}
-                        </p>
+          <p class="certificate-code">
+            Certificat n° {{ certification.certificateCode }}
+          </p>
+        </div>
 
-                        <p class="certificate-label">
-                            pour la réussite du programme
-                        </p>
+        <!-- Footer -->
+        <div class="certificate-footer">
+          <div class="certificate-signature">
+            <div class="signature-line"></div>
+            <p>Directeur de la formation</p>
+          </div>
 
-                        <p class="certificate-course">
-                            {% if certification.cursus %}
-                                {{ certification.cursus.name }}
-                            {% elseif certification.lesson %}
-                                {{ certification.lesson.title }}
-                            {% elseif certification.theme %}
-                                {{ certification.theme.name }}
-                            {% endif %}
-                        </p>
+          <div class="certificate-seal">
+            OFFICIEL
+          </div>
+        </div>
 
-                        <p class="certificate-date">
-                            Délivré le {{ certification.issuedAt|date('d/m/Y') }}
-                        </p>
+      </div>
+    </div>
 
-                        <p class="certificate-code">
-                            Certificat n° {{ certification.certificateCode }}
-                        </p>
+    <!-- Boutons -->
+    <div class="certificate-actions">
+      <button onclick="window.print()" class="btn btn-primary">🖨 Imprimer</button>
 
-                    </div>
+      <a class="btn btn-secondary"
+         href="{{ path('app_certification_pdf', {id: certification.id}) }}"
+         target="_blank">
+        Télécharger PDF
+      </a>
 
-                    <!-- Footer -->
-                    <div class="certificate-footer">
+      <a href="{{ path('user_dashboard_certifications') }}" class="btn btn-secondary">
+        ← Retour aux certifications
+      </a>
+    </div>
 
-                        <div class="certificate-signature">
-                            <div class="signature-line"></div>
-                            <p>Directeur de la formation</p>
-                        </div>
-
-                        <div class="certificate-seal">
-                            OFFICIEL
-                        </div>
-
-                    </div> 
-
-                </div> 
-
-            </div> 
-
-            <!-- Boutons en dessous du cadre -->
-            <div class="certificate-actions">
-
-                <button onclick="window.print()" class="btn btn-primary">
-                    🖨 Imprimer
-                </button>
-
-                <a class="btn btn-secondary"
-                   href="{{ path('app_certification_pdf', {id: certification.id}) }}"
-                    target="_blank">
-                    Télécharger PDF
-                </a>
-
-                <a href="{{ path('user_dashboard_certifications') }}" class="btn btn-secondary">
-                    ← Retour aux certifications
-                </a>
-
-            </div>
-
-        {% else %}
-
-            <p>Certification introuvable.</p>
-
-        {% endif %}
-
-    </div> 
-
-</div> 
+  {% else %}
+    <p>Certification introuvable.</p>
+  {% endif %}
 
 {% endblock %}

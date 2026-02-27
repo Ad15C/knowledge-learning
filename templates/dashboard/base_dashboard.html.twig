@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+  <div class="dashboard-layout">
+
+    {# SIDEBAR (remplacée par admin ou user) #}
+    <aside class="dashboard-sidebar">
+      {% block sidebar %}{% endblock %}
+    </aside>
+
+    {# CONTENU #}
+    <div class="dashboard-content">
+      {% block dashboard_content %}{% endblock %}
+    </div>
+
+  </div>
+{% endblock %}

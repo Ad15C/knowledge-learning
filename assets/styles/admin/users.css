@@ -1,0 +1,187 @@
+/* ==========================================
+   ADMIN USERS CSS (edit)
+========================================== */
+.admin-users-edit{
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* Header */
+.admin-page-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:14px;
+  padding-top: 6px;
+}
+
+.admin-page-title{
+  margin:0;
+  color:#00497c;
+}
+
+.admin-page-subtitle{
+  margin:8px 0 0;
+  color:#384050;
+  opacity:.9;
+}
+
+/* Summary card */
+.admin-user-summary{
+  display:flex;
+  justify-content:space-between;
+  gap:22px;
+  align-items:flex-start;
+  padding: 22px;
+}
+
+.admin-user-summary__name{
+  font-size:20px;
+  font-weight:700;
+  color:#00497c;
+}
+
+.admin-user-summary__email{
+  margin-top:4px;
+  color:#384050;
+  opacity:.9;
+}
+
+.admin-user-summary__badges{
+  margin-top:12px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.admin-user-summary__meta{
+  min-width:240px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  opacity:.95;
+}
+
+.meta-line{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  font-size:14px;
+}
+
+.meta-label{
+  color:#384050;
+  opacity:.75;
+}
+
+.meta-value{
+  color:#384050;
+  font-weight:600;
+}
+
+/* Alert */
+.admin-alert{
+  padding:14px 16px;
+  border-radius:14px;
+  border:1px solid rgba(220,53,69,0.25);
+  background: rgba(220,53,69,0.08);
+  color:#b02a37;
+  font-weight:600;
+}
+
+/* Form card */
+.admin-form-card{
+  padding: 22px;
+}
+
+/* Symfony fields spacing */
+.admin-form-card .form-row,
+.admin-form-card .form-group{
+  margin-bottom: 14px;
+}
+
+.admin-form-card label{
+  display:block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color:#384050;
+}
+
+/* Inputs */
+.admin-form-card input,
+.admin-form-card select,
+.admin-form-card textarea{
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 116, 199, 0.25);
+  background: #fff;
+  color:#384050;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.admin-form-card input:focus,
+.admin-form-card select:focus,
+.admin-form-card textarea:focus{
+  border-color: rgba(0, 116, 199, 0.65);
+  box-shadow: 0 0 0 3px rgba(0, 116, 199, 0.15);
+}
+
+/* Grid */
+.admin-form-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:18px 18px;
+}
+
+.admin-form-field--full{
+  grid-column: 1 / -1;
+}
+
+.admin-form-actions{
+  margin-top:18px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+/* Checkboxes roles (expanded) : aère */
+.admin-form-card .form-check{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border: 1px solid rgba(0, 116, 199, 0.18);
+  border-radius: 12px;
+  background: #f1f8fc;
+  margin-top: 10px;
+}
+
+.admin-form-card .form-check input{
+  width:auto;
+  padding:0;
+}
+
+/* Responsive */
+@media (max-width: 768px){
+  .admin-user-summary{
+    flex-direction:column;
+  }
+
+  .admin-user-summary__meta{
+    min-width:auto;
+    width:100%;
+  }
+
+  .admin-form-grid{
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-field--full{
+    grid-column:auto;
+  }
+}

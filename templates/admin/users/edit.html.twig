@@ -1,0 +1,105 @@
+{% extends 'dashboard/admin/_base.html.twig' %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/admin/users.css') }}">
+{% endblock %}
+
+{% block title %}Admin - Modifier un client{% endblock %}
+
+{% block dashboard_content %}
+  <div class="admin-users-edit">
+
+    <div class="admin-page-header">
+      <div>
+        <h1 class="admin-page-title">Modifier un client</h1>
+        <p class="admin-page-subtitle">Mettre à jour les informations du compte.</p>
+      </div>
+
+      <a href="{{ path('admin_users_index', { action: 'edit' }) }}"
+         class="btn btn-secondary"
+         style="text-decoration:none;">
+        ← Retour liste
+      </a>
+    </div>
+
+    <div class="admin-user-summary dashboard-card card-white">
+      <div class="admin-user-summary__main">
+        <div class="admin-user-summary__name">{{ user.firstName }} {{ user.lastName }}</div>
+        <div class="admin-user-summary__email">{{ user.email }}</div>
+
+        <div class="admin-user-summary__badges">
+          {% if user.archivedAt %}
+            <span class="badge badge-archived">Archivé</span>
+          {% else %}
+            <span class="badge badge-active">Actif</span>
+          {% endif %}
+
+          {% if 'ROLE_ADMIN' in user.roles %}
+            <span class="badge badge-admin">Admin</span>
+          {% else %}
+            <span class="badge badge-user">User</span>
+          {% endif %}
+
+          {% if not user.verified %}
+            <span class="badge badge-unverified">Non vérifié</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="admin-user-summary__meta">
+        <div class="meta-line">
+          <span class="meta-label">ID</span>
+          <span class="meta-value">#{{ user.id }}</span>
+        </div>
+        <div class="meta-line">
+          <span class="meta-label">Inscription</span>
+          <span class="meta-value">{{ user.createdAt ? user.createdAt|date('d/m/Y H:i') : '—' }}</span>
+        </div>
+      </div>
+    </div>
+
+    {% if isSelf %}
+      <div class="admin-alert">
+        ⚠️ Pour des raisons de sécurité, tu ne peux pas modifier ton propre rôle.
+      </div>
+    {% endif %}
+
+    <div class="dashboard-card card-white admin-form-card">
+      {{ form_start(form, { attr: { novalidate: 'novalidate' } }) }}
+
+        <div class="admin-form-grid">
+          <div class="admin-form-field">
+            {{ form_row(form.firstName) }}
+          </div>
+
+          <div class="admin-form-field">
+            {{ form_row(form.lastName) }}
+          </div>
+
+          <div class="admin-form-field admin-form-field--full">
+            {{ form_row(form.email) }}
+          </div>
+
+          {% if form.roles is defined %}
+            <div class="admin-form-field admin-form-field--full">
+              {{ form_row(form.roles) }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="admin-form-actions">
+          <button class="btn" type="submit">Enregistrer</button>
+
+          <a href="{{ path('admin_users_index', { action: 'edit' }) }}"
+             class="btn btn-secondary"
+             style="text-decoration:none;">
+            Annuler
+          </a>
+        </div>
+
+      {{ form_end(form) }}
+    </div>
+
+  </div>
+{% endblock %}

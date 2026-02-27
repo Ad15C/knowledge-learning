@@ -19,6 +19,17 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         parent::__construct($registry, User::class);
     }
 
+    public function countActiveAdmins(): int
+    {
+        return (int) $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->andWhere('u.archivedAt IS NULL')
+            ->andWhere('u.roles LIKE :role')
+            ->setParameter('role', '%"ROLE_ADMIN"%')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void
     {
         if (!$user instanceof User) {
@@ -44,16 +55,15 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         if (!$includeArchived) {
             $qb->andWhere('u.archivedAt IS NULL');
         }
-        // Recherche basique sur nom, prénom, email 
+
         if ($search) {
             $qb->andWhere('LOWER(u.firstName) LIKE :q OR LOWER(u.lastName) LIKE :q OR LOWER(u.email) LIKE :q')
                ->setParameter('q', '%'.mb_strtolower($search).'%');
         }
 
         $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
-        // Tri par date de création ou par nom
+
         if ($sort === 'recent') {
-            // Si jamais un vieux user a createdAt NULL, on se rabat sur id
             $qb->addOrderBy('u.createdAt', $direction)
                ->addOrderBy('u.id', $direction);
         } else {
