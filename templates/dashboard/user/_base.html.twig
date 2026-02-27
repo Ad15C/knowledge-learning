@@ -1,0 +1,35 @@
+{# templates/dashboard/user/_base.html.twig #}
+{% extends 'dashboard/base_dashboard.html.twig' %}
+
+{% block sidebar %}
+  {% set route = app.request.attributes.get('_route') %}
+
+  <div class="sidebar-header">Espace membre</div>
+
+  <nav class="sidebar-nav">
+    <a href="{{ path('user_dashboard') }}"
+       class="sidebar-link {{ route == 'user_dashboard' ? 'active' : '' }}">
+      Dashboard
+    </a>
+
+    <a href="{{ path('user_dashboard_edit') }}"
+       class="sidebar-link {{ route == 'user_dashboard_edit' ? 'active' : '' }}">
+      Modifier profil
+    </a>
+
+    <a href="{{ path('app_change_password') }}"
+       class="sidebar-link {{ route == 'app_change_password' ? 'active' : '' }}">
+      Mot de passe
+    </a>
+
+    <a href="{{ path('user_dashboard_purchases') }}"
+       class="sidebar-link {{ route == 'user_dashboard_purchases' ? 'active' : '' }}">
+      Mes commandes
+    </a>
+
+    <a href="{{ path('user_dashboard_certifications') }}"
+       class="sidebar-link {{ route == 'user_dashboard_certifications' ? 'active' : '' }}">
+      Mes certifications
+    </a>
+  </nav>
+{% endblock %}

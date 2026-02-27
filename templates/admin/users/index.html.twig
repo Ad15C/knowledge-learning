@@ -1,159 +1,123 @@
-{% extends 'base.html.twig' %}
+{% extends 'dashboard/admin/_base.html.twig' %}
 
 {% block title %}Admin - Clients{% endblock %}
 
-{% block body %}
-<div class="dashboard-layout">
+{% block dashboard_content %}
 
-    <!-- SIDEBAR ADMIN -->
-    <aside class="dashboard-sidebar">
-        <div class="sidebar-header">Espace admin</div>
-        <nav class="sidebar-nav">
-            <a href="{{ path('admin_dashboard') }}"
-               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_dashboard' ? 'active' : '' }}">
-                Vue d'ensemble
-            </a>
+  <h1>Gestion des clients</h1>
 
-            <a href="{{ path('admin_users_index') }}"
-               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_users_' ? 'active' : '' }}">
-                Clients
-            </a>
+  <div class="admin-stats-card">
+    <h2>{{ users|length }}</h2>
+    <p>Résultats affichés</p>
+  </div>
 
-            <a href="{{ path('admin_theme_index') }}"
-               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_theme_' ? 'active' : '' }}">
-                Thèmes
-            </a>
+  {% set mode = action|default('') %}
+  <div class="admin-actions">
+    <a href="{{ path('admin_users_index') }}" class="btn btn-secondary" style="text-decoration:none;">Tout afficher</a>
+    <a href="{{ path('admin_users_index', {action: 'edit'}) }}" class="btn btn-secondary" style="text-decoration:none;">Mode modification</a>
+    <a href="{{ path('admin_users_index', {action: 'delete'}) }}" class="btn btn-secondary" style="text-decoration:none;">Mode désactivation</a>
+  </div>
 
-            <a href="{{ path('admin_cursus_index') }}"
-               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_cursus_' ? 'active' : '' }}">
-                Cursus
-            </a>
+  <form method="get" class="dashboard-filters">
+    <input type="hidden" name="action" value="{{ mode }}">
 
-            <a href="{{ path('admin_lesson_index') }}"
-               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_lesson_' ? 'active' : '' }}">
-                Leçons
-            </a>
+    <label for="q">Recherche :</label>
+    <input type="text" id="q" name="q" value="{{ q }}" placeholder="Nom, prénom ou email">
 
-            <a href="{{ path('admin_purchase_index') }}"
-               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_purchase_' ? 'active' : '' }}">
-                Commandes
-            </a>
+    <label for="sort">Tri :</label>
+    <select name="sort" id="sort">
+      <option value="name" {{ sort == 'name' ? 'selected' : '' }}>Alphabétique</option>
+      <option value="recent" {{ sort == 'recent' ? 'selected' : '' }}>Inscrits plus récents</option>
+    </select>
 
-            <a href="{{ path('admin_contact_index') }}"
-               class="sidebar-link {{ app.request.attributes.get('_route') starts with 'admin_contact_' ? 'active' : '' }}">
-                Messages contact
-            </a>
-        </nav>
-    </aside>
+    <label for="dir">Direction :</label>
+    <select name="dir" id="dir">
+      <option value="ASC" {{ dir == 'ASC' ? 'selected' : '' }}>ASC</option>
+      <option value="DESC" {{ dir == 'DESC' ? 'selected' : '' }}>DESC</option>
+    </select>
 
-    <!-- CONTENU -->
-    <div class="dashboard-content">
-        <h1>Gestion des clients</h1>
+    <label for="archived" class="admin-check">
+      <input type="checkbox" id="archived" name="archived" value="1" {{ includeArchived ? 'checked' : '' }}>
+      Inclure archivés
+    </label>
 
-        {# Stats discrètes #}
-        <div class="admin-stats-card">
-            <h2>{{ users|length }}</h2>
-            <p>Résultats affichés</p>
-        </div>
+    <button type="submit" class="btn">Appliquer</button>
+    <a href="{{ path('admin_users_index', {action: mode}) }}" class="btn btn-secondary" style="text-decoration:none;">Reset</a>
+  </form>
 
-        <!-- FILTRES (recherche + tri + archivés) -->
-        <form method="get" class="dashboard-filters">
-            <label for="q">Recherche :</label>
-            <input type="text" id="q" name="q" value="{{ q }}" placeholder="Nom, prénom ou email">
+  {% if users is empty %}
+    <p>Aucun utilisateur trouvé.</p>
+  {% else %}
 
-            <label for="sort">Tri :</label>
-            <select name="sort" id="sort">
-                <option value="name" {{ sort == 'name' ? 'selected' : '' }}>Alphabétique</option>
-                <option value="recent" {{ sort == 'recent' ? 'selected' : '' }}>Inscrits plus récents</option>
-            </select>
+    <div class="dashboard-card card-white admin-table-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Inscription</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
 
-            <label for="dir">Direction :</label>
-            <select name="dir" id="dir">
-                <option value="ASC" {{ dir == 'ASC' ? 'selected' : '' }}>ASC</option>
-                <option value="DESC" {{ dir == 'DESC' ? 'selected' : '' }}>DESC</option>
-            </select>
+        <tbody>
+        {% for user in users %}
+          <tr>
+            <td><strong>{{ user.lastName }} {{ user.firstName }}</strong></td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.createdAt ? user.createdAt|date('d/m/Y H:i') : '—' }}</td>
 
-            <label for="archived" class="admin-check">
-                <input type="checkbox" id="archived" name="archived" value="1" {{ includeArchived ? 'checked' : '' }}>
-                Inclure archivés
-            </label>
+            <td>
+              {% if user.archivedAt %}
+                <span class="badge badge-archived">Archivé</span>
+              {% else %}
+                <span class="badge badge-active">Actif</span>
+              {% endif %}
 
-            <button type="submit" class="btn">Appliquer</button>
-            <a href="{{ path('admin_users_index') }}" class="btn btn-secondary" style="text-decoration:none;">Reset</a>
-        </form>
+              {% if 'ROLE_ADMIN' in user.roles %}
+                <span class="badge badge-admin">Admin</span>
+              {% endif %}
 
-        {% if users is empty %}
-            <p>Aucun utilisateur trouvé.</p>
-        {% else %}
+              {% if not user.verified %}
+                <span class="badge badge-unverified">Non vérifié</span>
+              {% endif %}
+            </td>
 
-            {# TABLEAU #}
-            <div class="dashboard-card card-white admin-table-card">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Nom</th>
-                            <th>Email</th>
-                            <th>Inscription</th>
-                            <th>Statut</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
+            <td>
+              <div class="admin-actions">
+                {% if mode in ['', 'edit'] %}
+                  <a href="{{ path('admin_users_edit', {id: user.id}) }}"
+                     class="btn btn-secondary"
+                     style="text-decoration:none;">Éditer</a>
+                {% endif %}
 
-                    <tbody>
-                    {% for user in users %}
-                        <tr>
-                            <td><strong>{{ user.lastName }} {{ user.firstName }}</strong></td>
+                {% if mode in ['', 'delete'] %}
+                  {% if user.archivedAt %}
+                    <form method="post" action="{{ path('admin_users_restore', {id: user.id}) }}" style="margin:0;">
+                      <input type="hidden" name="_token" value="{{ csrf_token('restore_user_' ~ user.id) }}">
+                      <button type="submit" class="btn">Restaurer</button>
+                    </form>
+                  {% else %}
+                    <form method="post" action="{{ path('admin_users_delete', {id: user.id}) }}" style="margin:0;">
+                      <input type="hidden" name="_token" value="{{ csrf_token('archive_user_' ~ user.id) }}">
+                      <button type="submit" class="btn btn-danger"
+                              onclick="return confirm('Confirmer l\\'archivage de cet utilisateur ?');">
+                        Archiver
+                      </button>
+                    </form>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </td>
 
-                            <td>{{ user.email }}</td>
-
-                            <td>{{ user.createdAt ? user.createdAt|date('d/m/Y H:i') : '—' }}</td>
-
-                            <td>
-                                {% if user.archivedAt %}
-                                    <span class="badge badge-archived">Archivé</span>
-                                {% else %}
-                                    <span class="badge badge-active">Actif</span>
-                                {% endif %}
-
-                                {% if not user.verified %}
-                                    <span class="badge badge-unverified">Non vérifié</span>
-                                {% endif %}
-                            </td>
-
-                            <td>
-                                <div class="admin-actions">
-                                    <a href="{{ path('admin_users_edit', {id: user.id}) }}"
-                                       class="btn btn-secondary"
-                                       style="text-decoration:none;">
-                                        Éditer
-                                    </a>
-
-                                    {% if user.archivedAt %}
-                                        <form method="post" action="{{ path('admin_users_restore', {id: user.id}) }}" style="margin:0;">
-                                            <input type="hidden" name="_token" value="{{ csrf_token('restore_user_' ~ user.id) }}">
-                                            <button type="submit" class="btn">Restaurer</button>
-                                        </form>
-                                    {% else %}
-                                        <form method="post" action="{{ path('admin_users_delete', {id: user.id}) }}" style="margin:0;">
-                                            <input type="hidden" name="_token" value="{{ csrf_token('archive_user_' ~ user.id) }}">
-                                            <button type="submit"
-                                                    class="btn btn-danger"
-                                                    onclick="return confirm('Confirmer l\\'archivage de cet utilisateur ?');">
-                                                Archiver
-                                            </button>
-                                        </form>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-        {% endif %}
-
-        <a href="{{ path('admin_dashboard') }}" class="btn-back">← Retour au dashboard admin</a>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
-</div>
+
+  {% endif %}
+
+  <a href="{{ path('admin_dashboard') }}" class="btn-back">← Retour au dashboard admin</a>
 {% endblock %}

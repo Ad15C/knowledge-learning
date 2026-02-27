@@ -1,77 +1,12 @@
 /* ==========================================
-   ADMIN CSS (Dashboard + Pages)
+   ADMIN CSS (Global: dashboard + pages)
    Palette:
    #f1f8fc (fond)
    #0074c7 (primary)
    #00497c (primary dark)
    #384050 (text)
 ========================================== */
-
-/* =========================
-   ADMIN DASHBOARD (cards grid)
-========================= */
-.admin-dashboard {
-  padding: 1rem;
-}
-
-.admin-dashboard__header {
-  margin-bottom: 1rem;
-}
-
-.admin-dashboard__header h1 {
-  margin: 0 0 0.25rem 0;
-}
-
-.admin-dashboard__header p {
-  margin: 0;
-  opacity: 0.9;
-  color: #384050;
-}
-
-/* Grille responsive : s’adapte automatiquement à la largeur */
-.admin-dashboard__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-}
-
-/* Carte dashboard */
-.admin-card {
-  display: block;
-  border: 1px solid rgba(0, 116, 199, 0.18);
-  border-radius: 14px;
-  padding: 1rem;
-  text-decoration: none;
-  color: inherit;
-  background: #fff;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-}
-
-.admin-card h2 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
-  color: #00497c;
-}
-
-.admin-card p {
-  margin: 0;
-  opacity: 0.85;
-  line-height: 1.4;
-  color: #384050;
-}
-
-.admin-card:hover,
-.admin-card:focus-visible {
-  background: #f1f8fc;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-  outline: none;
-}
-
-
-/* =========================
-   ADMIN PAGES (list/edit/etc.)
-========================= */
+* { font-family: "Comic Sans MS", cursive, sans-serif; }
 
 /* Un peu d’air dans les pages admin */
 .dashboard-content{
@@ -88,38 +23,9 @@
   padding: 18px;
 }
 
-/* Stats discrètes */
-.admin-stats-card{
-  display: inline-block;
-  background: #f1f8fc;
-  border: 1px solid rgba(0, 116, 199, 0.25);
-  border-radius: 14px;
-  padding: 14px 18px;
-  margin-top: 4px;
-}
-
-.admin-stats-card h2{
-  margin: 0;
-  font-size: 26px;
-  color: #00497c;
-  line-height: 1.1;
-}
-
-.admin-stats-card p{
-  margin: 6px 0 0;
-  font-size: 14px;
-  color: #384050;
-  opacity: 0.85;
-}
-
-/* Checkbox align */
-.admin-check{
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Boutons */
+/* =========================
+   Boutons
+========================= */
 .btn{
   background: #0074c7;
   color: #fff;
@@ -171,9 +77,12 @@
 
 .btn-back:hover{
   background: #0074c7;
-  color: #f1f8fc; 
+  color: #f1f8fc;
 }
-/* Sidebar active */
+
+/* =========================
+   Sidebar
+========================= */
 .sidebar-link.active{
   background: #0074c7;
   color: #fff;
@@ -184,7 +93,50 @@
   color: #00497c;
 }
 
-/* Table admin */
+/* =========================
+   Stats (petite carte)
+========================= */
+.admin-stats-card{
+  display: inline-block;
+  background: #f1f8fc;
+  border: 1px solid rgba(0, 116, 199, 0.25);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-top: 4px;
+}
+
+.admin-stats-card h2{
+  margin: 0;
+  font-size: 26px;
+  color: #00497c;
+  line-height: 1.1;
+}
+
+.admin-stats-card p{
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #384050;
+  opacity: 0.85;
+}
+
+/* Checkbox align */
+.admin-check{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Actions alignées */
+.admin-actions{
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* =========================
+   Table admin
+========================= */
 .admin-table-card{
   padding: 0; /* la table gère ses paddings internes */
   overflow: hidden;
@@ -213,7 +165,9 @@
   background: #f1f8fc;
 }
 
-/* Badges */
+/* =========================
+   Badges
+========================= */
 .badge{
   display: inline-block;
   padding: 4px 10px;
@@ -230,6 +184,18 @@
   border-color: rgba(0, 116, 199, 0.25);
 }
 
+.badge-admin{
+  background: rgba(0, 116, 199, 0.10);
+  color: #00497c;
+  border: 1px solid rgba(0, 116, 199, 0.35);
+}
+
+.badge-user{
+  background: rgba(56,64,80,0.08);
+  color:#384050;
+  border-color: rgba(56,64,80,0.18);
+}
+
 .badge-archived{
   background: rgba(56, 64, 80, 0.08);
   color: #384050;
@@ -242,46 +208,58 @@
   border-color: rgba(220, 53, 69, 0.25);
 }
 
-/* Actions alignées */
-.admin-actions{
+/* =========================
+   Dashboard cards (liens)
+========================= */
+.card-links{
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
+  margin: 12px 0;
 }
 
+.card-links a{
+  color: #0074c7;
+  text-decoration: none;
+  font-weight: 400; /* pas en gras */
+  transition: color 0.2s ease;
+}
+
+.card-links a:hover{
+  color: #00497c;
+  text-decoration: underline;
+}
+
+a.card-link-indicator{
+  display: inline-block;
+  margin-top: 10px;
+  color: #0074c7;
+  text-decoration: none;
+  font-weight: 400; /* pas en gras */
+  transition: color 0.2s ease;
+}
+
+a.card-link-indicator:hover{
+  color: #00497c;
+  text-decoration: underline;
+}
 
 /* =========================
-   RESPONSIVE
+   Responsive
 ========================= */
-
-/* Mobile : padding un peu plus petit + grille 1 colonne */
-@media (max-width: 480px) {
-  .admin-dashboard {
-    padding: 0.75rem;
-  }
-
-  .admin-dashboard__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-card {
-    padding: 0.9rem;
-  }
-
+@media (max-width: 480px){
   .dashboard-card.card-white{
     padding: 14px;
   }
 }
 
-/* Table responsive (table scrollable) */
-@media (max-width: 992px) {
+@media (max-width: 992px){
   .admin-table-card{
     overflow-x: auto;
   }
 
   .admin-table{
-    min-width: 780px; /* évite que tout se compresse trop */
+    min-width: 780px;
   }
 
   .admin-actions{

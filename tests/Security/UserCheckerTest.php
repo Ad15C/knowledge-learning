@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Security\UserChecker;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
+use Symfony\Component\Security\Core\Exception\CustomUserMessageAccountStatusException;
 
 class UserCheckerTest extends TestCase
 {
@@ -19,7 +20,8 @@ class UserCheckerTest extends TestCase
         $user->setPassword('hashed');
         $user->setIsVerified(false);
 
-        $this->expectException(CustomUserMessageAuthenticationException::class);
+        $this->expectException(CustomUserMessageAccountStatusException::class);
+        $this->expectExceptionMessage("Votre compte n’est pas encore vérifié.");
         $checker->checkPreAuth($user);
     }
 

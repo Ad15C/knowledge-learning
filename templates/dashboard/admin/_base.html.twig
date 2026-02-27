@@ -1,0 +1,50 @@
+{% extends 'dashboard/base_dashboard.html.twig' %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/dashboard.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/admin/dashboard.css') }}">
+{% endblock %}
+
+{% block sidebar %}
+  {% set route = app.request.attributes.get('_route') %}
+
+  <div class="sidebar-header">Admin</div>
+
+  <nav class="sidebar-nav">
+    <a href="{{ path('admin_dashboard') }}"
+       class="sidebar-link {{ route starts with 'admin_dashboard' ? 'active' : '' }}">
+      Vue d'ensemble
+    </a>
+
+    <a href="{{ path('admin_users_index') }}"
+       class="sidebar-link {{ route starts with 'admin_users' ? 'active' : '' }}">
+      Clients
+    </a>
+
+    <a href="{{ path('admin_theme_index') }}"
+       class="sidebar-link {{ route starts with 'admin_theme' ? 'active' : '' }}">
+      Thèmes
+    </a>
+
+    <a href="{{ path('admin_cursus_index') }}"
+       class="sidebar-link {{ route starts with 'admin_cursus' ? 'active' : '' }}">
+      Cursus
+    </a>
+
+    <a href="{{ path('admin_lesson_index') }}"
+       class="sidebar-link {{ route starts with 'admin_lesson' ? 'active' : '' }}">
+      Leçons
+    </a>
+
+    <a href="{{ path('admin_purchase_index') }}"
+       class="sidebar-link {{ route starts with 'admin_purchase' ? 'active' : '' }}">
+      Commandes
+    </a>
+
+    <a href="{{ path('admin_contact_index') }}"
+       class="sidebar-link {{ route starts with 'admin_contact' ? 'active' : '' }}">
+      Messages contact
+    </a>
+  </nav>
+{% endblock %}
