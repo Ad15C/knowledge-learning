@@ -32,7 +32,11 @@ class Lesson
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $image = null;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private bool $isActive = true;
+
     public function getId(): ?int { return $this->id; }
+
     public function getTitle(): ?string { return $this->title; }
     public function setTitle(string $title): static { $this->title = $title; return $this; }
 
@@ -51,5 +55,13 @@ class Lesson
     public function getVideoUrl(): ?string { return $this->videoUrl; }
     public function setVideoUrl(?string $videoUrl): static { $this->videoUrl = $videoUrl; return $this; }
 
-    
+    public function isActive(): bool { return $this->isActive; }
+    public function setIsActive(bool $isActive): static { $this->isActive = $isActive; return $this; }
+
+    // Centralisation de la règle d'accès public
+    public function isPubliclyAccessible(): bool
+    {
+        return $this->isActive === true
+            && $this->cursus?->isPubliclyAccessible() === true;
+    }
 }

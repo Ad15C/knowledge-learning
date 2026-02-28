@@ -42,7 +42,7 @@ class ThemeController extends AbstractController
     {
         $theme = $themeRepository->find($id);
 
-        if (!$theme) {
+        if (!$theme || !$theme->isActive()) {
             throw $this->createNotFoundException('Thème introuvable.');
         }
 
