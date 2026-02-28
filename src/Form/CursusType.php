@@ -28,6 +28,7 @@ class CursusType extends AbstractType
                 'placeholder' => '— Choisir un thème —',
                 'query_builder' => function (ThemeRepository $tr) use ($options) {
                     $qb = $tr->createQueryBuilder('t')
+                        ->distinct()
                         ->orderBy('t.name', 'ASC');
 
                     $cursus = $options['data'] ?? null;

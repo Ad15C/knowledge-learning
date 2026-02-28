@@ -3,7 +3,6 @@
 {% block stylesheets %}
   {{ parent() }}
   <link rel="stylesheet" href="{{ asset('styles/admin/admin-shared.css') }}">
-  <link rel="stylesheet" href="{{ asset('styles/admin/cursus.css') }}">
 {% endblock %}
 
 {% block title %}Admin - Cursus{% endblock %}
@@ -71,7 +70,7 @@
       <h2>
         <span>{{ cursus.name }}</span>
 
-        {% if cursus.active %}
+        {% if cursus.isActive %}
           <span class="badge badge-active">Actif</span>
         {% else %}
           <span class="badge badge-archived">Inactif</span>
@@ -92,7 +91,7 @@
           Modifier
         </a>
 
-        {% if cursus.active %}
+        {% if cursus.isActive %}
           <a href="{{ path('admin_cursus_delete', {'id': cursus.id}) }}" class="btn btn-danger">
             Archiver
           </a>
