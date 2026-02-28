@@ -34,6 +34,8 @@ class Cursus
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private bool $isActive = true;
 
     public function __construct()
     {
@@ -41,21 +43,24 @@ class Cursus
     }
 
     public function getId(): ?int { return $this->id; }
+
     public function getName(): ?string { return $this->name; }
     public function setName(string $name): static { $this->name = $name; return $this; }
 
-    public function getPrice(): ?float { return $this->price !== null ? (float)$this->price : null; }
-    public function setPrice(float $price): static { $this->price = (string)$price; return $this; }
+    public function getPrice(): ?float { return $this->price !== null ? (float) $this->price : null; }
+    public function setPrice(float $price): static { $this->price = number_format($price, 2, '.', ''); return $this; }
 
     public function getDescription(): ?string { return $this->description; }
     public function setDescription(?string $description): static { $this->description = $description; return $this; }
-
 
     public function getTheme(): ?Theme { return $this->theme; }
     public function setTheme(?Theme $theme): static { $this->theme = $theme; return $this; }
 
     public function getImage(): ?string { return $this->image; }
     public function setImage(?string $image): static { $this->image = $image; return $this; }
+
+    public function isActive(): bool { return $this->isActive; }
+    public function setIsActive(bool $isActive): static { $this->isActive = $isActive; return $this; }
 
     /** @return Collection<int, Lesson> */
     public function getLessons(): Collection { return $this->lessons; }
@@ -69,4 +74,9 @@ class Cursus
         return $this;
     }
 
+    // Centralisation de la règle d'accès public
+    public function isPubliclyAccessible(): bool
+    {
+        return $this->isActive === true && $this->theme?->isActive() === true;
+    }
 }

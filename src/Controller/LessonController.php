@@ -9,8 +9,7 @@ use App\Service\LessonValidatedService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
@@ -27,7 +26,9 @@ class LessonController extends AbstractController
         $userHasAccess = [];
         $userHasCompleted = [];
 
-        if (!$user) return [$userHasAccess, $userHasCompleted];
+        if (!$user) {
+            return [$userHasAccess, $userHasCompleted];
+        }
 
         $paidItems = $this->em->getRepository('App\Entity\PurchaseItem')
             ->createQueryBuilder('pi')
@@ -63,16 +64,18 @@ class LessonController extends AbstractController
     #[Route('/lesson/{id}', name: 'lesson_show')]
     public function show(Lesson $lesson): Response
     {
+        if (!$lesson->isPubliclyAccessible()) {
+            throw $this->createNotFoundException('Leçon introuvable.');
+        }
+
         [$userHasAccess, $userHasCompleted] = $this->getUserAccessAndCompleted();
         $user = $this->getUser();
 
-        // Récupérer la certification de cette leçon si elle existe
-        $certification = $this->em->getRepository(Certification::class)
-            ->findOneBy([
-                'user' => $user,
-                'lesson' => $lesson,
-                'type' => 'lesson',
-            ]);
+        $certification = $this->em->getRepository(Certification::class)->findOneBy([
+            'user' => $user,
+            'lesson' => $lesson,
+            'type' => 'lesson',
+        ]);
 
         return $this->render('lesson/show.html.twig', [
             'lesson' => $lesson,
@@ -85,10 +88,15 @@ class LessonController extends AbstractController
     #[Route('/lesson/{id}/complete', name: 'lesson_complete', methods: ['POST'])]
     public function complete(Lesson $lesson, LessonValidatedService $lessonService): Response
     {
-        $user = $this->getUser();
-        if (!$user) return $this->redirectToRoute('app_login');
+        if (!$lesson->isPubliclyAccessible()) {
+            throw $this->createNotFoundException('Leçon introuvable.');
+        }
 
-        // Valider la leçon et créer les certifications
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
+
         $lessonService->validateLesson($user, $lesson);
 
         $this->addFlash('success', 'Leçon marquée comme complétée et certification générée !');

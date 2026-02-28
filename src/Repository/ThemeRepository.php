@@ -14,33 +14,40 @@ class ThemeRepository extends ServiceEntityRepository
     }
 
     /**
-     * Récupère tous les thèmes avec leurs cursus et leçons.
-     *
      * @return Theme[]
      */
     public function findThemesWithFilters(?string $name = null, ?float $minPrice = null, ?float $maxPrice = null): array
     {
         $qb = $this->createQueryBuilder('t')
+            ->distinct()
             ->leftJoin('t.cursus', 'c')
             ->addSelect('c')
             ->leftJoin('c.lessons', 'l')
-            ->addSelect('l');
+            ->addSelect('l')
+            ->andWhere('t.isActive = true');
 
         if ($name) {
             $qb->andWhere('t.name LIKE :name')
                ->setParameter('name', '%'.$name.'%');
         }
 
-        if ($minPrice !== null) {
-            $qb->andWhere('c.price >= :minPrice')
-               ->setParameter('minPrice', $minPrice);
-        }
-
-        if ($maxPrice !== null) {
-            $qb->andWhere('c.price <= :maxPrice')
+        if ($minPrice !== null && $maxPrice !== null) {
+            $qb->andWhere('((c.price BETWEEN :minPrice AND :maxPrice) OR c.id IS NULL)')
+               ->setParameter('minPrice', $minPrice)
                ->setParameter('maxPrice', $maxPrice);
+        } else {
+            if ($minPrice !== null) {
+                $qb->andWhere('(c.price >= :minPrice OR c.id IS NULL)')
+                   ->setParameter('minPrice', $minPrice);
+            }
+            if ($maxPrice !== null) {
+                $qb->andWhere('(c.price <= :maxPrice OR c.id IS NULL)')
+                   ->setParameter('maxPrice', $maxPrice);
+            }
         }
 
-        return $qb->orderBy('t.name', 'ASC')->getQuery()->getResult();
+        return $qb->orderBy('t.name', 'ASC')
+                  ->getQuery()
+                  ->getResult();
     }
 }

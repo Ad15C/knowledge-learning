@@ -1,8 +1,74 @@
-{% extends 'base.html.twig' %}
+{% extends 'dashboard/admin/_base.html.twig' %}
 
 {% block title %}Admin - Thèmes{% endblock %}
 
-{% block body %}
-  <h1>Gestion des Thèmes</h1>
-  <p>Page en cours de construction.</p>
+{% block dashboard_content %}
+
+<h1>Gestion des Thèmes</h1>
+
+<a href="{{ path('admin_theme_new') }}" class="btn btn-success" style="margin-bottom:20px;">
+    + Créer un nouveau thème
+</a>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Image</th>
+            <th>Nom</th>
+            <th>Créé le</th>
+            <th>Statut</th>
+            <th style="width:250px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for theme in themes %}
+        <tr>
+            <td>
+                {% if theme.image %}
+                    <img src="{{ asset(theme.image) }}" alt="{{ theme.name }}" width="80">
+                {% endif %}
+            </td>
+
+            <td>{{ theme.name }}</td>
+
+            <td>{{ theme.createdAt|date('d/m/Y') }}</td>
+
+            <td>
+                {% if theme.isActive %}
+                    <span class="badge badge-success">Actif</span>
+                {% else %}
+                    <span class="badge badge-danger">Désactivé</span>
+                {% endif %}
+            </td>
+
+            <td>
+                <a href="{{ path('admin_theme_edit', {id: theme.id}) }}" class="btn btn-primary btn-sm">
+                    Modifier
+                </a>
+
+                {% if theme.isActive %}
+                    <a href="{{ path('admin_theme_delete', {id: theme.id}) }}" class="btn btn-warning btn-sm">
+                        Désactiver
+                    </a>
+                {% else %}
+                    <form method="post"
+                          action="{{ path('admin_theme_activate', {id: theme.id}) }}"
+                          style="display:inline-block;">
+                        <input type="hidden" name="_token"
+                               value="{{ csrf_token('theme_activate_' ~ theme.id) }}">
+                        <button class="btn btn-success btn-sm">
+                            Réactiver
+                        </button>
+                    </form>
+                {% endif %}
+            </td>
+        </tr>
+    {% else %}
+        <tr>
+            <td colspan="5">Aucun thème enregistré.</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
 {% endblock %}

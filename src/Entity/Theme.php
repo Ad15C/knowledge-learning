@@ -30,6 +30,9 @@ class Theme
     #[ORM\OneToMany(mappedBy: 'theme', targetEntity: Cursus::class, orphanRemoval: true)]
     private Collection $cursus;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private bool $isActive = true;
+
     public function __construct()
     {
         $this->cursus = new ArrayCollection();
@@ -37,6 +40,7 @@ class Theme
     }
 
     public function getId(): ?int { return $this->id; }
+
     public function getName(): ?string { return $this->name; }
     public function setName(string $name): static { $this->name = $name; return $this; }
 
@@ -68,4 +72,7 @@ class Theme
         }
         return $this;
     }
+
+    public function isActive(): bool { return $this->isActive; }
+    public function setIsActive(bool $isActive): static { $this->isActive = $isActive; return $this; }
 }
