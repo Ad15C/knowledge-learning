@@ -20,6 +20,18 @@
   flex-direction: column;
 }
 
+/* Détails (page delete) */
+.theme-detail-title{
+  margin: 0;
+  color:#00497c;
+}
+
+.theme-detail-desc{
+  margin: 10px 0 0;
+  color:#384050;
+  opacity:.92;
+}
+
 .theme-card:hover{
   transform: translateY(-3px);
   box-shadow: 0 12px 28px rgba(0,0,0,0.08);

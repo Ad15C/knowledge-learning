@@ -31,6 +31,8 @@ security:
                 password_parameter: _password          
                 default_target_path: user_dashboard # redirection après login
                 enable_csrf: true               # protection CSRF activée
+                csrf_parameter: _csrf_token
+                csrf_token_id: authenticate
 
             # Déconnexion
             logout:

@@ -44,11 +44,13 @@
         <a href="{{ path('admin_theme_edit', {'id': theme.id}) }}" class="btn btn-secondary">Modifier</a>
 
         {% if theme.isActive %}
-          <a href="{{ path('admin_theme_delete', {'id': theme.id}) }}" class="btn btn-danger">Désactiver</a>
+          <a href="{{ path('admin_theme_delete', {'id': theme.id}) }}" class="btn btn-danger">
+            Archiver
+          </a>
         {% else %}
           <form method="post" action="{{ path('admin_theme_activate', {'id': theme.id}) }}" class="inline-form">
-            <input type="hidden" name="_token" value="{{ csrf_token('theme_activate_' ~ theme.id) }}">
-            <button class="btn" type="submit">Réactiver</button>
+            <input type="hidden" name="_token" value="{{ csrf_token('theme_activate' ~ theme.id) }}">
+            <button class="btn" type="submit">Restaurer</button>
           </form>
         {% endif %}
       </div>
