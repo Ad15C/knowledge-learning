@@ -4,6 +4,9 @@ namespace App\Controller\Admin;
 
 use App\Entity\User;
 use App\Form\Admin\UserType;
+use App\Repository\CertificationRepository;
+use App\Repository\LessonValidatedRepository;
+use App\Repository\PurchaseItemRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -74,6 +77,46 @@ class AdminUserController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}', name: 'show', methods: ['GET'])]
+    public function show(
+        int $id,
+        EntityManagerInterface $em,
+        UserRepository $repo,
+        LessonValidatedRepository $lvRepo,
+        CertificationRepository $certRepo,
+        PurchaseItemRepository $purchaseItemRepo
+    ): Response {
+        $user = $this->findUserIncludingArchived($id, $em, $repo);
+
+        $validatedLessons = $lvRepo->findValidatedLessonsForUser($user);
+        $certifications = $certRepo->findByUserWithTargets($user);
+        $purchasedLessons = $purchaseItemRepo->findLessonsPurchasedByUser($user);
+
+        $validatedIds = array_values(array_filter(array_map(
+            static fn($lv) => $lv->getLesson()?->getId(),
+            $validatedLessons
+        )));
+
+        $inProgressLessons = array_values(array_filter(
+            $purchasedLessons,
+            static fn($lesson) => $lesson && !in_array($lesson->getId(), $validatedIds, true)
+        ));
+
+        $stats = [
+            'purchasedCount' => count($purchasedLessons),
+            'validatedCount' => count($validatedLessons),
+            'certificationsCount' => count($certifications),
+        ];
+
+        return $this->render('admin/users/show.html.twig', [
+            'user' => $user,
+            'validatedLessons' => $validatedLessons,
+            'inProgressLessons' => $inProgressLessons,
+            'certifications' => $certifications,
+            'stats' => $stats,
+        ]);
+    }
+
     #[Route('/{id}/edit', name: 'edit', methods: ['GET', 'POST'])]
     public function edit(
         int $id,
@@ -116,6 +159,7 @@ class AdminUserController extends AbstractController
                 if ($adminsCount <= 1) {
                     $user->setStoredRoles(['ROLE_ADMIN']);
                     $this->addFlash('danger', "Action refusée : il doit rester au moins un administrateur actif.");
+
                     return $this->redirectToRoute('admin_users_edit', [
                         'id' => $user->getId(),
                         'status' => $status,
@@ -136,7 +180,7 @@ class AdminUserController extends AbstractController
             'user' => $user,
             'form' => $form->createView(),
             'isSelf' => $isSelf,
-            'status' => $status, // utile pour les liens retour/annuler
+            'status' => $status,
         ]);
     }
 

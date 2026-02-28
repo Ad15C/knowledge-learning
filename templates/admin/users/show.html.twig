@@ -1,0 +1,35 @@
+{% extends 'dashboard/admin/_base.html.twig' %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/admin/users.css') }}">
+{% endblock %}
+
+{% block title %}Admin - Fiche client{% endblock %}
+
+{% block dashboard_content %}
+  <div class="admin-users-edit">
+    <div class="admin-page-header">
+      <div>
+        <h1 class="admin-page-title">Fiche client</h1>
+        <p class="admin-page-subtitle">{{ user.firstName }} {{ user.lastName }} • {{ user.email }}</p>
+      </div>
+
+      <div class="admin-actions-inline">
+        <a class="btn btn-secondary" href="{{ path('admin_users_index') }}">← Retour liste</a>
+        <a class="btn" href="{{ path('admin_users_edit', { id: user.id }) }}">Modifier</a>
+      </div>
+    </div>
+
+    {% if stats is defined %}
+      <div class="dashboard-card card-white admin-section">
+        <h2 class="admin-section-title">Statistiques</h2>
+        <p>Leçons achetées : <strong>{{ stats.purchasedCount }}</strong></p>
+        <p>Leçons validées : <strong>{{ stats.validatedCount }}</strong></p>
+        <p>Certifications : <strong>{{ stats.certificationsCount }}</strong></p>
+      </div>
+    {% endif %}
+
+    {% include 'admin/users/_progress_and_certs.html.twig' %}
+  </div>
+{% endblock %}
