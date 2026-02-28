@@ -1,0 +1,42 @@
+{% extends 'dashboard/admin/_base.html.twig' %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/admin/theme.css') }}">
+{% endblock %}
+
+{% block title %}Admin - Modifier un thème{% endblock %}
+
+{% block dashboard_content %}
+
+<div class="admin-page-header">
+  <div>
+    <h1 class="admin-page-title">Modifier : {{ theme.name }}</h1>
+    <p class="admin-page-subtitle">Modifie le nom, la description et l’image du thème.</p>
+  </div>
+
+  <a href="{{ path('admin_theme_index') }}" class="btn btn-secondary">← Retour</a>
+</div>
+
+<div class="dashboard-card card-white admin-form-card admin-container-narrow">
+  {{ form_start(form) }}
+
+  <div class="admin-form-grid">
+    <div class="admin-form-field--full">{{ form_row(form.name) }}</div>
+    <div class="admin-form-field--full">{{ form_row(form.description) }}</div>
+    <div class="admin-form-field--full">{{ form_row(form.image) }}</div>
+  </div>
+
+  <div class="admin-form-actions">
+    <button class="btn" type="submit">Enregistrer</button>
+    <a href="{{ path('admin_theme_index') }}" class="btn btn-secondary">Annuler</a>
+
+    {% if theme.isActive %}
+      <a href="{{ path('admin_theme_delete', {id: theme.id}) }}" class="btn btn-danger">Désactiver</a>
+    {% endif %}
+  </div>
+
+  {{ form_end(form) }}
+</div>
+
+{% endblock %}

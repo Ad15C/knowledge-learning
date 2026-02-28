@@ -6,7 +6,14 @@
    #00497c (primary dark)
    #384050 (text)
 ========================================== */
-* { font-family: "Comic Sans MS", cursive, sans-serif; }
+
+/* Base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  font-family: "Comic Sans MS", cursive, sans-serif;
+}
 
 /* Un peu d’air dans les pages admin */
 .dashboard-content{
@@ -35,6 +42,11 @@
   cursor: pointer;
   font-weight: 600;
   transition: all .2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
 }
 
 .btn:hover{
@@ -64,20 +76,9 @@
   border-color: #b02a37;
 }
 
-/* Retour */
-.btn-back{
-  display: inline-block;
-  color: #0074c7;
-  text-decoration: none;
-  font-weight: 600;
-  padding: 6px 10px;
-  border-radius: 8px;
-  transition: all .2s ease;
-}
-
-.btn-back:hover{
-  background: #0074c7;
-  color: #f1f8fc;
+/* Form inline (utile dans les cards) */
+.inline-form{
+  margin: 0;
 }
 
 /* =========================
@@ -94,39 +95,88 @@
 }
 
 /* =========================
-   Stats (petite carte)
+   Page header (réutilisable)
 ========================= */
-.admin-stats-card{
-  display: inline-block;
-  background: #f1f8fc;
-  border: 1px solid rgba(0, 116, 199, 0.25);
-  border-radius: 14px;
-  padding: 14px 18px;
-  margin-top: 4px;
+.admin-page-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-top: 6px;
 }
 
-.admin-stats-card h2{
+.admin-page-title{
   margin: 0;
-  font-size: 26px;
   color: #00497c;
-  line-height: 1.1;
 }
 
-.admin-stats-card p{
-  margin: 6px 0 0;
-  font-size: 14px;
+.admin-page-subtitle{
+  margin: 8px 0 0;
   color: #384050;
-  opacity: 0.85;
+  opacity: .9;
 }
 
-/* Checkbox align */
-.admin-check{
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+/* =========================
+   Forms (réutilisable)
+========================= */
+.admin-form-card{
+  padding: 22px;
 }
 
-/* Actions alignées */
+.admin-form-grid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.admin-form-field--full{
+  grid-column: 1 / -1;
+}
+
+.admin-form-actions{
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Inputs */
+.admin-form-card label{
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #384050;
+}
+
+.admin-form-card input,
+.admin-form-card select,
+.admin-form-card textarea{
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 116, 199, 0.25);
+  background: #fff;
+  color: #384050;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.admin-form-card input:focus,
+.admin-form-card select:focus,
+.admin-form-card textarea:focus{
+  border-color: rgba(0, 116, 199, 0.65);
+  box-shadow: 0 0 0 3px rgba(0, 116, 199, 0.15);
+}
+
+/* Container largeur (si besoin) */
+.admin-container-narrow{
+  max-width: 980px;
+}
+
+/* =========================
+   Actions alignées
+========================= */
 .admin-actions{
   display: flex;
   gap: 8px;
@@ -138,7 +188,7 @@
    Table admin
 ========================= */
 .admin-table-card{
-  padding: 0; /* la table gère ses paddings internes */
+  padding: 0;
   overflow: hidden;
 }
 
@@ -174,8 +224,8 @@
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
-  margin-right: 6px;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .badge-active{
@@ -184,28 +234,10 @@
   border-color: rgba(0, 116, 199, 0.25);
 }
 
-.badge-admin{
-  background: rgba(0, 116, 199, 0.10);
-  color: #00497c;
-  border: 1px solid rgba(0, 116, 199, 0.35);
-}
-
-.badge-user{
-  background: rgba(56,64,80,0.08);
-  color:#384050;
-  border-color: rgba(56,64,80,0.18);
-}
-
 .badge-archived{
   background: rgba(56, 64, 80, 0.08);
   color: #384050;
   border-color: rgba(56, 64, 80, 0.18);
-}
-
-.badge-unverified{
-  background: rgba(220, 53, 69, 0.10);
-  color: #b02a37;
-  border-color: rgba(220, 53, 69, 0.25);
 }
 
 /* =========================
@@ -221,7 +253,7 @@
 .card-links a{
   color: #0074c7;
   text-decoration: none;
-  font-weight: 400; /* pas en gras */
+  font-weight: 400;
   transition: color 0.2s ease;
 }
 
@@ -235,7 +267,7 @@ a.card-link-indicator{
   margin-top: 10px;
   color: #0074c7;
   text-decoration: none;
-  font-weight: 400; /* pas en gras */
+  font-weight: 400;
   transition: color 0.2s ease;
 }
 
@@ -247,27 +279,17 @@ a.card-link-indicator:hover{
 /* =========================
    Responsive
 ========================= */
-@media (max-width: 480px){
-  .dashboard-card.card-white{
-    padding: 14px;
-  }
+@media (max-width: 992px){
+  .admin-table-card{ overflow-x: auto; }
+  .admin-table{ min-width: 780px; }
+
+  .admin-actions{ gap: 6px; }
+  .btn{ padding: 7px 12px; }
+
+  .admin-form-card{ padding: 18px; }
+  .admin-form-actions{ gap: 8px; }
 }
 
-@media (max-width: 992px){
-  .admin-table-card{
-    overflow-x: auto;
-  }
-
-  .admin-table{
-    min-width: 780px;
-  }
-
-  .admin-actions{
-    gap: 6px;
-  }
-
-  .btn{
-    padding: 7px 12px;
-    border-radius: 10px;
-  }
+@media (max-width: 480px){
+  .dashboard-card.card-white{ padding: 14px; }
 }
