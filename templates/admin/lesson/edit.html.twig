@@ -1,8 +1,79 @@
-{% extends 'base.html.twig' %}
+{% extends 'dashboard/admin/_base.html.twig' %}
 
-{% block title %}Admin -Leçons{% endblock %}
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/admin/admin-shared.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/admin/lesson.css') }}">
+{% endblock %}
 
-{% block body %}
-  <h1>Gestion des Leçons</h1>
-  <p>Page en cours de construction.</p>
+{% block title %}Admin - Modifier une leçon{% endblock %}
+
+{% block dashboard_content %}
+
+  <div class="admin-page-header">
+    <div>
+      <h1 class="admin-page-title">Modifier : {{ lesson.title }}</h1>
+      <p class="admin-page-subtitle">
+        Tu peux aussi changer le cursus ici (déplacer la leçon).
+      </p>
+    </div>
+
+    <a href="{{ path('admin_lesson_index') }}" class="btn btn-secondary">
+      ← Retour
+    </a>
+  </div>
+
+  <div class="dashboard-card card-white admin-form-card admin-container-narrow">
+
+    {{ form_start(form, { attr: { novalidate: 'novalidate' } }) }}
+
+      {{ form_errors(form) }}
+
+      <div class="admin-form-grid">
+        <div class="admin-form-field--full">
+          {{ form_row(form.title) }}
+        </div>
+
+        <div class="admin-form-field--full">
+          {{ form_row(form.cursus) }}
+        </div>
+
+        <div class="admin-form-field--full">
+          {{ form_row(form.price) }}
+        </div>
+
+        <div class="admin-form-field--full">
+          {{ form_row(form.fiche) }}
+        </div>
+
+        <div class="admin-form-field--full">
+          {{ form_row(form.videoUrl) }}
+        </div>
+
+        <div class="admin-form-field--full">
+          {{ form_row(form.image) }}
+        </div>
+      </div>
+
+      <div class="admin-form-actions">
+        <button class="btn" type="submit">
+          Enregistrer
+        </button>
+
+        <a href="{{ path('admin_lesson_index') }}" class="btn btn-secondary">
+          Annuler
+        </a>
+
+        {% if lesson.isActive %}
+          <a href="{{ path('admin_lesson_delete', {'id': lesson.id}) }}"
+             class="btn btn-danger">
+            Archiver
+          </a>
+        {% endif %}
+      </div>
+
+    {{ form_end(form) }}
+
+  </div>
+
 {% endblock %}
