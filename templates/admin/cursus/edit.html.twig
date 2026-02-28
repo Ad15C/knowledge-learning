@@ -36,7 +36,7 @@
     <button class="btn" type="submit">Enregistrer</button>
     <a href="{{ path('admin_cursus_index') }}" class="btn btn-secondary">Annuler</a>
 
-    {% if cursus.active %}
+    {% if cursus.isActive %}
       <a href="{{ path('admin_cursus_delete', {'id': cursus.id}) }}" class="btn btn-danger">
         Archiver
       </a>
