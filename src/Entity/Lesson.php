@@ -41,7 +41,11 @@ class Lesson
     public function setTitle(string $title): static { $this->title = $title; return $this; }
 
     public function getPrice(): ?float { return $this->price !== null ? (float)$this->price : null; }
-    public function setPrice(float $price): static { $this->price = number_format($price, 2, '.', ''); return $this; }
+    public function setPrice(float|string $price): static
+    {
+        $this->price = number_format((float) $price, 2, '.', '');
+        return $this;
+    }
 
     public function getCursus(): ?Cursus { return $this->cursus; }
     public function setCursus(?Cursus $cursus): static { $this->cursus = $cursus; return $this; }

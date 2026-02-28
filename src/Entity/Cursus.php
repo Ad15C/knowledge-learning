@@ -28,7 +28,7 @@ class Cursus
     #[ORM\JoinColumn(nullable: false)]
     private ?Theme $theme = null;
 
-    #[ORM\OneToMany(mappedBy: 'cursus', targetEntity: Lesson::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'cursus', targetEntity: Lesson::class)]
     private Collection $lessons;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -42,13 +42,26 @@ class Cursus
         $this->lessons = new ArrayCollection();
     }
 
+    public function __toString(): string
+    {
+        return (string) $this->name;
+    }
+
     public function getId(): ?int { return $this->id; }
 
     public function getName(): ?string { return $this->name; }
     public function setName(string $name): static { $this->name = $name; return $this; }
 
-    public function getPrice(): ?float { return $this->price !== null ? (float) $this->price : null; }
-    public function setPrice(float $price): static { $this->price = number_format($price, 2, '.', ''); return $this; }
+    public function getPrice(): ?float
+    {
+        return $this->price !== null ? (float) $this->price : null;
+    }
+
+    public function setPrice(float|string $price): static
+    {
+        $this->price = number_format((float) $price, 2, '.', '');
+        return $this;
+    }
 
     public function getDescription(): ?string { return $this->description; }
     public function setDescription(?string $description): static { $this->description = $description; return $this; }
@@ -74,7 +87,12 @@ class Cursus
         return $this;
     }
 
-    // Centralisation de la règle d'accès public
+    public function removeLesson(Lesson $lesson): static
+    {
+        $this->lessons->removeElement($lesson);
+        return $this;
+    }
+
     public function isPubliclyAccessible(): bool
     {
         return $this->isActive === true && $this->theme?->isActive() === true;

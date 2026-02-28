@@ -27,7 +27,7 @@ class Theme
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $createdAt = null;
 
-    #[ORM\OneToMany(mappedBy: 'theme', targetEntity: Cursus::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'theme', targetEntity: Cursus::class)]
     private Collection $cursus;
 
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
@@ -37,6 +37,11 @@ class Theme
     {
         $this->cursus = new ArrayCollection();
         $this->createdAt = new \DateTime();
+    }
+
+    public function __toString(): string
+    {
+        return (string) $this->name;
     }
 
     public function getId(): ?int { return $this->id; }
@@ -67,9 +72,7 @@ class Theme
 
     public function removeCursus(Cursus $cursus): static
     {
-        if ($this->cursus->removeElement($cursus) && $cursus->getTheme() === $this) {
-            $cursus->setTheme(null);
-        }
+        $this->cursus->removeElement($cursus);
         return $this;
     }
 
