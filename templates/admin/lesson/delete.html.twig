@@ -1,8 +1,53 @@
-{% extends 'base.html.twig' %}
+{% extends 'dashboard/admin/_base.html.twig' %}
 
-{% block title %}Admin - Leçons{% endblock %}
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/admin/admin-shared.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/admin/lesson.css') }}">
+{% endblock %}
 
-{% block body %}
-  <h1>Suppression des leçons</h1>
-  <p>Page en cours de construction.</p>
+{% block title %}Admin - Archiver une leçon{% endblock %}
+
+{% block dashboard_content %}
+
+  <div class="admin-page-header">
+    <div>
+      <h1 class="admin-page-title">Archiver une leçon</h1>
+      <p class="admin-page-subtitle">
+        Cette leçon ne sera plus visible côté utilisateurs.
+      </p>
+    </div>
+
+    <a href="{{ path('admin_lesson_index') }}" class="btn btn-secondary">← Retour</a>
+  </div>
+
+  <div class="dashboard-card card-white admin-form-card admin-container-narrow">
+    <h2 class="lesson-detail-title">{{ lesson.title }}</h2>
+
+    <p class="lesson-meta" style="margin-top: 8px;">
+      <strong>Cursus :</strong> {{ lesson.cursus ? lesson.cursus.name : '—' }}<br>
+      <strong>Prix :</strong>
+      {{ lesson.price is not null ? (lesson.price|number_format(2, ',', ' ') ~ ' €') : '—' }}
+    </p>
+
+    <div class="admin-alert admin-alert-danger">
+      ⚠️ Cette leçon va être archivée (désactivée).
+      <strong>Les achats liés ne seront pas supprimés.</strong>
+    </div>
+
+    <form
+      method="post"
+      action="{{ path('admin_lesson_disable', { id: lesson.id }) }}"
+      class="inline-form"
+      onsubmit="return confirm('Confirmer l’archivage ?');"
+    >
+      <input type="hidden" name="_token" value="{{ csrf_token('lesson_disable' ~ lesson.id) }}">
+
+      <div class="admin-form-actions">
+        <button class="btn btn-danger" type="submit">Confirmer l’archivage</button>
+        <a href="{{ path('admin_lesson_index') }}" class="btn btn-secondary">Annuler</a>
+      </div>
+    </form>
+  </div>
+
 {% endblock %}

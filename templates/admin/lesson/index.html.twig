@@ -122,7 +122,8 @@
         {% else %}
           <form method="post"
                 action="{{ path('admin_lesson_activate', {'id': lesson.id}) }}"
-                class="inline-form">
+                class="inline-form"
+                onsubmit="return confirm('Confirmer la restauration ?');">
             <input type="hidden" name="_token" value="{{ csrf_token('lesson_activate' ~ lesson.id) }}">
             <button class="btn" type="submit">Restaurer</button>
           </form>
