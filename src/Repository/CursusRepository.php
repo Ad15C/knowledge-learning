@@ -37,7 +37,7 @@ class CursusRepository extends ServiceEntityRepository
 
         if ($q) {
             $qb->andWhere('LOWER(c.name) LIKE :q')
-            ->setParameter('q', '%'.mb_strtolower(trim($q)).'%');
+               ->setParameter('q', '%'.mb_strtolower(trim($q)).'%');
         }
 
         if ($status === 'active') {
@@ -48,22 +48,30 @@ class CursusRepository extends ServiceEntityRepository
 
         if ($themeId) {
             $qb->andWhere('t.id = :themeId')
-            ->setParameter('themeId', $themeId);
+               ->setParameter('themeId', $themeId);
         }
 
         switch ($sort) {
             case 'name_asc':
                 $qb->orderBy('c.name', 'ASC');
                 break;
+
             case 'name_desc':
                 $qb->orderBy('c.name', 'DESC');
                 break;
+
             case 'price_asc':
-                $qb->orderBy('c.price', 'ASC');
+                // NULL en dernier, puis prix croissant
+                $qb->orderBy('CASE WHEN c.price IS NULL THEN 1 ELSE 0 END', 'ASC')
+                   ->addOrderBy('c.price', 'ASC');
                 break;
+
             case 'price_desc':
-                $qb->orderBy('c.price', 'DESC');
+                // NULL en dernier, puis prix décroissant
+                $qb->orderBy('CASE WHEN c.price IS NULL THEN 1 ELSE 0 END', 'ASC')
+                   ->addOrderBy('c.price', 'DESC');
                 break;
+
             default:
                 $qb->orderBy('c.id', 'DESC');
         }
