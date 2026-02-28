@@ -11,6 +11,7 @@
   {% endif %}
 
   <div class="dashboard-cards">
+
     {# Clients #}
     <div
       class="dashboard-card dashboard-card-clickable"
@@ -45,11 +46,15 @@
       aria-label="Gérer les thèmes"
     >
       <h2>Thèmes</h2>
+
       <div class="card-links">
         <a href="{{ path('admin_theme_index') }}" data-no-card-click>Gérer les thèmes</a>
         <a href="{{ path('admin_theme_new') }}" data-no-card-click>Créer un thème</a>
       </div>
-      <a href="{{ path('admin_theme_index') }}" class="card-link-indicator" data-no-card-click>Gérer →</a>
+
+      <a href="{{ path('admin_theme_index') }}" class="card-link-indicator" data-no-card-click>
+        Gérer →
+      </a>
     </div>
 
     {# Cursus #}
@@ -61,11 +66,15 @@
       aria-label="Gérer les cursus"
     >
       <h2>Cursus</h2>
+
       <div class="card-links">
         <a href="{{ path('admin_cursus_index') }}" data-no-card-click>Gérer les cursus</a>
         <a href="{{ path('admin_cursus_new') }}" data-no-card-click>Créer un cursus</a>
       </div>
-      <a href="{{ path('admin_cursus_index') }}" class="card-link-indicator" data-no-card-click>Gérer →</a>
+
+      <a href="{{ path('admin_cursus_index') }}" class="card-link-indicator" data-no-card-click>
+        Gérer →
+      </a>
     </div>
 
     {# Leçons #}
@@ -81,15 +90,13 @@
       </div>
 
       <div class="card-links">
-        <a href="{{ path('admin_lesson_index') }}" data-no-card-click>
-          Voir toutes les leçons
-        </a>
-
-        <a href="{{ path('admin_lesson_new') }}" data-no-card-click>
-          Créer une leçon
-        </a>
+        <a href="{{ path('admin_lesson_index') }}" data-no-card-click>Voir toutes les leçons</a>
+        <a href="{{ path('admin_lesson_new') }}" data-no-card-click>Créer une leçon</a>
       </div>
-      <a href="{{ path('admin_lesson_index') }}" class="card-link-indicator" data-no-card-click>Gérer →</a>
+
+      <a href="{{ path('admin_lesson_index') }}" class="card-link-indicator" data-no-card-click>
+        Gérer →
+      </a>
     </div>
 
     {# Commandes #}
@@ -101,10 +108,14 @@
       aria-label="Voir les commandes"
     >
       <h2>Commandes</h2>
+
       <div class="card-links">
-        <a href="{{ path('admin_purchase_index') }}" data-no-card-click>Voir les commandes</a>
+        <span>Voir les commandes</span>
       </div>
-      <a href="{{ path('admin_purchase_index') }}" class="card-link-indicator" data-no-card-click>Gérer →</a>
+
+      <a href="{{ path('admin_purchase_index') }}" class="card-link-indicator" data-no-card-click>
+        Gérer →
+      </a>
     </div>
 
     {# Messages Contact #}
@@ -116,32 +127,43 @@
       aria-label="Voir les messages"
     >
       <h2>Messages</h2>
+
       <div class="card-links">
         <a href="{{ path('admin_contact_index') }}" data-no-card-click>Tous les messages</a>
         <a href="{{ path('admin_contact_index') }}" data-no-card-click>Non traités</a>
         <a href="{{ path('admin_contact_index') }}" data-no-card-click>Traités</a>
       </div>
-      <a href="{{ path('admin_contact_index') }}" class="card-link-indicator" data-no-card-click>Gérer →</a>
+
+      <a href="{{ path('admin_contact_index') }}" class="card-link-indicator" data-no-card-click>
+        Gérer →
+      </a>
     </div>
 
   </div>
 
-<script>
-  document.querySelectorAll('.dashboard-card-clickable[data-href]').forEach((card) => {
-    const href = card.dataset.href;
+{% endblock %}
 
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('a, button, [data-no-card-click]')) return;
-      window.location.href = href;
-    });
+{% block javascripts %}
+  {{ parent() }}
+  <script>
+    document
+      .querySelectorAll('.dashboard-card-clickable[data-href]')
+      .forEach((card) => {
+        const href = card.dataset.href;
 
-    card.addEventListener('keydown', (e) => {
-      if (e.target.closest('a, button, [data-no-card-click]')) return;
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        window.location.href = href;
-      }
-    });
-  });
-</script>
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('a, button, [data-no-card-click]')) return;
+          window.location.href = href;
+        });
+
+        card.addEventListener('keydown', (e) => {
+          if (e.target.closest('a, button, [data-no-card-click]')) return;
+
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            window.location.href = href;
+          }
+        });
+      });
+  </script>
 {% endblock %}
