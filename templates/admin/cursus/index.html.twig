@@ -1,8 +1,116 @@
-{% extends 'base.html.twig' %}
+{% extends 'dashboard/admin/_base.html.twig' %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/admin/cursus.css') }}">
+{% endblock %}
 
 {% block title %}Admin - Cursus{% endblock %}
 
-{% block body %}
-  <h1>Gestion des Cursus</h1>
-  <p>Page en cours de construction.</p>
+{% block dashboard_content %}
+
+<div class="admin-page-header">
+  <div>
+    <h1 class="admin-page-title">Cursus</h1>
+    <p class="admin-page-subtitle">
+      Créer, modifier, désactiver / réactiver des cursus.
+    </p>
+  </div>
+
+  <a href="{{ path('admin_cursus_new') }}" class="btn">+ Créer un cursus</a>
+</div>
+
+  <form method="get" class="admin-filters">
+    <div class="admin-filters-row">
+      <input
+        type="search"
+        name="q"
+        value="{{ filters.q ?? '' }}"
+        placeholder="Rechercher un cursus…"
+        class="admin-filter-input"
+      >
+
+      <select name="status" class="admin-filter-select">
+        <option value="all"      {{ (filters.status ?? 'all') == 'all' ? 'selected' }}>Tous</option>
+        <option value="active"   {{ (filters.status ?? 'all') == 'active' ? 'selected' }}>Actifs</option>
+        <option value="archived" {{ (filters.status ?? 'all') == 'archived' ? 'selected' }}>Archivés</option>
+      </select>
+
+      <select name="theme" class="admin-filter-select">
+        <option value="">Tous les thèmes</option>
+        {% for theme in themes %}
+          <option value="{{ theme.id }}" {{ (filters.theme ?? null) == theme.id ? 'selected' }}>
+            {{ theme.name }}
+          </option>
+        {% endfor %}
+      </select>
+
+      <select name="sort" class="admin-filter-select">
+        <option value="id_desc"     {{ (filters.sort ?? 'id_desc') == 'id_desc' ? 'selected' }}>Plus récents</option>
+        <option value="name_asc"    {{ (filters.sort ?? 'id_desc') == 'name_asc' ? 'selected' }}>Nom A → Z</option>
+        <option value="name_desc"   {{ (filters.sort ?? 'id_desc') == 'name_desc' ? 'selected' }}>Nom Z → A</option>
+        <option value="price_asc"   {{ (filters.sort ?? 'id_desc') == 'price_asc' ? 'selected' }}>Prix croissant</option>
+        <option value="price_desc"  {{ (filters.sort ?? 'id_desc') == 'price_desc' ? 'selected' }}>Prix décroissant</option>
+      </select>
+
+      <button class="btn btn-secondary" type="submit">Filtrer</button>
+
+      <a class="btn btn-secondary" href="{{ path('admin_cursus_index') }}">Réinitialiser</a>
+    </div>
+  </form>
+
+<div class="cursus-grid">
+  {% for cursus in cursus_list %}
+    <div class="cursus-card">
+
+      {% if cursus.image %}
+        <img src="{{ asset(cursus.image) }}" alt="{{ cursus.name }}" class="cursus-image">
+      {% endif %}
+
+      <h2>
+        <span>{{ cursus.name }}</span>
+
+        {% if cursus.active %}
+          <span class="badge badge-active">Actif</span>
+        {% else %}
+          <span class="badge badge-archived">Inactif</span>
+        {% endif %}
+      </h2>
+
+      <p class="cursus-meta">
+        <strong>Thème :</strong> {{ cursus.theme.name }}<br>
+        <strong>Prix :</strong> {{ cursus.price|number_format(2, ',', ' ') }} €
+      </p>
+
+      {% if cursus.description %}
+        <p>{{ cursus.description }}</p>
+      {% endif %}
+
+      <div class="admin-actions">
+        <a href="{{ path('admin_cursus_edit', {'id': cursus.id}) }}" class="btn btn-secondary">
+          Modifier
+        </a>
+
+        {% if cursus.active %}
+          <a href="{{ path('admin_cursus_delete', {'id': cursus.id}) }}" class="btn btn-danger">
+            Archiver
+          </a>
+        {% else %}
+          <form method="post"
+                action="{{ path('admin_cursus_activate', {'id': cursus.id}) }}"
+                class="inline-form">
+            <input type="hidden" name="_token" value="{{ csrf_token('cursus_activate' ~ cursus.id) }}">
+            <button class="btn" type="submit">Restaurer</button>
+          </form>
+        {% endif %}
+      </div>
+
+    </div>
+  {% else %}
+    <p>Aucun cursus pour le moment.</p>
+  {% endfor %}
+</div>
+
+<a href="{{ path('admin_dashboard') }}" class="btn-back">← Retour au dashboard admin</a>
+
 {% endblock %}

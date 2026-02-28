@@ -18,6 +18,33 @@
   <a href="{{ path('admin_theme_new') }}" class="btn">+ Créer un thème</a>
 </div>
 
+<form method="get" class="admin-filters">
+  <div class="admin-filters-row">
+    <input
+      type="search"
+      name="q"
+      value="{{ filters.q ?? '' }}"
+      placeholder="Rechercher un thème…"
+      class="admin-filter-input"
+    >
+
+    <select name="status" class="admin-filter-select">
+      <option value="all"      {{ (filters.status ?? 'all') == 'all' ? 'selected' }}>Tous</option>
+      <option value="active"   {{ (filters.status ?? 'all') == 'active' ? 'selected' }}>Actifs</option>
+      <option value="archived" {{ (filters.status ?? 'all') == 'archived' ? 'selected' }}>Archivés</option>
+    </select>
+
+    <select name="sort" class="admin-filter-select">
+      <option value="created_desc" {{ (filters.sort ?? 'created_desc') == 'created_desc' ? 'selected' }}>Plus récents</option>
+      <option value="name_asc"     {{ (filters.sort ?? 'created_desc') == 'name_asc' ? 'selected' }}>Nom A → Z</option>
+      <option value="name_desc"    {{ (filters.sort ?? 'created_desc') == 'name_desc' ? 'selected' }}>Nom Z → A</option>
+    </select>
+
+    <button class="btn btn-secondary" type="submit">Filtrer</button>
+    <a class="btn btn-secondary" href="{{ path('admin_theme_index') }}">Réinitialiser</a>
+  </div>
+</form>
+
 <div class="themes-grid">
   {% for theme in themes %}
     <div class="theme-card">
@@ -60,5 +87,7 @@
     <p>Aucun thème pour le moment.</p>
   {% endfor %}
 </div>
+
+<a href="{{ path('admin_dashboard') }}" class="btn-back">← Retour au dashboard admin</a>
 
 {% endblock %}

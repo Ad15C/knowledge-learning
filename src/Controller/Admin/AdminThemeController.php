@@ -18,12 +18,23 @@ class AdminThemeController extends AbstractController
 {
     // 1) Liste
     #[Route('', name: 'index', methods: ['GET'])]
-    public function index(ThemeRepository $repo): Response
+    public function index(Request $request, ThemeRepository $repo): Response
     {
-        $themes = $repo->findBy([], ['createdAt' => 'DESC']);
+        $q = $request->query->get('q');
+        $status = $request->query->get('status', 'all'); // all|active|archived
+        $sort = $request->query->get('sort', 'created_desc');
+
+        $themes = $repo->createAdminFilterQueryBuilder($q, $status, $sort)
+            ->getQuery()
+            ->getResult();
 
         return $this->render('admin/theme/index.html.twig', [
             'themes' => $themes,
+            'filters' => [
+                'q' => $q,
+                'status' => $status,
+                'sort' => $sort,
+            ],
         ]);
     }
 

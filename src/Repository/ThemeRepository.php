@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Theme;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\ORM\QueryBuilder;
 
 class ThemeRepository extends ServiceEntityRepository
 {
@@ -20,15 +21,15 @@ class ThemeRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('t')
             ->distinct()
-            ->leftJoin('t.cursus', 'c')
+            ->leftJoin('t.cursus', 'c', 'WITH', 'c.isActive = true')
             ->addSelect('c')
-            ->leftJoin('c.lessons', 'l')
+            ->leftJoin('c.lessons', 'l', 'WITH', 'l.isActive = true')
             ->addSelect('l')
             ->andWhere('t.isActive = true');
 
         if ($name) {
-            $qb->andWhere('t.name LIKE :name')
-               ->setParameter('name', '%'.$name.'%');
+            $qb->andWhere('LOWER(t.name) LIKE :name')
+            ->setParameter('name', '%'.mb_strtolower(trim($name)).'%');
         }
 
         if ($minPrice !== null && $maxPrice !== null) {
@@ -49,5 +50,45 @@ class ThemeRepository extends ServiceEntityRepository
         return $qb->orderBy('t.name', 'ASC')
                   ->getQuery()
                   ->getResult();
+    }
+
+    public function createActiveThemesQueryBuilder(): QueryBuilder
+    {
+        return $this->createQueryBuilder('t')
+            ->andWhere('t.isActive = true')
+            ->orderBy('t.name', 'ASC');
+    }
+
+    public function createAdminFilterQueryBuilder(
+        ?string $q = null,
+        ?string $status = 'all',
+        ?string $sort = 'created_desc'
+    ): QueryBuilder {
+        $qb = $this->createQueryBuilder('t');
+
+        if ($q) {
+            $qb->andWhere('LOWER(t.name) LIKE :q')
+            ->setParameter('q', '%'.mb_strtolower(trim($q)).'%');
+        }
+
+        if ($status === 'active') {
+            $qb->andWhere('t.isActive = true');
+        } elseif ($status === 'archived') {
+            $qb->andWhere('t.isActive = false');
+        }
+
+        switch ($sort) {
+            case 'name_asc':
+                $qb->orderBy('t.name', 'ASC');
+                break;
+            case 'name_desc':
+                $qb->orderBy('t.name', 'DESC');
+                break;
+            default:
+                // plus récents
+                $qb->orderBy('t.createdAt', 'DESC');
+        }
+
+        return $qb;
     }
 }
