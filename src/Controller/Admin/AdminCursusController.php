@@ -47,15 +47,29 @@ class AdminCursusController extends AbstractController
 
     // 2) Créer
     #[Route('/new', name: 'new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $em): Response
+    public function new(Request $request, EntityManagerInterface $em, ThemeRepository $themeRepo): Response
     {
+        $activeThemesCount = (int) $themeRepo->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->andWhere('t.isActive = true')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $hasActiveThemes = $activeThemesCount > 0;
+
         $cursus = new Cursus();
         $cursus->setIsActive(true);
 
         $form = $this->createForm(CursusType::class, $cursus);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        // Sécurité serveur : si pas de thème actif et POST manuel => redirect + flash
+        if (!$hasActiveThemes && $request->isMethod('POST')) {
+            $this->addFlash('error', 'Aucun thème actif disponible. Crée ou réactive un thème avant de créer un cursus.');
+            return $this->redirectToRoute('admin_theme_index');
+        }
+
+        if ($hasActiveThemes && $form->isSubmitted() && $form->isValid()) {
             $em->persist($cursus);
             $em->flush();
 
@@ -65,6 +79,7 @@ class AdminCursusController extends AbstractController
 
         return $this->render('admin/cursus/new.html.twig', [
             'form' => $form->createView(),
+            'has_active_themes' => $hasActiveThemes,
         ]);
     }
 

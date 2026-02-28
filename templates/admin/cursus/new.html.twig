@@ -1,0 +1,55 @@
+{% extends 'dashboard/admin/_base.html.twig' %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/admin/cursus.css') }}">
+{% endblock %}
+
+{% block title %}Admin - Nouveau cursus{% endblock %}
+
+{% block dashboard_content %}
+
+<div class="admin-page-header">
+  <div>
+    <h1 class="admin-page-title">Créer un cursus</h1>
+    <p class="admin-page-subtitle">Ajoute un nouveau cursus (nom, thème, prix, description, image).</p>
+  </div>
+
+  <a href="{{ path('admin_cursus_index') }}" class="btn btn-secondary">← Retour</a>
+</div>
+
+{% if has_active_themes is defined and not has_active_themes %}
+  <div class="admin-alert admin-alert-danger">
+    ⚠️ Aucun thème actif disponible. Crée ou réactive un thème avant de créer un cursus.
+    <div style="margin-top: 10px;">
+      <a href="{{ path('admin_theme_new') }}" class="btn">+ Créer un thème</a>
+      <a href="{{ path('admin_theme_index') }}" class="btn btn-secondary">Gérer les thèmes</a>
+    </div>
+  </div>
+{% endif %}
+
+<div class="dashboard-card card-white admin-form-card admin-container-narrow">
+
+  {{ form_start(form) }}
+
+  <div class="admin-form-grid">
+    <div class="admin-form-field--full">{{ form_row(form.name) }}</div>
+    <div class="admin-form-field--full">{{ form_row(form.theme) }}</div>
+    <div class="admin-form-field--full">{{ form_row(form.price) }}</div>
+    <div class="admin-form-field--full">{{ form_row(form.description) }}</div>
+    <div class="admin-form-field--full">{{ form_row(form.image) }}</div>
+  </div>
+
+  <div class="admin-form-actions">
+    <button class="btn" type="submit"
+        {% if has_active_themes is defined and not has_active_themes %}disabled aria-disabled="true"{% endif %}>
+            Créer
+    </button>
+    <a href="{{ path('admin_cursus_index') }}" class="btn btn-secondary">Annuler</a>
+  </div>
+
+  {{ form_end(form) }}
+
+</div>
+
+{% endblock %}
