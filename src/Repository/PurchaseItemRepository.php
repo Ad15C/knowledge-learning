@@ -2,9 +2,10 @@
 
 namespace App\Repository;
 
+use App\Entity\Cursus;
+use App\Entity\Lesson;
 use App\Entity\PurchaseItem;
 use App\Entity\User;
-use App\Entity\Cursus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -61,6 +62,30 @@ class PurchaseItemRepository extends ServiceEntityRepository
             ->setParameter('user', $user)
             ->setParameter('from', $from)
             ->setParameter('to', $to)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Retourne les leçons achetées par un user (hors panier).
+     * ✅ Root alias = l (Lesson) => plus d'erreur Doctrine.
+     */
+    public function findLessonsPurchasedByUser(User $user): array
+    {
+        $qb = $this->getEntityManager()->createQueryBuilder();
+
+        return $qb
+            ->select('DISTINCT l, c, t')
+            ->from(Lesson::class, 'l')
+            ->join(PurchaseItem::class, 'pi', 'WITH', 'pi.lesson = l')
+            ->join('pi.purchase', 'p')
+            ->leftJoin('l.cursus', 'c')
+            ->leftJoin('c.theme', 't')
+            ->andWhere('p.user = :user')
+            ->andWhere('p.status != :cart')
+            ->andWhere('pi.lesson IS NOT NULL')
+            ->setParameter('user', $user)
+            ->setParameter('cart', 'cart')
             ->getQuery()
             ->getResult();
     }

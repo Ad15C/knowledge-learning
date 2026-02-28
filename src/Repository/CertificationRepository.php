@@ -71,4 +71,17 @@ class CertificationRepository extends ServiceEntityRepository
 
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
+
+    public function findByUserWithTargets(User $user): array
+    {
+        return $this->createQueryBuilder('c')
+            ->leftJoin('c.lesson', 'l')->addSelect('l')
+            ->leftJoin('c.cursus', 'cu')->addSelect('cu')
+            ->leftJoin('c.theme', 't')->addSelect('t')
+            ->andWhere('c.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('c.issuedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

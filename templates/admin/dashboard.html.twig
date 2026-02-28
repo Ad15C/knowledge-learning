@@ -25,7 +25,19 @@
       </div>
 
       <div class="card-links">
-        <span>Mettre à jour, archiver, restaurer depuis la liste</span>
+        <a
+          href="{{ path('admin_users_index', { status: 'active' }) }}"
+          data-no-card-click
+        >
+          Voir la liste des clients
+        </a>
+
+        <a
+          href="{{ path('admin_users_index', { action: 'edit', status: 'active' }) }}"
+          data-no-card-click
+        >
+          Gestion des comptes & suivi pédagogique
+        </a>
       </div>
 
       <a

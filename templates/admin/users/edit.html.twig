@@ -9,7 +9,6 @@
 
 {% block dashboard_content %}
   <div class="admin-users-edit">
-
     <div class="admin-page-header">
       <div>
         <h1 class="admin-page-title">Modifier un client</h1>
@@ -17,8 +16,7 @@
       </div>
 
       <a href="{{ path('admin_users_index', { action: 'edit', status: status|default('active') }) }}"
-         class="btn btn-secondary"
-         style="text-decoration:none;">
+         class="btn btn-secondary">
         ← Retour liste
       </a>
     </div>
@@ -52,6 +50,7 @@
           <span class="meta-label">ID</span>
           <span class="meta-value">#{{ user.id }}</span>
         </div>
+
         <div class="meta-line">
           <span class="meta-label">Inscription</span>
           <span class="meta-value">{{ user.createdAt ? user.createdAt|date('d/m/Y H:i') : '—' }}</span>
@@ -68,38 +67,38 @@
     <div class="dashboard-card card-white admin-form-card">
       {{ form_start(form, { attr: { novalidate: 'novalidate' } }) }}
 
-        <div class="admin-form-grid">
-          <div class="admin-form-field">
-            {{ form_row(form.firstName) }}
-          </div>
+      <div class="admin-form-grid">
+        <div class="admin-form-field">
+          {{ form_row(form.firstName) }}
+        </div>
 
-          <div class="admin-form-field">
-            {{ form_row(form.lastName) }}
-          </div>
+        <div class="admin-form-field">
+          {{ form_row(form.lastName) }}
+        </div>
 
+        <div class="admin-form-field admin-form-field--full">
+          {{ form_row(form.email) }}
+        </div>
+
+        {% if form.roles is defined %}
           <div class="admin-form-field admin-form-field--full">
-            {{ form_row(form.email) }}
+            {{ form_row(form.roles) }}
           </div>
+        {% endif %}
+      </div>
 
-          {% if form.roles is defined %}
-            <div class="admin-form-field admin-form-field--full">
-              {{ form_row(form.roles) }}
-            </div>
-          {% endif %}
-        </div>
+      <div class="admin-form-actions">
+        <button class="btn" type="submit">Enregistrer</button>
 
-        <div class="admin-form-actions">
-          <button class="btn" type="submit">Enregistrer</button>
-
-          <a href="{{ path('admin_users_index', { action: 'edit', status: status|default('active') }) }}"
-             class="btn btn-secondary"
-             style="text-decoration:none;">
-            Annuler
-          </a>
-        </div>
+        <a href="{{ path('admin_users_index', { action: 'edit', status: status|default('active') }) }}"
+           class="btn btn-secondary">
+          Annuler
+        </a>
+      </div>
 
       {{ form_end(form) }}
     </div>
 
+    {% include 'admin/users/_progress_and_certs.html.twig' %}
   </div>
 {% endblock %}

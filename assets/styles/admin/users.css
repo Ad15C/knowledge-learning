@@ -1,5 +1,12 @@
 /* ==========================================
-   ADMIN USERS CSS (edit)
+   ADMIN USERS CSS
+   - index (liste)
+   - edit/show (fiche + formulaire)
+   - sections (historique / certifications)
+========================================== */
+
+/* ==========================================
+   Base layout (edit/show container)
 ========================================== */
 .admin-users-edit{
   max-width: 980px;
@@ -9,7 +16,9 @@
   gap: 22px;
 }
 
-/* Header */
+/* ==========================================
+   Header (shared)
+========================================== */
 .admin-page-header{
   display:flex;
   justify-content:space-between;
@@ -29,7 +38,81 @@
   opacity:.9;
 }
 
-/* Summary card */
+/* ==========================================
+   INDEX (liste clients)
+========================================== */
+.admin-page-header--list{
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.admin-page-title--list{
+  margin: 0;
+}
+
+.admin-page-subtitle--list{
+  margin: .25rem 0 0;
+  opacity: .8;
+}
+
+/* Groupes de boutons (modes + tabs) */
+.admin-actions--modes,
+.admin-actions--tabs{
+  display:flex;
+  gap:.5rem;
+  flex-wrap:wrap;
+  margin-top: 1rem;
+}
+
+.admin-actions--tabs{
+  margin: 1rem 0;
+}
+
+/* Alert spacing (uniquement sur la liste) */
+.admin-alert--spaced{
+  margin: 1rem 0;
+}
+
+/* Cellule user (nom + id) */
+.admin-user-cell{
+  display:flex;
+  flex-direction:column;
+}
+
+.admin-user-cell small{
+  opacity: .75;
+}
+
+/* Pagination */
+.admin-pagination{
+  display:flex;
+  gap:.5rem;
+  justify-content:center;
+  align-items:center;
+  margin: 1rem 0;
+  flex-wrap:wrap;
+}
+
+.admin-pagination__label{
+  opacity: .8;
+}
+
+/* Désactivation visuelle (pagination) */
+.is-disabled{
+  pointer-events:none;
+  opacity:.5;
+}
+
+/* Bonus: si tu appliques is-disabled sur un bouton */
+.btn.is-disabled{
+  pointer-events:none;
+  opacity:.5;
+}
+
+/* ==========================================
+   Summary card (edit/show)
+========================================== */
 .admin-user-summary{
   display:flex;
   justify-content:space-between;
@@ -82,7 +165,9 @@
   font-weight:600;
 }
 
-/* Alert */
+/* ==========================================
+   Alerts (shared)
+========================================== */
 .admin-alert{
   padding:14px 16px;
   border-radius:14px;
@@ -92,7 +177,9 @@
   font-weight:600;
 }
 
-/* Form card */
+/* ==========================================
+   Form card (edit)
+========================================== */
 .admin-form-card{
   padding: 22px;
 }
@@ -166,7 +253,75 @@
   padding:0;
 }
 
-/* Responsive */
+/* ==========================================
+   Sections (Historique / Certifications)
+========================================== */
+.admin-section{
+  padding: 22px;
+}
+
+.admin-section-title{
+  margin: 0 0 12px 0;
+  color:#00497c;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.admin-subtitle{
+  margin: 12px 0 10px 0;
+  color:#384050;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.admin-subtitle--spaced{
+  margin-top: 18px;
+}
+
+.admin-empty{
+  margin: 6px 0 0;
+  color:#384050;
+  opacity:.85;
+}
+
+/* Admin tables helpers */
+.admin-col-actions{
+  text-align: right;
+  width: 260px;
+}
+
+.admin-actions-cell{
+  text-align: right;
+  vertical-align: middle;
+}
+
+.admin-actions-inline{
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.admin-actions-inline form{
+  margin: 0;
+}
+
+/* Badge "En cours" */
+.badge-progress{
+  display:inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+  border: 1px solid rgba(0, 73, 124, 0.25);
+  background: rgba(0, 73, 124, 0.08);
+  color:#00497c;
+}
+
+/* ==========================================
+   Responsive
+========================================== */
 @media (max-width: 768px){
   .admin-user-summary{
     flex-direction:column;
@@ -183,5 +338,9 @@
 
   .admin-form-field--full{
     grid-column:auto;
+  }
+
+  .admin-col-actions{
+    width: auto;
   }
 }

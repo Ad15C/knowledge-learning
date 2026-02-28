@@ -31,7 +31,7 @@ class LessonValidated
     private ?PurchaseItem $purchaseItem = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
-    private ?\DateTimeInterface $validatedAt = null;
+    private ?\DateTimeImmutable $validatedAt = null;
 
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private bool $completed = true;
@@ -57,7 +57,7 @@ class LessonValidated
         return $this;
     }
 
-    public function getValidatedAt(): ?\DateTimeInterface { return $this->validatedAt; }
+    public function getValidatedAt(): ?\DateTimeImmutable { return $this->validatedAt; }
 
     public function isCompleted(): bool { return $this->completed; }
 

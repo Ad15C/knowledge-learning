@@ -2,12 +2,17 @@
 
 {% block title %}Admin - Clients{% endblock %}
 
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/admin/users.css') }}">
+{% endblock %}
+
 {% block dashboard_content %}
 
-  <div class="admin-page-header" style="display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+  <div class="admin-page-header admin-page-header--list">
     <div>
-      <h1 style="margin:0;">Gestion des clients</h1>
-      <p style="margin:.25rem 0 0; opacity:.8;">
+      <h1 class="admin-page-title admin-page-title--list">Gestion des clients</h1>
+      <p class="admin-page-subtitle admin-page-subtitle--list">
         {{ total }} utilisateur(s) • Page {{ page }}/{{ pages }}
       </p>
     </div>
@@ -16,44 +21,38 @@
   {% set mode = action|default('') %}
 
   {# ======= Modes ======= #}
-  <div class="admin-actions" style="display:flex; gap:.5rem; flex-wrap:wrap; margin-top:1rem;">
+  <div class="admin-actions admin-actions--modes">
     <a href="{{ path('admin_users_index', { status: status }) }}"
-       class="btn btn-secondary"
-       style="text-decoration:none;">
+       class="btn btn-secondary">
       Mode standard
     </a>
 
     <a href="{{ path('admin_users_index', { action: 'edit', status: status }) }}"
-       class="btn btn-secondary"
-       style="text-decoration:none;">
+       class="btn btn-secondary">
       Mode modification
     </a>
 
     <a href="{{ path('admin_users_index', { action: 'delete', status: status }) }}"
-       class="btn btn-secondary"
-       style="text-decoration:none;">
+       class="btn btn-secondary">
       Mode désactivation
     </a>
   </div>
 
   {# ======= Onglets statut ======= #}
   {% set baseParams = { action: mode, q: q, sort: sort, dir: dir } %}
-  <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin:1rem 0;">
+  <div class="admin-actions admin-actions--tabs">
     <a href="{{ path('admin_users_index', baseParams|merge({ status: 'active', page: 1 })) }}"
-       class="btn {{ status == 'active' ? '' : 'btn-secondary' }}"
-       style="text-decoration:none;">
+       class="btn {{ status == 'active' ? '' : 'btn-secondary' }}">
       Actifs
     </a>
 
     <a href="{{ path('admin_users_index', baseParams|merge({ status: 'archived', page: 1 })) }}"
-       class="btn {{ status == 'archived' ? '' : 'btn-secondary' }}"
-       style="text-decoration:none;">
+       class="btn {{ status == 'archived' ? '' : 'btn-secondary' }}">
       Archivés
     </a>
 
     <a href="{{ path('admin_users_index', baseParams|merge({ status: 'all', page: 1 })) }}"
-       class="btn {{ status == 'all' ? '' : 'btn-secondary' }}"
-       style="text-decoration:none;">
+       class="btn {{ status == 'all' ? '' : 'btn-secondary' }}">
       Tous
     </a>
   </div>
@@ -82,14 +81,13 @@
     <button type="submit" class="btn">Filtrer</button>
 
     <a href="{{ path('admin_users_index', { action: mode, status: status }) }}"
-       class="btn btn-secondary"
-       style="text-decoration:none;">
+       class="btn btn-secondary">
       Réinitialiser
     </a>
   </form>
 
   {% if mode == 'delete' and status == 'active' %}
-    <div class="admin-alert" style="margin:1rem 0;">
+    <div class="admin-alert admin-alert--spaced">
       Mode désactivation : passe sur l’onglet <strong>Archivés</strong> pour voir les comptes à restaurer.
     </div>
   {% endif %}
@@ -105,7 +103,7 @@
             <th>Email</th>
             <th>Inscription</th>
             <th>Statut</th>
-            <th style="width:260px;">Actions</th>
+            <th class="admin-col-actions">Actions</th>
           </tr>
         </thead>
 
@@ -115,9 +113,9 @@
 
           <tr>
             <td>
-              <div style="display:flex; flex-direction:column;">
+              <div class="admin-user-cell">
                 <strong>{{ user.lastName }} {{ user.firstName }}</strong>
-                <small style="opacity:.75;">#{{ user.id }}</small>
+                <small>#{{ user.id }}</small>
               </div>
             </td>
 
@@ -141,23 +139,27 @@
               {% endif %}
             </td>
 
-            <td>
-              <div class="admin-actions" style="display:flex; gap:.5rem; flex-wrap:wrap; justify-content:flex-end;">
+            <td class="admin-actions-cell">
+              <div class="admin-actions-inline">
 
                 {% if mode in ['', 'edit'] %}
                   <a href="{{ path('admin_users_edit', { id: user.id, status: status }) }}"
-                     class="btn btn-secondary"
-                     style="text-decoration:none;">
-                    Éditer
+                     class="btn">
+                    Gérer
                   </a>
                 {% endif %}
+
+                <a href="{{ path('admin_users_show', { id: user.id }) }}"
+                   class="btn btn-secondary">
+                  Fiche
+                </a>
 
                 {% if mode in ['', 'delete'] %}
                   {% if isSelf and mode == 'delete' %}
                     <span class="badge badge-admin">Toi-même</span>
                   {% elseif not isSelf %}
                     {% if user.archivedAt %}
-                      <form method="post" action="{{ path('admin_users_restore', { id: user.id }) }}" style="margin:0;">
+                      <form method="post" action="{{ path('admin_users_restore', { id: user.id }) }}">
                         <input type="hidden" name="_token" value="{{ csrf_token('restore_user_' ~ user.id) }}">
                         <button type="submit" class="btn"
                                 onclick="return confirm('Confirmer la restauration de cet utilisateur ?');">
@@ -165,7 +167,7 @@
                         </button>
                       </form>
                     {% else %}
-                      <form method="post" action="{{ path('admin_users_delete', { id: user.id }) }}" style="margin:0;">
+                      <form method="post" action="{{ path('admin_users_delete', { id: user.id }) }}">
                         <input type="hidden" name="_token" value="{{ csrf_token('archive_user_' ~ user.id) }}">
                         <button type="submit" class="btn btn-danger"
                                 onclick="return confirm('Confirmer l\\'archivage de cet utilisateur ?');">
@@ -175,6 +177,7 @@
                     {% endif %}
                   {% endif %}
                 {% endif %}
+
               </div>
             </td>
           </tr>
@@ -186,17 +189,15 @@
     {# ======= Pagination ======= #}
     {% if pages > 1 %}
       {% set params = { action: mode, status: status, q: q, sort: sort, dir: dir } %}
-      <div style="display:flex; gap:.5rem; justify-content:center; align-items:center; margin:1rem 0; flex-wrap:wrap;">
-        <a class="btn btn-secondary"
-           style="text-decoration:none; {{ page <= 1 ? 'pointer-events:none; opacity:.5;' : '' }}"
+      <div class="admin-pagination">
+        <a class="btn btn-secondary {{ page <= 1 ? 'is-disabled' : '' }}"
            href="{{ path('admin_users_index', params|merge({ page: page - 1 })) }}">
           ← Précédent
         </a>
 
-        <span style="opacity:.8;">Page {{ page }} / {{ pages }}</span>
+        <span class="admin-pagination__label">Page {{ page }} / {{ pages }}</span>
 
-        <a class="btn btn-secondary"
-           style="text-decoration:none; {{ page >= pages ? 'pointer-events:none; opacity:.5;' : '' }}"
+        <a class="btn btn-secondary {{ page >= pages ? 'is-disabled' : '' }}"
            href="{{ path('admin_users_index', params|merge({ page: page + 1 })) }}">
           Suivant →
         </a>

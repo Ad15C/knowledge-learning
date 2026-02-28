@@ -1,0 +1,116 @@
+{% set validatedLessons = validatedLessons|default([]) %}
+{% set inProgressLessons = inProgressLessons|default([]) %}
+{% set certifications = certifications|default([]) %}
+
+{# ===================== Historique des leçons ===================== #}
+<div class="dashboard-card card-white admin-table-card admin-section">
+  <h2 class="admin-section-title">Historique des leçons</h2>
+
+  <h3 class="admin-subtitle">Validées</h3>
+  {% if validatedLessons is empty %}
+    <p class="admin-empty">— Aucune leçon validée.</p>
+  {% else %}
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Leçon</th>
+          <th>Cursus</th>
+          <th>Thème</th>
+          <th>Statut</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lv in validatedLessons %}
+          <tr>
+            <td>{{ lv.lesson.title }}</td>
+            <td>{{ lv.lesson.cursus.title ?? '—' }}</td>
+            <td>{{ lv.lesson.cursus.theme.title ?? '—' }}</td>
+            <td><span class="badge badge-active">Validé</span></td>
+            <td>{{ lv.validatedAt ? lv.validatedAt|date('d/m/Y H:i') : '—' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  <h3 class="admin-subtitle admin-subtitle--spaced">En cours (achetées, non validées)</h3>
+  {% if inProgressLessons is empty %}
+    <p class="admin-empty">— Aucune leçon en cours.</p>
+  {% else %}
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Leçon</th>
+          <th>Cursus</th>
+          <th>Thème</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lesson in inProgressLessons %}
+          <tr>
+            <td>{{ lesson.title }}</td>
+            <td>{{ lesson.cursus.title ?? '—' }}</td>
+            <td>{{ lesson.cursus.theme.title ?? '—' }}</td>
+            <td><span class="badge badge-progress">En cours</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+
+{# ===================== Certifications ===================== #}
+<div class="dashboard-card card-white admin-table-card admin-section">
+  <h2 class="admin-section-title">Validations & Certifications</h2>
+
+  {% if certifications is empty %}
+    <p class="admin-empty">— Aucune certification.</p>
+  {% else %}
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Cible</th>
+          <th>Code</th>
+          <th>Date</th>
+          <th class="admin-col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cert in certifications %}
+          {% set target =
+            cert.lesson ? ('Leçon : ' ~ cert.lesson.title)
+            : (cert.cursus ? ('Cursus : ' ~ cert.cursus.title)
+            : (cert.theme ? ('Thème : ' ~ cert.theme.title) : '—'))
+          %}
+
+          <tr>
+            <td><span class="badge badge-admin">{{ cert.type }}</span></td>
+            <td>{{ target }}</td>
+            <td>{{ cert.certificateCode }}</td>
+            <td>{{ cert.issuedAt ? cert.issuedAt|date('d/m/Y H:i') : '—' }}</td>
+
+            <td class="admin-actions-cell">
+              <div class="admin-actions-inline">
+                <a class="btn btn-secondary" href="{{ path('certification_download', { id: cert.id }) }}">
+                  Télécharger
+                </a>
+
+                {# Réédition (à activer quand la route existe)
+                <form method="post" action="{{ path('admin_certification_reissue', { id: cert.id }) }}">
+                  <input type="hidden" name="_token" value="{{ csrf_token('reissue_cert_' ~ cert.id) }}">
+                  <button class="btn" type="submit" onclick="return confirm('Rééditer / régénérer ce certificat ?');">
+                    Rééditer
+                  </button>
+                </form>
+                #}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>

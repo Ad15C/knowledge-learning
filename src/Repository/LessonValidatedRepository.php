@@ -45,4 +45,17 @@ class LessonValidatedRepository extends ServiceEntityRepository
         return $totalLessons > 0 && $validatedLessons >= $totalLessons;
     }
 
+    public function findValidatedLessonsForUser(User $user): array
+    {
+        return $this->createQueryBuilder('lv')
+            ->leftJoin('lv.lesson', 'l')->addSelect('l')
+            ->leftJoin('l.cursus', 'c')->addSelect('c')
+            ->leftJoin('c.theme', 't')->addSelect('t')
+            ->andWhere('lv.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('lv.validatedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
 }
