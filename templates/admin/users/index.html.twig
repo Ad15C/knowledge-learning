@@ -4,22 +4,65 @@
 
 {% block dashboard_content %}
 
-  <h1>Gestion des clients</h1>
-
-  <div class="admin-stats-card">
-    <h2>{{ users|length }}</h2>
-    <p>Résultats affichés</p>
+  <div class="admin-page-header" style="display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+    <div>
+      <h1 style="margin:0;">Gestion des clients</h1>
+      <p style="margin:.25rem 0 0; opacity:.8;">
+        {{ total }} utilisateur(s) • Page {{ page }}/{{ pages }}
+      </p>
+    </div>
   </div>
 
   {% set mode = action|default('') %}
-  <div class="admin-actions">
-    <a href="{{ path('admin_users_index') }}" class="btn btn-secondary" style="text-decoration:none;">Tout afficher</a>
-    <a href="{{ path('admin_users_index', {action: 'edit'}) }}" class="btn btn-secondary" style="text-decoration:none;">Mode modification</a>
-    <a href="{{ path('admin_users_index', {action: 'delete'}) }}" class="btn btn-secondary" style="text-decoration:none;">Mode désactivation</a>
+
+  {# ======= Modes ======= #}
+  <div class="admin-actions" style="display:flex; gap:.5rem; flex-wrap:wrap; margin-top:1rem;">
+    <a href="{{ path('admin_users_index', { status: status }) }}"
+       class="btn btn-secondary"
+       style="text-decoration:none;">
+      Mode standard
+    </a>
+
+    <a href="{{ path('admin_users_index', { action: 'edit', status: status }) }}"
+       class="btn btn-secondary"
+       style="text-decoration:none;">
+      Mode modification
+    </a>
+
+    <a href="{{ path('admin_users_index', { action: 'delete', status: status }) }}"
+       class="btn btn-secondary"
+       style="text-decoration:none;">
+      Mode désactivation
+    </a>
   </div>
 
+  {# ======= Onglets statut ======= #}
+  {% set baseParams = { action: mode, q: q, sort: sort, dir: dir } %}
+  <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin:1rem 0;">
+    <a href="{{ path('admin_users_index', baseParams|merge({ status: 'active', page: 1 })) }}"
+       class="btn {{ status == 'active' ? '' : 'btn-secondary' }}"
+       style="text-decoration:none;">
+      Actifs
+    </a>
+
+    <a href="{{ path('admin_users_index', baseParams|merge({ status: 'archived', page: 1 })) }}"
+       class="btn {{ status == 'archived' ? '' : 'btn-secondary' }}"
+       style="text-decoration:none;">
+      Archivés
+    </a>
+
+    <a href="{{ path('admin_users_index', baseParams|merge({ status: 'all', page: 1 })) }}"
+       class="btn {{ status == 'all' ? '' : 'btn-secondary' }}"
+       style="text-decoration:none;">
+      Tous
+    </a>
+  </div>
+
+  {# ======= Filtres ======= #}
   <form method="get" class="dashboard-filters">
     <input type="hidden" name="action" value="{{ mode }}">
+    <input type="hidden" name="status" value="{{ status }}">
+    <input type="hidden" name="page" value="1">
 
     <label for="q">Recherche :</label>
     <input type="text" id="q" name="q" value="{{ q }}" placeholder="Nom, prénom ou email">
@@ -36,36 +79,50 @@
       <option value="DESC" {{ dir == 'DESC' ? 'selected' : '' }}>DESC</option>
     </select>
 
-    <label for="archived" class="admin-check">
-      <input type="checkbox" id="archived" name="archived" value="1" {{ includeArchived ? 'checked' : '' }}>
-      Inclure archivés
-    </label>
-
     <button type="submit" class="btn">Appliquer</button>
-    <a href="{{ path('admin_users_index', {action: mode}) }}" class="btn btn-secondary" style="text-decoration:none;">Reset</a>
+
+    <a href="{{ path('admin_users_index', { action: mode, status: status }) }}"
+       class="btn btn-secondary"
+       style="text-decoration:none;">
+      Reset
+    </a>
   </form>
+
+  {% if mode == 'delete' and status == 'active' %}
+    <div class="admin-alert" style="margin:1rem 0;">
+      Mode désactivation : passe sur l’onglet <strong>Archivés</strong> pour voir les comptes à restaurer.
+    </div>
+  {% endif %}
 
   {% if users is empty %}
     <p>Aucun utilisateur trouvé.</p>
   {% else %}
-
     <div class="dashboard-card card-white admin-table-card">
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Nom</th>
+            <th>Utilisateur</th>
             <th>Email</th>
             <th>Inscription</th>
             <th>Statut</th>
-            <th>Actions</th>
+            <th style="width:260px;">Actions</th>
           </tr>
         </thead>
 
         <tbody>
         {% for user in users %}
+          {% set isSelf = app.user and app.user.id == user.id %}
+
           <tr>
-            <td><strong>{{ user.lastName }} {{ user.firstName }}</strong></td>
+            <td>
+              <div style="display:flex; flex-direction:column;">
+                <strong>{{ user.lastName }} {{ user.firstName }}</strong>
+                <small style="opacity:.75;">#{{ user.id }}</small>
+              </div>
+            </td>
+
             <td>{{ user.email }}</td>
+
             <td>{{ user.createdAt ? user.createdAt|date('d/m/Y H:i') : '—' }}</td>
 
             <td>
@@ -85,39 +142,68 @@
             </td>
 
             <td>
-              <div class="admin-actions">
+              <div class="admin-actions" style="display:flex; gap:.5rem; flex-wrap:wrap; justify-content:flex-end;">
+
                 {% if mode in ['', 'edit'] %}
-                  <a href="{{ path('admin_users_edit', {id: user.id}) }}"
+                  <a href="{{ path('admin_users_edit', { id: user.id, status: status }) }}"
                      class="btn btn-secondary"
-                     style="text-decoration:none;">Éditer</a>
+                     style="text-decoration:none;">
+                    Éditer
+                  </a>
                 {% endif %}
 
                 {% if mode in ['', 'delete'] %}
-                  {% if user.archivedAt %}
-                    <form method="post" action="{{ path('admin_users_restore', {id: user.id}) }}" style="margin:0;">
-                      <input type="hidden" name="_token" value="{{ csrf_token('restore_user_' ~ user.id) }}">
-                      <button type="submit" class="btn">Restaurer</button>
-                    </form>
-                  {% else %}
-                    <form method="post" action="{{ path('admin_users_delete', {id: user.id}) }}" style="margin:0;">
-                      <input type="hidden" name="_token" value="{{ csrf_token('archive_user_' ~ user.id) }}">
-                      <button type="submit" class="btn btn-danger"
-                              onclick="return confirm('Confirmer l\\'archivage de cet utilisateur ?');">
-                        Archiver
-                      </button>
-                    </form>
+                  {% if isSelf and mode == 'delete' %}
+                    <span class="badge badge-admin">Toi-même</span>
+                  {% elseif not isSelf %}
+                    {% if user.archivedAt %}
+                      <form method="post" action="{{ path('admin_users_restore', { id: user.id }) }}" style="margin:0;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('restore_user_' ~ user.id) }}">
+                        <button type="submit" class="btn"
+                                onclick="return confirm('Confirmer la restauration de cet utilisateur ?');">
+                          Restaurer
+                        </button>
+                      </form>
+                    {% else %}
+                      <form method="post" action="{{ path('admin_users_delete', { id: user.id }) }}" style="margin:0;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('archive_user_' ~ user.id) }}">
+                        <button type="submit" class="btn btn-danger"
+                                onclick="return confirm('Confirmer l\\'archivage de cet utilisateur ?');">
+                          Archiver
+                        </button>
+                      </form>
+                    {% endif %}
                   {% endif %}
                 {% endif %}
               </div>
             </td>
-
           </tr>
         {% endfor %}
         </tbody>
       </table>
     </div>
 
+    {# ======= Pagination ======= #}
+    {% if pages > 1 %}
+      {% set params = { action: mode, status: status, q: q, sort: sort, dir: dir } %}
+      <div style="display:flex; gap:.5rem; justify-content:center; align-items:center; margin:1rem 0; flex-wrap:wrap;">
+        <a class="btn btn-secondary"
+           style="text-decoration:none; {{ page <= 1 ? 'pointer-events:none; opacity:.5;' : '' }}"
+           href="{{ path('admin_users_index', params|merge({ page: page - 1 })) }}">
+          ← Précédent
+        </a>
+
+        <span style="opacity:.8;">Page {{ page }} / {{ pages }}</span>
+
+        <a class="btn btn-secondary"
+           style="text-decoration:none; {{ page >= pages ? 'pointer-events:none; opacity:.5;' : '' }}"
+           href="{{ path('admin_users_index', params|merge({ page: page + 1 })) }}">
+          Suivant →
+        </a>
+      </div>
+    {% endif %}
   {% endif %}
 
   <a href="{{ path('admin_dashboard') }}" class="btn-back">← Retour au dashboard admin</a>
+
 {% endblock %}

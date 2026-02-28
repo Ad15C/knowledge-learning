@@ -16,7 +16,7 @@
         <p class="admin-page-subtitle">Mettre à jour les informations du compte.</p>
       </div>
 
-      <a href="{{ path('admin_users_index', { action: 'edit' }) }}"
+      <a href="{{ path('admin_users_index', { action: 'edit', status: status|default('active') }) }}"
          class="btn btn-secondary"
          style="text-decoration:none;">
         ← Retour liste
@@ -91,7 +91,7 @@
         <div class="admin-form-actions">
           <button class="btn" type="submit">Enregistrer</button>
 
-          <a href="{{ path('admin_users_index', { action: 'edit' }) }}"
+          <a href="{{ path('admin_users_index', { action: 'edit', status: status|default('active') }) }}"
              class="btn btn-secondary"
              style="text-decoration:none;">
             Annuler
