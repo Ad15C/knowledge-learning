@@ -51,7 +51,8 @@
     <div class="theme-card">
 
       {% if theme.image %}
-        <img src="{{ asset(theme.image) }}" alt="{{ theme.name }}" class="theme-image">
+        {% set img = theme.image %}
+        <img src="{{ img starts with 'http' ? img : asset(img) }}" alt="{{ theme.name }}" class="theme-image" loading="lazy">
       {% endif %}
 
       <h2>
@@ -66,6 +67,21 @@
 
       {% if theme.description %}
         <p>{{ theme.description }}</p>
+      {% endif %}
+
+      {% set names = [] %}
+      {% for c in theme.cursus %}
+        {% if c.isActive %}
+          {% set names = names|merge([c.name]) %}
+        {% endif %}
+      {% endfor %}
+
+      {% if names|length %}
+        <p class="theme-meta">
+          <strong>Cursus :</strong> {{ names|join(', ') }}
+        </p>
+      {% else %}
+        <p class="theme-meta muted">Aucun cursus actif</p>
       {% endif %}
 
       <div class="admin-actions">

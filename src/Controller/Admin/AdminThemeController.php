@@ -24,7 +24,11 @@ class AdminThemeController extends AbstractController
         $status = $request->query->get('status', 'all'); // all|active|archived
         $sort = $request->query->get('sort', 'created_desc');
 
-        $themes = $repo->createAdminFilterQueryBuilder($q, $status, $sort)
+        // On exige un cursus actif uniquement quand on affiche les thèmes "actifs"
+        $requireCursus = ($status === 'active');
+
+        $themes = $repo
+            ->createAdminFilterQueryBuilder($q, $status, $sort, true, $requireCursus)
             ->getQuery()
             ->getResult();
 

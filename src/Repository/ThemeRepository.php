@@ -61,10 +61,24 @@ class ThemeRepository extends ServiceEntityRepository
 
     public function createAdminFilterQueryBuilder(
         ?string $q = null,
-        ?string $status = 'all',
-        ?string $sort = 'created_desc'
+        string $status = 'all',
+        string $sort = 'created_desc',
+        bool $onlyActiveCursus = false,
+        bool $requireCursus = false
     ): QueryBuilder {
-        $qb = $this->createQueryBuilder('t');
+        $qb = $this->createQueryBuilder('t')->distinct();
+
+        if ($onlyActiveCursus) {
+            $qb->leftJoin('t.cursus', 'c', 'WITH', 'c.isActive = true');
+        } else {
+            $qb->leftJoin('t.cursus', 'c');
+        }
+        $qb->addSelect('c');
+
+        // Si on veut exclure les thèmes sans cursus (dans le JOIN courant)
+        if ($requireCursus) {
+            $qb->andWhere('c.id IS NOT NULL');
+        }
 
         if ($q) {
             $qb->andWhere('LOWER(t.name) LIKE :q')
@@ -84,10 +98,14 @@ class ThemeRepository extends ServiceEntityRepository
             case 'name_desc':
                 $qb->orderBy('t.name', 'DESC');
                 break;
+            case 'created_asc':
+                $qb->orderBy('t.createdAt', 'ASC');
+                break;
             default:
-                // plus récents
                 $qb->orderBy('t.createdAt', 'DESC');
         }
+
+        $qb->addOrderBy('c.name', 'ASC');
 
         return $qb;
     }
