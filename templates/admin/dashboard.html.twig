@@ -18,12 +18,14 @@
       <h2>Clients</h2>
 
       <div class="card-links">
-        <a href="{{ path('admin_users_index') }}">Voir tous les clients</a>
-        <a href="{{ path('admin_users_index', { action: 'edit' }) }}">Mettre à jour un profil</a>
-        <a href="{{ path('admin_users_index', { action: 'delete' }) }}">Désactiver un profil</a>
+        <a href="{{ path('admin_users_index', { status: 'active' }) }}">Voir les clients actifs</a>
+        <a href="{{ path('admin_users_index', { action: 'edit', status: 'active' }) }}"> Mettre à jour un profil</a>
+        <a href="{{ path('admin_users_index', { action: 'delete', status: 'active' }) }}"> Archiver un profil</a>
+        <a href="{{ path('admin_users_index', { action: 'delete', status: 'archived' }) }}">Restaurer un profil</a>
+        <a href="{{ path('admin_users_index', { status: 'all' }) }}">Tous (actifs + archivés)</a>
       </div>
 
-      <a href="{{ path('admin_users_index') }}" class="card-link-indicator">
+      <a href="{{ path('admin_users_index', { status: 'active' }) }}" class="card-link-indicator">
         Gérer →
       </a>
     </div>

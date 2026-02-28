@@ -8,6 +8,7 @@ use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 
 /**
  * @extends ServiceEntityRepository<User>
@@ -72,6 +73,49 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         }
 
         return $qb->getQuery()->getResult();
+    }
+
+    public function findForAdminListPaginated(
+        string $q,
+        string $status,  // active|archived|all
+        string $sort,
+        string $dir,
+        int $page,
+        int $perPage
+    ): array {
+        $qb = $this->createQueryBuilder('u');
+
+        if ($q !== '') {
+            $qb->andWhere('LOWER(u.firstName) LIKE :q OR LOWER(u.lastName) LIKE :q OR LOWER(u.email) LIKE :q')
+            ->setParameter('q', '%'.mb_strtolower($q).'%');
+        }
+
+        // Filtre statut (onglets)
+        if ($status === 'active') {
+            $qb->andWhere('u.archivedAt IS NULL');
+        } elseif ($status === 'archived') {
+            $qb->andWhere('u.archivedAt IS NOT NULL');
+        } // all => pas de filtre
+
+        $dir = strtoupper($dir) === 'DESC' ? 'DESC' : 'ASC';
+
+        if ($sort === 'recent') {
+            $qb->orderBy('u.createdAt', $dir)
+            ->addOrderBy('u.id', $dir);
+        } else {
+            $qb->orderBy('u.lastName', $dir)
+            ->addOrderBy('u.firstName', $dir);
+        }
+
+        $qb->setFirstResult(($page - 1) * $perPage)
+        ->setMaxResults($perPage);
+
+        $paginator = new Paginator($qb->getQuery(), true);
+
+        return [
+            'items' => iterator_to_array($paginator->getIterator(), false),
+            'total' => count($paginator),
+        ];
     }
 
     public function findActiveUsers(): array
