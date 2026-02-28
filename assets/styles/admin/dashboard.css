@@ -277,6 +277,18 @@ a.card-link-indicator:hover{
 }
 
 /* =========================
+   Alert (infos / warning)
+========================= */
+.admin-alert{
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(220, 53, 69, 0.25);
+  background: rgba(220, 53, 69, 0.08);
+  color: #b02a37;
+  font-weight: 600;
+}
+
+/* =========================
    Responsive
 ========================= */
 @media (max-width: 992px){

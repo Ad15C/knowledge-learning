@@ -70,7 +70,7 @@ class AdminThemeController extends AbstractController
         ]);
     }
 
-    // 4) Page de confirmation "suprrimer" (= désactiver)
+    // 4) Page de confirmation "supprimer" (= désactiver)
     #[Route('/{id}/delete', name: 'delete', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function deleteConfirm(Theme $theme): Response
     {
@@ -79,11 +79,11 @@ class AdminThemeController extends AbstractController
         ]);
     }
 
-    // Action Post de désactivation (depuis la page delete)
+    // 5) Action POST de désactivation (depuis la page delete)
     #[Route('/{id}/disable', name: 'disable', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function disable(Theme $theme, Request $request, EntityManagerInterface $em): Response
     {
-        if (!$this->isCsrfTokenValid('theme_disable_'.$theme->getId(), (string) $request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('theme_disable'.$theme->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF invalide.');
         }
 
@@ -94,11 +94,12 @@ class AdminThemeController extends AbstractController
         return $this->redirectToRoute('admin_theme_index');
     }
 
-    // Réactiver depuis la liste
+    // 6) Réactiver depuis la liste
     #[Route('/{id}/activate', name: 'activate', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function activate(Theme $theme, Request $request, EntityManagerInterface $em): Response
     {
-        if (!$this->isCsrfTokenValid('theme_activate_'.$theme->getId(), (string) $request->request->get('_token'))) {
+        // IMPORTANT: on harmonise sans underscore pour matcher le Twig : csrf_token('theme_activate' ~ id)
+        if (!$this->isCsrfTokenValid('theme_activate'.$theme->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF invalide.');
         }
 
