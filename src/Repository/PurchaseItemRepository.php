@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Cursus;
 use App\Entity\Lesson;
+use App\Entity\Purchase;
 use App\Entity\PurchaseItem;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -16,8 +17,7 @@ class PurchaseItemRepository extends ServiceEntityRepository
         parent::__construct($registry, PurchaseItem::class);
     }
 
-    // Tous les items d'une commande
-    public function findByPurchase($purchase): array
+    public function findByPurchase(Purchase $purchase): array
     {
         return $this->createQueryBuilder('pi')
             ->andWhere('pi.purchase = :purchase')
@@ -26,7 +26,6 @@ class PurchaseItemRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // Recherche par utilisateur et cursus/cours
     public function findByUserAndCursus(User $user, Cursus $cursus): array
     {
         return $this->createQueryBuilder('pi')
@@ -39,7 +38,6 @@ class PurchaseItemRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // Recherche par utilisateur et statut de la commande
     public function findByUserAndStatus(User $user, string $status): array
     {
         return $this->createQueryBuilder('pi')
@@ -52,7 +50,6 @@ class PurchaseItemRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // Recherche par utilisateur et période
     public function findByUserAndPeriod(User $user, \DateTimeInterface $from, \DateTimeInterface $to): array
     {
         return $this->createQueryBuilder('pi')
@@ -67,8 +64,7 @@ class PurchaseItemRepository extends ServiceEntityRepository
     }
 
     /**
-     * Retourne les leçons achetées par un user (hors panier).
-     * ✅ Root alias = l (Lesson) => plus d'erreur Doctrine.
+     * Leçons achetées (hors panier)
      */
     public function findLessonsPurchasedByUser(User $user): array
     {
@@ -85,7 +81,7 @@ class PurchaseItemRepository extends ServiceEntityRepository
             ->andWhere('p.status != :cart')
             ->andWhere('pi.lesson IS NOT NULL')
             ->setParameter('user', $user)
-            ->setParameter('cart', 'cart')
+            ->setParameter('cart', Purchase::STATUS_CART)
             ->getQuery()
             ->getResult();
     }

@@ -2,12 +2,15 @@
 
 namespace App\Controller;
 
+use App\Entity\Certification;
 use App\Entity\Lesson;
 use App\Entity\LessonValidated;
-use App\Entity\Certification;
+use App\Entity\Purchase;
+use App\Entity\PurchaseItem;
 use App\Service\LessonValidatedService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -18,25 +21,28 @@ class LessonController extends AbstractController
     public function __construct(private EntityManagerInterface $em) {}
 
     /**
-     * Récupère les leçons accessibles et déjà complétées pour l'utilisateur
+     * @return array{0: array<int,bool>, 1: array<int,bool>}
      */
     private function getUserAccessAndCompleted(): array
     {
         $user = $this->getUser();
+
         $userHasAccess = [];
         $userHasCompleted = [];
 
+        // Important : éviter d'exécuter des requêtes avec user = null
         if (!$user) {
             return [$userHasAccess, $userHasCompleted];
         }
 
-        $paidItems = $this->em->getRepository('App\Entity\PurchaseItem')
+        // 1) Accès : items payés (leçon OU cursus)
+        $paidItems = $this->em->getRepository(PurchaseItem::class)
             ->createQueryBuilder('pi')
             ->join('pi.purchase', 'p')
             ->andWhere('p.user = :user')
             ->andWhere('p.status = :status')
             ->setParameter('user', $user)
-            ->setParameter('status', 'paid')
+            ->setParameter('status', Purchase::STATUS_PAID)
             ->getQuery()
             ->getResult();
 
@@ -44,6 +50,7 @@ class LessonController extends AbstractController
             if ($item->getLesson()) {
                 $userHasAccess[$item->getLesson()->getId()] = true;
             }
+
             if ($item->getCursus()) {
                 foreach ($item->getCursus()->getLessons() as $lesson) {
                     $userHasAccess[$lesson->getId()] = true;
@@ -51,17 +58,21 @@ class LessonController extends AbstractController
             }
         }
 
+        // 2) Complété : leçons validées
         $validatedLessons = $this->em->getRepository(LessonValidated::class)
             ->findBy(['user' => $user]);
 
         foreach ($validatedLessons as $validation) {
-            $userHasCompleted[$validation->getLesson()->getId()] = true;
+            $lessonId = $validation->getLesson()?->getId();
+            if ($lessonId) {
+                $userHasCompleted[$lessonId] = true;
+            }
         }
 
         return [$userHasAccess, $userHasCompleted];
     }
 
-    #[Route('/lesson/{id}', name: 'lesson_show')]
+    #[Route('/lesson/{id}', name: 'lesson_show', methods: ['GET'])]
     public function show(Lesson $lesson): Response
     {
         if (!$lesson->isPubliclyAccessible()) {
@@ -71,11 +82,14 @@ class LessonController extends AbstractController
         [$userHasAccess, $userHasCompleted] = $this->getUserAccessAndCompleted();
         $user = $this->getUser();
 
-        $certification = $this->em->getRepository(Certification::class)->findOneBy([
-            'user' => $user,
-            'lesson' => $lesson,
-            'type' => 'lesson',
-        ]);
+        $certification = null;
+        if ($user) {
+            $certification = $this->em->getRepository(Certification::class)->findOneBy([
+                'user' => $user,
+                'lesson' => $lesson,
+                'type' => 'lesson',
+            ]);
+        }
 
         return $this->render('lesson/show.html.twig', [
             'lesson' => $lesson,
@@ -86,7 +100,7 @@ class LessonController extends AbstractController
     }
 
     #[Route('/lesson/{id}/complete', name: 'lesson_complete', methods: ['POST'])]
-    public function complete(Lesson $lesson, LessonValidatedService $lessonService): Response
+    public function complete(Request $request, Lesson $lesson, LessonValidatedService $lessonService): Response
     {
         if (!$lesson->isPubliclyAccessible()) {
             throw $this->createNotFoundException('Leçon introuvable.');
@@ -97,10 +111,26 @@ class LessonController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
+        // CSRF
+        $tokenId = 'lesson_complete_' . $lesson->getId();
+        $token = (string) $request->request->get('_token');
+
+        if (!$this->isCsrfTokenValid($tokenId, $token)) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        // Sécurité serveur : vérifier l’accès (ne pas dépendre du Twig)
+        [$userHasAccess] = $this->getUserAccessAndCompleted();
+        if (!isset($userHasAccess[$lesson->getId()])) {
+            $this->addFlash('danger', "Tu n'as pas accès à cette leçon.");
+            return $this->redirectToRoute('lesson_show', ['id' => $lesson->getId()]);
+        }
+
         $lessonService->validateLesson($user, $lesson);
 
         $this->addFlash('success', 'Leçon marquée comme complétée et certification générée !');
 
         return $this->redirectToRoute('lesson_show', ['id' => $lesson->getId()]);
     }
+
 }

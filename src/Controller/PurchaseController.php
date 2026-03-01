@@ -9,9 +9,12 @@ use App\Entity\Cursus;
 use App\Repository\PurchaseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('ROLE_USER')]
 class PurchaseController extends AbstractController
 {
     public function __construct(
@@ -19,18 +22,14 @@ class PurchaseController extends AbstractController
         private PurchaseRepository $purchaseRepo
     ) {}
 
-    #[Route('/cart', name: 'cart_show')]
+    #[Route('/cart', name: 'cart_show', methods: ['GET'])]
     public function show(): Response
     {
         $user = $this->getUser();
 
-        if (!$user) {
-            return $this->redirectToRoute('app_login');
-        }
-
         $purchase = $this->purchaseRepo->findOneBy([
             'user' => $user,
-            'status' => 'cart'
+            'status' => Purchase::STATUS_CART,
         ]);
 
         return $this->render('cart/show.html.twig', [
@@ -38,28 +37,26 @@ class PurchaseController extends AbstractController
         ]);
     }
 
-    #[Route('/cart/add/lesson/{id}', name: 'cart_add_lesson')]
-    public function addLesson(Lesson $lesson): Response
+    #[Route('/cart/add/lesson/{id}', name: 'cart_add_lesson', methods: ['POST'])]
+    public function addLesson(Request $request, Lesson $lesson): Response
     {
-        $user = $this->getUser();
-
-        if (!$user) {
-            return $this->redirectToRoute('app_login');
+        if (!$this->isCsrfTokenValid('cart_add_lesson_'.$lesson->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
+
+        $user = $this->getUser();
 
         $purchase = $this->purchaseRepo->findOneBy([
             'user' => $user,
-            'status' => 'cart'
+            'status' => Purchase::STATUS_CART,
         ]);
 
         if (!$purchase) {
             $purchase = new Purchase();
             $purchase->setUser($user);
-            $purchase->setStatus('cart'); 
             $this->em->persist($purchase);
         }
 
-        // éviter doublons
         foreach ($purchase->getItems() as $existingItem) {
             if ($existingItem->getLesson() === $lesson) {
                 $this->addFlash('info', 'Cette leçon est déjà dans le panier.');
@@ -70,38 +67,35 @@ class PurchaseController extends AbstractController
         $item = new PurchaseItem();
         $item->setPurchase($purchase);
         $item->setLesson($lesson);
-        $item->setUnitPrice($lesson->getPrice());
+        $item->setUnitPrice((float) $lesson->getPrice());
 
         $this->em->persist($item);
-
         $purchase->addItem($item);
         $purchase->calculateTotal();
 
         $this->em->flush();
 
         $this->addFlash('success', 'Leçon ajoutée au panier.');
-
         return $this->redirectToRoute('cart_show');
     }
 
-    #[Route('/cart/add/cursus/{id}', name: 'cart_add_cursus')]
-    public function addCursus(Cursus $cursus): Response
+    #[Route('/cart/add/cursus/{id}', name: 'cart_add_cursus', methods: ['POST'])]
+    public function addCursus(Request $request, Cursus $cursus): Response
     {
-        $user = $this->getUser();
-
-        if (!$user) {
-            return $this->redirectToRoute('app_login');
+        if (!$this->isCsrfTokenValid('cart_add_cursus_'.$cursus->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
+
+        $user = $this->getUser();
 
         $purchase = $this->purchaseRepo->findOneBy([
             'user' => $user,
-            'status' => 'cart'
+            'status' => Purchase::STATUS_CART,
         ]);
 
         if (!$purchase) {
             $purchase = new Purchase();
             $purchase->setUser($user);
-            $purchase->setStatus('cart');
             $this->em->persist($purchase);
         }
 
@@ -115,32 +109,34 @@ class PurchaseController extends AbstractController
         $item = new PurchaseItem();
         $item->setPurchase($purchase);
         $item->setCursus($cursus);
-        $item->setUnitPrice($cursus->getPrice());
+        $item->setUnitPrice((float) $cursus->getPrice());
 
         $this->em->persist($item);
-
         $purchase->addItem($item);
         $purchase->calculateTotal();
 
         $this->em->flush();
 
         $this->addFlash('success', 'Cursus ajouté au panier.');
-
         return $this->redirectToRoute('cart_show');
     }
 
-    #[Route('/cart/remove/{type}/{id}', name: 'cart_remove')]
-    public function remove(string $type, int $id): Response
+    #[Route('/cart/remove/{type}/{id}', name: 'cart_remove', methods: ['POST'])]
+    public function remove(Request $request, string $type, int $id): Response
     {
-        $user = $this->getUser();
-
-        if (!$user) {
-            return $this->redirectToRoute('app_login');
+        if (!in_array($type, ['lesson', 'cursus'], true)) {
+            throw $this->createNotFoundException();
         }
+
+        if (!$this->isCsrfTokenValid('cart_remove_'.$type.'_'.$id, (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $user = $this->getUser();
 
         $purchase = $this->purchaseRepo->findOneBy([
             'user' => $user,
-            'status' => 'cart'
+            'status' => Purchase::STATUS_CART,
         ]);
 
         if (!$purchase) {
@@ -148,7 +144,6 @@ class PurchaseController extends AbstractController
         }
 
         foreach ($purchase->getItems() as $item) {
-
             if ($type === 'lesson' && $item->getLesson()?->getId() === $id) {
                 $purchase->removeItem($item);
                 $this->em->remove($item);
@@ -163,40 +158,35 @@ class PurchaseController extends AbstractController
         }
 
         $purchase->calculateTotal();
-
         $this->em->flush();
 
         $this->addFlash('success', 'Item supprimé.');
-
         return $this->redirectToRoute('cart_show');
     }
 
-    /* Simulation Stripe */
-    #[Route('/cart/pay', name: 'cart_pay')]
-    public function pay(): Response
+    #[Route('/cart/pay', name: 'cart_pay', methods: ['POST'])]
+    public function pay(Request $request): Response
     {
-        $user = $this->getUser();
-
-        if (!$user) {
-            return $this->redirectToRoute('app_login');
+        if (!$this->isCsrfTokenValid('cart_pay', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
+
+        $user = $this->getUser();
 
         $purchase = $this->purchaseRepo->findOneBy([
             'user' => $user,
-            'status' => 'cart'
+            'status' => Purchase::STATUS_CART,
         ]);
 
         if (!$purchase || $purchase->getItems()->isEmpty()) {
-
             $this->addFlash('error', 'Panier vide.');
-
             return $this->redirectToRoute('cart_show');
         }
 
-        // simulation paiement Stripe
+        // Simulation : tu peux mettre pending ici si tu veux, puis paid ensuite via webhook
+        // $purchase->markPending();
         $purchase->calculateTotal();
-        $purchase->setStatus('paid');
-        $purchase->setPaidAt(new \DateTimeImmutable());
+        $purchase->markPaid();
 
         $this->em->flush();
 
@@ -205,19 +195,15 @@ class PurchaseController extends AbstractController
         ]);
     }
 
-    #[Route('/cart/success/{orderNumber}', name: 'cart_success')]
+    #[Route('/cart/success/{orderNumber}', name: 'cart_success', methods: ['GET'])]
     public function success(string $orderNumber): Response
     {
         $user = $this->getUser();
 
-        if (!$user) {
-            return $this->redirectToRoute('app_login');
-        }
-
         $purchase = $this->purchaseRepo->findOneBy([
             'orderNumber' => $orderNumber,
             'user' => $user,
-            'status' => 'paid'
+            'status' => Purchase::STATUS_PAID,
         ]);
 
         if (!$purchase) {

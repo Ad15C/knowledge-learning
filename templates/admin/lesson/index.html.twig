@@ -1,9 +1,9 @@
 {% extends 'dashboard/admin/_base.html.twig' %}
 
 {% block stylesheets %}
-  {{ parent() }}
-  <link rel="stylesheet" href="{{ asset('styles/admin/admin-shared.css') }}">
-  <link rel="stylesheet" href="{{ asset('styles/admin/lesson.css') }}">
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/admin/admin-shared.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/admin/lesson.css') }}">
 {% endblock %}
 
 {% block title %}Admin - Leçons{% endblock %}
@@ -11,131 +11,180 @@
 {% block dashboard_content %}
 
 <div class="admin-page-header">
-  <div>
-    <h1 class="admin-page-title">Leçons</h1>
-    <p class="admin-page-subtitle">
-      Créer, modifier, archiver / restaurer des leçons.
-    </p>
-  </div>
+    <div>
+        <h1 class="admin-page-title">Leçons</h1>
+        <p class="admin-page-subtitle">
+            Créer, modifier, archiver / restaurer des leçons.
+        </p>
+    </div>
 
-  <a href="{{ path('admin_lesson_new') }}" class="btn">+ Créer une leçon</a>
+    <a href="{{ path('admin_lesson_new') }}" class="btn">
+        + Créer une leçon
+    </a>
 </div>
 
-{# Filtre #}
+{# Filtres #}
 <form method="get" class="admin-filters">
-  <div class="admin-filters-row">
-    <input type="search"
-           name="q"
-           value="{{ filters.q ?? '' }}"
-           placeholder="Rechercher une leçon…"
-           class="admin-filter-input">
+    <div class="admin-filters-row">
 
-    <select name="theme" class="admin-filter-select">
-      <option value="">Tous les thèmes</option>
-      {% for theme in themes %}
-        <option value="{{ theme.id }}" {{ (filters.theme ?? null) == theme.id ? 'selected' }}>
-          {{ theme.name }}
-        </option>
-      {% endfor %}
-    </select>
+        <input type="search"
+               name="q"
+               value="{{ filters.q ?? '' }}"
+               placeholder="Rechercher une leçon…"
+               class="admin-filter-input">
 
-    <select name="cursus" class="admin-filter-select">
-      <option value="">Tous les cursus</option>
-      {% for c in cursus_list %}
-        <option value="{{ c.id }}" {{ (filters.cursus ?? null) == c.id ? 'selected' }}>
-          {{ c.name }}
-        </option>
-      {% endfor %}
-    </select>
+        <select name="theme" class="admin-filter-select">
+            <option value="">Tous les thèmes</option>
+            {% for theme in themes %}
+                <option value="{{ theme.id }}"
+                    {{ (filters.theme ?? null) == theme.id ? 'selected' }}>
+                    {{ theme.name }}
+                </option>
+            {% endfor %}
+        </select>
 
-    <select name="status" class="admin-filter-select">
-      <option value="all"      {{ (filters.status ?? 'all') == 'all' ? 'selected' }}>Toutes</option>
-      <option value="active"   {{ (filters.status ?? 'all') == 'active' ? 'selected' }}>Actives</option>
-      <option value="archived" {{ (filters.status ?? 'all') == 'archived' ? 'selected' }}>Archivées</option>
-    </select>
+        <select name="cursus" class="admin-filter-select">
+            <option value="">Tous les cursus</option>
+            {% for c in cursus_list %}
+                <option value="{{ c.id }}"
+                    {{ (filters.cursus ?? null) == c.id ? 'selected' }}>
+                    {{ c.name }}
+                </option>
+            {% endfor %}
+        </select>
 
-    <select name="sort" class="admin-filter-select">
-      <option value="id_desc"     {{ (filters.sort ?? 'id_desc') == 'id_desc' ? 'selected' }}>Plus récents</option>
-      <option value="title_asc"   {{ (filters.sort ?? '') == 'title_asc' ? 'selected' }}>Titre A → Z</option>
-      <option value="title_desc"  {{ (filters.sort ?? '') == 'title_desc' ? 'selected' }}>Titre Z → A</option>
-      <option value="price_asc"   {{ (filters.sort ?? '') == 'price_asc' ? 'selected' }}>Prix croissant</option>
-      <option value="price_desc"  {{ (filters.sort ?? '') == 'price_desc' ? 'selected' }}>Prix décroissant</option>
-    </select>
+        <select name="status" class="admin-filter-select">
+            <option value="all"
+                {{ (filters.status ?? 'all') == 'all' ? 'selected' }}>
+                Toutes
+            </option>
+            <option value="active"
+                {{ (filters.status ?? 'all') == 'active' ? 'selected' }}>
+                Actives
+            </option>
+            <option value="archived"
+                {{ (filters.status ?? 'all') == 'archived' ? 'selected' }}>
+                Archivées
+            </option>
+        </select>
 
-    <button class="btn btn-secondary" type="submit">Filtrer</button>
-    <a class="btn btn-secondary" href="{{ path('admin_lesson_index') }}">Réinitialiser</a>
-  </div>
+        <select name="sort" class="admin-filter-select">
+            <option value="id_desc"
+                {{ (filters.sort ?? 'id_desc') == 'id_desc' ? 'selected' }}>
+                Plus récents
+            </option>
+            <option value="title_asc"
+                {{ (filters.sort ?? '') == 'title_asc' ? 'selected' }}>
+                Titre A → Z
+            </option>
+            <option value="title_desc"
+                {{ (filters.sort ?? '') == 'title_desc' ? 'selected' }}>
+                Titre Z → A
+            </option>
+            <option value="price_asc"
+                {{ (filters.sort ?? '') == 'price_asc' ? 'selected' }}>
+                Prix croissant
+            </option>
+            <option value="price_desc"
+                {{ (filters.sort ?? '') == 'price_desc' ? 'selected' }}>
+                Prix décroissant
+            </option>
+        </select>
+
+        <button class="btn btn-secondary" type="submit">Filtrer</button>
+        <a class="btn btn-secondary" href="{{ path('admin_lesson_index') }}">
+            Réinitialiser
+        </a>
+
+    </div>
 </form>
 
 <div class="lesson-grid">
-  {% for lesson in lessons %}
-    <div class="lesson-card">
 
-      {% if lesson.image %}
-        {% set img = lesson.image %}
-        <img
-          src="{{ img starts with 'http' ? img : asset(img) }}"
-          alt="{{ lesson.title }}"
-          class="lesson-image"
-          loading="lazy"
-        >
-      {% endif %}
+    {% for lesson in lessons %}
+        <div class="lesson-card">
 
-      <h2 class="lesson-title">
-        <span>{{ lesson.title }}</span>
+            {% if lesson.image %}
+                {% set img = lesson.image %}
+                <img src="{{ img starts with 'http' ? img : asset(img) }}"
+                     alt="{{ lesson.title }}"
+                     class="lesson-image"
+                     loading="lazy">
+            {% endif %}
 
-        {% if lesson.isActive %}
-          <span class="badge badge-active">Active</span>
-        {% else %}
-          <span class="badge badge-archived">Inactive</span>
-        {% endif %}
-      </h2>
+            <h2 class="lesson-title">
+                <span>{{ lesson.title }}</span>
 
-      <p class="lesson-meta">
-        <strong>Cursus :</strong> {{ lesson.cursus ? lesson.cursus.name : '—' }}<br>
-        <strong>Prix :</strong>
-        {{ lesson.price is not null ? (lesson.price|number_format(2, ',', ' ') ~ ' €') : '—' }}
-        {% if lesson.videoUrl %}
-          <br><strong>Vidéo :</strong> <span class="muted">oui</span>
-        {% endif %}
-      </p>
+                {% if lesson.isActive %}
+                    <span class="badge badge-active">Active</span>
+                {% else %}
+                    <span class="badge badge-archived">Inactive</span>
+                {% endif %}
+            </h2>
 
-      {% if lesson.fiche %}
-        {% set ficheText = lesson.fiche|striptags|trim %}
-        <p class="lesson-desc">
-          {{ ficheText|length > 160 
-              ? ficheText|slice(0,160) ~ '…' 
-              : ficheText 
-          }}
-        </p>
-      {% endif %}
+            <p class="lesson-meta">
+                <strong>Cursus :</strong>
+                {{ lesson.cursus ? lesson.cursus.name : '—' }}<br>
 
-      <div class="admin-actions">
-        <a href="{{ path('admin_lesson_edit', {'id': lesson.id}) }}" class="btn btn-secondary">
-          Modifier
-        </a>
+                <strong>Prix :</strong>
+                {{ lesson.price is not null
+                    ? (lesson.price|number_format(2, ',', ' ') ~ ' €')
+                    : '—' }}
 
-        {% if lesson.isActive %}
-          <a href="{{ path('admin_lesson_delete', {'id': lesson.id}) }}" class="btn btn-danger">
-            Archiver
-          </a>
-        {% else %}
-          <form method="post"
-                action="{{ path('admin_lesson_activate', {'id': lesson.id}) }}"
-                class="inline-form"
-                onsubmit="return confirm('Confirmer la restauration ?');">
-            <input type="hidden" name="_token" value="{{ csrf_token('lesson_activate' ~ lesson.id) }}">
-            <button class="btn" type="submit">Restaurer</button>
-          </form>
-        {% endif %}
-      </div>
+                {% if lesson.videoUrl %}
+                    <br><strong>Vidéo :</strong>
+                    <span class="muted">oui</span>
+                {% endif %}
+            </p>
 
-    </div>
-  {% else %}
-    <p>Aucune leçon pour le moment.</p>
-  {% endfor %}
+            {% if lesson.fiche %}
+                {% set ficheText = lesson.fiche|striptags|trim %}
+                <p class="lesson-desc">
+                    {{ ficheText|length > 160
+                        ? ficheText|slice(0, 160) ~ '…'
+                        : ficheText }}
+                </p>
+            {% endif %}
+
+            <div class="admin-actions">
+
+                <a href="{{ path('admin_lesson_edit', {'id': lesson.id}) }}"
+                   class="btn btn-secondary">
+                    Modifier
+                </a>
+
+                {% if lesson.isActive %}
+                    <a href="{{ path('admin_lesson_delete', {'id': lesson.id}) }}"
+                       class="btn btn-danger">
+                        Archiver
+                    </a>
+                {% else %}
+                    <form method="post"
+                          action="{{ path('admin_lesson_activate', {'id': lesson.id}) }}"
+                          class="inline-form"
+                          onsubmit="return confirm('Confirmer la restauration ?');">
+
+                        <input type="hidden"
+                               name="_token"
+                               value="{{ csrf_token('lesson_activate' ~ lesson.id) }}">
+
+                        <button class="btn" type="submit">
+                            Restaurer
+                        </button>
+                    </form>
+                {% endif %}
+
+            </div>
+
+        </div>
+    {% else %}
+        <p>Aucune leçon pour le moment.</p>
+    {% endfor %}
+
 </div>
 
-<a href="{{ path('admin_dashboard') }}" class="btn-back">← Retour au dashboard admin</a>
+<a href="{{ path('admin_dashboard') }}" class="btn-back">
+    ← Retour au dashboard admin
+</a>
 
 {% endblock %}

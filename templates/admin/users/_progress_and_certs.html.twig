@@ -24,8 +24,8 @@
         {% for lv in validatedLessons %}
           <tr>
             <td>{{ lv.lesson.title }}</td>
-            <td>{{ lv.lesson.cursus.title ?? '—' }}</td>
-            <td>{{ lv.lesson.cursus.theme.title ?? '—' }}</td>
+            <td>{{ lv.lesson.cursus.name ?? '—' }}</td>
+            <td>{{ lv.lesson.cursus.theme.name ?? '—' }}</td>
             <td><span class="badge badge-active">Validé</span></td>
             <td>{{ lv.validatedAt ? lv.validatedAt|date('d/m/Y H:i') : '—' }}</td>
           </tr>
@@ -51,8 +51,8 @@
         {% for lesson in inProgressLessons %}
           <tr>
             <td>{{ lesson.title }}</td>
-            <td>{{ lesson.cursus.title ?? '—' }}</td>
-            <td>{{ lesson.cursus.theme.title ?? '—' }}</td>
+            <td>{{ lesson.cursus.name ?? '—' }}</td>
+            <td>{{ lesson.cursus.theme.name ?? '—' }}</td>
             <td><span class="badge badge-progress">En cours</span></td>
           </tr>
         {% endfor %}
@@ -82,8 +82,8 @@
         {% for cert in certifications %}
           {% set target =
             cert.lesson ? ('Leçon : ' ~ cert.lesson.title)
-            : (cert.cursus ? ('Cursus : ' ~ cert.cursus.title)
-            : (cert.theme ? ('Thème : ' ~ cert.theme.title) : '—'))
+            : (cert.cursus ? ('Cursus : ' ~ (cert.cursus.name ?? '—'))
+            : (cert.theme ? ('Thème : ' ~ (cert.theme.name ?? '—')) : '—'))
           %}
 
           <tr>

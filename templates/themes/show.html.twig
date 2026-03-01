@@ -3,48 +3,52 @@
 {% block title %}{{ theme.name }}{% endblock %}
 
 {% block stylesheets %}
-    {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('build/css/themes.css') }}">
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/themes.css') }}">
 {% endblock %}
 
 {% block body %}
 <div class="dashboard-layout">
-    <main class="dashboard-content">
+  <main class="dashboard-content">
 
-        <h1>{{ theme.name }}</h1>
+    <h1>{{ theme.name }}</h1>
 
-        {% if theme.description %}
-            <p style="margin-bottom: 30px;">{{ theme.description }}</p>
-        {% endif %}
+    {% if theme.description %}
+      <p style="margin-bottom: 30px;">{{ theme.description }}</p>
+    {% endif %}
 
-        <h2>Cursus disponibles</h2>
+    <h2>Cursus disponibles</h2>
 
-        <div class="cursus-grid">
-            {% for cursus in theme.cursus %}
-                <div class="cursus-card">
-                    {% if cursus.image %}
-                        <img src="{{ asset(cursus.image) }}" alt="{{ cursus.name }}">
-                    {% endif %}
+    <div class="cursus-grid">
+      {% for cursus in theme.cursus %}
+        <div class="cursus-card">
 
-                    <h3>{{ cursus.name }}</h3>
-                    <p>Prix : <strong>{{ cursus.price }} €</strong></p>
+          {% if cursus.image %}
+            <img src="{{ asset(cursus.image) }}" alt="{{ cursus.name }}">
+          {% endif %}
 
-                    <div style="margin-top: 10px;">
-                        <a href="{{ path('cursus_show', {id: cursus.id}) }}" class="btn-secondary">
-                            Détails du cursus
-                        </a>
+          <h3>{{ cursus.name }}</h3>
+          <p>Prix : <strong>{{ cursus.price }} €</strong></p>
 
-                        <a href="{{ path('cart_add_cursus', {id: cursus.id}) }}" class="btn">
-                            Ajouter au panier
-                        </a>
-                    </div>
-                </div>
-            {% else %}
-                <p>Aucun cursus disponible pour ce thème.</p>
-            {% endfor %}
+          <div style="margin-top: 10px;">
+            <a href="{{ path('cursus_show', {id: cursus.id}) }}" class="btn-secondary">
+              Détails du cursus
+            </a>
+
+            <form method="post" action="{{ path('cart_add_cursus', {id: cursus.id}) }}" style="display:inline;">
+              <input type="hidden" name="_token" value="{{ csrf_token('cart_add_cursus_' ~ cursus.id) }}">
+              <button type="submit" class="btn">Ajouter au panier</button>
+            </form>
+          </div>
+
         </div>
+      {% else %}
+        <p>Aucun cursus disponible pour ce thème.</p>
+      {% endfor %}
+    </div>
 
-        <a href="{{ path('themes_index') }}" class="btn-back">← Retour aux Thèmes</a>
-    </main>
+    <a href="{{ path('themes_index') }}" class="btn-back">← Retour aux Thèmes</a>
+
+  </main>
 </div>
 {% endblock %}

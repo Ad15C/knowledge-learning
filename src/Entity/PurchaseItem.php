@@ -27,7 +27,7 @@ class PurchaseItem
     private int $quantity = 1;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private string $unitPrice;
+    private string $unitPrice = '0.00';
 
     public function getId(): ?int { return $this->id; }
 
@@ -41,11 +41,17 @@ class PurchaseItem
     public function setCursus(?Cursus $cursus): static { $this->cursus = $cursus; return $this; }
 
     public function getQuantity(): int { return $this->quantity; }
-    public function setQuantity(int $quantity): static { $this->quantity = $quantity; return $this; }
+    public function setQuantity(int $quantity): static { $this->quantity = max(1, $quantity); return $this; }
 
-    public function getUnitPrice(): float { return (float)$this->unitPrice; }
-    public function setUnitPrice(float $price): static { $this->unitPrice = number_format($price, 2, '.', ''); return $this; }
+    public function getUnitPrice(): float { return (float) $this->unitPrice; }
+    public function setUnitPrice(float $price): static
+    {
+        $this->unitPrice = number_format($price, 2, '.', '');
+        return $this;
+    }
 
-    public function getTotal(): float { return $this->getUnitPrice() * $this->quantity; }
-
+    public function getTotal(): float
+    {
+        return $this->getUnitPrice() * $this->quantity;
+    }
 }

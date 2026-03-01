@@ -15,10 +15,11 @@
   <label>
     Statut :
     <select name="status">
-      <option value="">Tous</option>
+      <option value="" {% if filter_status is empty %}selected{% endif %}>Tous</option>
       <option value="paid" {% if filter_status == 'paid' %}selected{% endif %}>Payé</option>
       <option value="pending" {% if filter_status == 'pending' %}selected{% endif %}>En attente</option>
-      <option value="cancelled" {% if filter_status == 'cancelled' %}selected{% endif %}>Annulé</option>
+      <option value="canceled" {% if filter_status == 'canceled' %}selected{% endif %}>Annulé</option>
+      {# <option value="cart" {% if filter_status == 'cart' %}selected{% endif %}>Panier</option> #}
     </select>
   </label>
 
@@ -45,35 +46,41 @@
           <h3>Commande #{{ purchase.id }}</h3>
           <p><strong>Date :</strong> {{ purchase.createdAt|date('d/m/Y H:i') }}</p>
           <p><strong>Total :</strong> {{ purchase.total|number_format(2, '.', ' ') }} €</p>
-          <p><strong>Statut :</strong> {{ purchase.status|capitalize }}</p>
+          <p><strong>Statut :</strong> {{ purchase.statusLabel }}</p>
 
-          {% if purchase.items|length > 0 %}
+          {% if purchase.items is not empty %}
             <h4>Articles :</h4>
             <ul>
               {% for item in purchase.items %}
                 <li>
-                  {% if item.cursus %}
-                    {{ item.cursus.name }} - {{ item.getTotal()|number_format(2, '.', ' ') }} €
-                    <span class="cart-type">(Cursus)</span>
+                  {% if item.lesson %}
+                    {{ item.lesson.title }} - {{ item.total|number_format(2, '.', ' ') }} €
+                    <span class="cart-type">(Leçon)</span>
+                    — Quantité : {{ item.quantity }}
 
-                    {% if item.lesson %}
-                      <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}" class="cart-link">Accéder au cours</a>
-                    {% elseif item.cursus %}
-                      {% for lesson in item.cursus.lessons %}
-                        <a href="{{ path('lesson_show', {'id': lesson.id}) }}" class="cart-link">{{ lesson.title }}</a>
-                      {% else %}
-                        <span class="cart-link disabled">Pas de cours disponible</span>
-                      {% endfor %}
+                    <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}" class="cart-link">
+                      Accéder
+                    </a>
+
+                  {% elseif item.cursus %}
+                    {{ item.cursus.name }} - {{ item.total|number_format(2, '.', ' ') }} €
+                    <span class="cart-type">(Cursus)</span>
+                    — Quantité : {{ item.quantity }}
+
+                    {% if item.cursus.lessons is not empty %}
+                      <div class="mt-2">
+                        {% for lesson in item.cursus.lessons %}
+                          <a href="{{ path('lesson_show', {'id': lesson.id}) }}" class="cart-link">
+                            {{ lesson.title }}
+                          </a>
+                        {% endfor %}
+                      </div>
                     {% else %}
-                      <span class="cart-link disabled">Article indisponible</span>
+                      <span class="cart-link disabled">Pas de cours disponible</span>
                     {% endif %}
 
-                  {% elseif item.lesson %}
-                    {{ item.lesson.title }} - {{ item.getTotal()|number_format(2, '.', ' ') }} €
-                    <span class="cart-type">(Leçon)</span> - Quantité : {{ item.getQuantity() }}
-                    <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}" class="cart-link">Accéder</a>
                   {% else %}
-                    Article inconnu - {{ item.getTotal()|number_format(2, '.', ' ') }} €
+                    Article inconnu - {{ item.total|number_format(2, '.', ' ') }} €
                   {% endif %}
                 </li>
               {% endfor %}

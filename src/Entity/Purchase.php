@@ -11,6 +11,18 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\HasLifecycleCallbacks]
 class Purchase
 {
+    public const STATUS_CART     = 'cart';
+    public const STATUS_PENDING  = 'pending';
+    public const STATUS_PAID     = 'paid';
+    public const STATUS_CANCELED = 'canceled';
+
+    public const STATUSES = [
+        self::STATUS_CART,
+        self::STATUS_PENDING,
+        self::STATUS_PAID,
+        self::STATUS_CANCELED,
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -24,7 +36,7 @@ class Purchase
     private ?User $user = null;
 
     #[ORM\Column(length: 20)]
-    private string $status = 'cart';
+    private string $status = self::STATUS_CART;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     private string $total = '0.00';
@@ -35,6 +47,7 @@ class Purchase
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $paidAt = null;
 
+    /** @var Collection<int, PurchaseItem> */
     #[ORM\OneToMany(mappedBy: 'purchase', targetEntity: PurchaseItem::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $items;
 
@@ -54,13 +67,30 @@ class Purchase
 
     public function calculateTotal(): void
     {
-        $total = 0;
-
+        $total = 0.0;
         foreach ($this->items as $item) {
             $total += $item->getTotal();
         }
-
         $this->total = number_format($total, 2, '.', '');
+    }
+
+    public function markPaid(?\DateTimeImmutable $paidAt = null): static
+    {
+        $this->setStatus(self::STATUS_PAID);
+        $this->paidAt = $paidAt ?? new \DateTimeImmutable();
+        return $this;
+    }
+
+    public function markPending(): static
+    {
+        $this->setStatus(self::STATUS_PENDING);
+        return $this;
+    }
+
+    public function markCanceled(): static
+    {
+        $this->setStatus(self::STATUS_CANCELED);
+        return $this;
     }
 
     public function getId(): ?int { return $this->id; }
@@ -71,20 +101,26 @@ class Purchase
     public function setUser(?User $user): static { $this->user = $user; return $this; }
 
     public function getStatus(): string { return $this->status; }
-    public function setStatus(string $status): static { $this->status = $status; return $this; }
 
-    public function getTotal(): float { return (float)$this->total; }
+    public function setStatus(string $status): static
+    {
+        if (!in_array($status, self::STATUSES, true)) {
+            throw new \InvalidArgumentException(sprintf('Invalid purchase status "%s".', $status));
+        }
+        $this->status = $status;
+        return $this;
+    }
+
+    public function getTotal(): float { return (float) $this->total; }
 
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
 
     public function getPaidAt(): ?\DateTimeImmutable { return $this->paidAt; }
-    public function setPaidAt(?\DateTimeImmutable $paidAt): static
-    {
-        $this->paidAt = $paidAt;
-        return $this;
-    }
+    public function setPaidAt(?\DateTimeImmutable $paidAt): static { $this->paidAt = $paidAt; return $this; }
 
+    /** @return Collection<int, PurchaseItem> */
     public function getItems(): Collection { return $this->items; }
+
     public function addItem(PurchaseItem $item): static
     {
         if (!$this->items->contains($item)) {
@@ -102,5 +138,21 @@ class Purchase
             }
         }
         return $this;
+    }
+
+    public function isPaid(): bool { return $this->status === self::STATUS_PAID; }
+    public function isPending(): bool { return $this->status === self::STATUS_PENDING; }
+    public function isCanceled(): bool { return $this->status === self::STATUS_CANCELED; }
+    public function isCart(): bool { return $this->status === self::STATUS_CART; }
+
+    public function getStatusLabel(): string
+    {
+        return match ($this->status) {
+            self::STATUS_CART     => 'Panier',
+            self::STATUS_PENDING  => 'En attente',
+            self::STATUS_PAID     => 'Payée',
+            self::STATUS_CANCELED => 'Annulée',
+            default               => $this->status,
+        };
     }
 }

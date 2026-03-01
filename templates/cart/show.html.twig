@@ -3,82 +3,92 @@
 {% block title %}Mon Panier{% endblock %}
 
 {% block stylesheets %}
-    {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('styles/cart.css') }}">
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/cart.css') }}">
 {% endblock %}
 
 {% block body %}
 <h1>Mon Panier</h1>
 
-{% if purchase and purchase.items is not empty %}
+{% if purchase and purchase.items|length > 0 %}
 
-    {# (Optionnel) statut de la purchase #}
-    <p>
-        <span class="{{ purchase_status_class(purchase.status) }}">
-            {{ purchase_status_label(purchase.status) }}
-        </span>
-    </p>
+  <p>
+    <span class="badge">
+      {{ purchase.statusLabel }}
+    </span>
+  </p>
 
-    {# Récap items #}
-    <p class="cart-meta">
-        {{ purchase_items_count(purchase) }} produits —
-        {{ purchase_items_quantity(purchase) }} articles
-    </p>
+  <p class="cart-meta">
+    {{ purchase.items|length }} produits —
+    {% set qty = 0 %}
+    {% for it in purchase.items %}
+      {% set qty = qty + it.quantity %}
+    {% endfor %}
+    {{ qty }} articles
+  </p>
 
-    <div class="cart-items">
-        {% for item in purchase.items %}
-            <div class="cart-item-card">
-                <div class="cart-item-info">
-                    <h3>
-                        {% if item.cursus %}
-                            {{ item.cursus.name }}
-                        {% elseif item.lesson %}
-                            {{ item.lesson.title }}
-                        {% else %}
-                            Produit
-                        {% endif %}
-                    </h3>
+  <div class="cart-items">
+    {% for item in purchase.items %}
+      <div class="cart-item-card">
+        <div class="cart-item-info">
+          <h3>
+            {% if item.cursus %}
+              {{ item.cursus.name }}
+            {% elseif item.lesson %}
+              {{ item.lesson.title }}
+            {% else %}
+              Produit
+            {% endif %}
+          </h3>
 
-                    {% if item.cursus %}
-                        <span class="cart-type">Cursus</span>
-                    {% elseif item.lesson %}
-                        <span class="cart-type">Leçon</span>
-                    {% endif %}
-                </div>
-
-                <div class="cart-item-actions">
-                    {# Prix total de la ligne #}
-                    <span class="cart-price">{{ item.total|money }}</span>
-
-                    <span>Quantité : {{ item.quantity }}</span>
-
-                    {% if item.cursus or item.lesson %}
-                        <a href="{{ path('cart_remove', {
-                            'type': item.cursus ? 'cursus' : 'lesson',
-                            'id': item.cursus ? item.cursus.id : item.lesson.id
-                        }) }}" class="btn-remove">Supprimer</a>
-                    {% endif %}
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-
-    <div class="cart-summary-wrapper">
-        <div class="cart-summary">
-            <div class="cart-total">
-                Total : <strong>{{ purchase.total|money }}</strong>
-            </div>
-
-            <a href="{{ path('themes_index') }}" class="btn btn-outline">
-                Ajouter un cursus / leçon
-            </a>
-
-            <a href="{{ path('cart_pay') }}" class="btn btn-primary">
-                Passer au paiement
-            </a>
+          {% if item.cursus %}
+            <span class="cart-type">Cursus</span>
+          {% elseif item.lesson %}
+            <span class="cart-type">Leçon</span>
+          {% endif %}
         </div>
+
+        <div class="cart-item-actions">
+          <span class="cart-price">
+            {{ item.total|number_format(2, '.', ' ') }} €
+          </span>
+
+          <span>Quantité : {{ item.quantity }}</span>
+
+          {% set removeType = item.cursus ? 'cursus' : 'lesson' %}
+          {% set removeId   = item.cursus ? item.cursus.id : item.lesson.id %}
+
+          <form method="post"
+                action="{{ path('cart_remove', {'type': removeType, 'id': removeId}) }}"
+                style="display:inline;">
+            <input type="hidden" name="_token" value="{{ csrf_token('cart_remove_' ~ removeType ~ '_' ~ removeId) }}">
+            <button type="submit" class="btn-remove">Supprimer</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="cart-summary-wrapper">
+    <div class="cart-summary">
+      <div class="cart-total">
+        Total : <strong>{{ purchase.total|number_format(2, '.', ' ') }} €</strong>
+      </div>
+
+      <a href="{{ path('themes_index') }}" class="btn btn-outline">
+        Ajouter un cursus / leçon
+      </a>
+
+      <form method="post" action="{{ path('cart_pay') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('cart_pay') }}">
+        <button type="submit" class="btn btn-primary">
+          Passer au paiement
+        </button>
+      </form>
     </div>
+  </div>
+
 {% else %}
-    <p class="cart-empty">Votre panier est vide.</p>
+  <p class="cart-empty">Votre panier est vide.</p>
 {% endif %}
 {% endblock %}
