@@ -1,0 +1,227 @@
+{% extends 'dashboard/admin/_base.html.twig' %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/admin/admin-shared.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/admin/purchase.css') }}">
+{% endblock %}
+
+{% block title %}Commande {{ purchase.orderNumber }}{% endblock %}
+
+{% block body %}
+<div class="admin-purchase-page">
+  <div class="container-fluid py-4">
+
+    <div class="d-flex align-items-start justify-content-between mb-3">
+      <div>
+        <h1 class="h3 mb-1">Commande {{ purchase.orderNumber }}</h1>
+        <div class="text-muted">
+          <span class="me-2">#{{ purchase.id }}</span>
+          <span class="me-2">Créée le {{ purchase.createdAt|date('d/m/Y à H:i') }}</span>
+          {% if purchase.paidAt %}
+            <span>Payée le {{ purchase.paidAt|date('d/m/Y à H:i') }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="{{ path('admin_purchase_index') }}">← Retour à la liste</a>
+      </div>
+    </div>
+
+    {# Badge statut #}
+    {% set badgeClass =
+        purchase.isPaid ? 'bg-success' :
+        (purchase.isPending ? 'bg-warning text-dark' :
+        (purchase.isCanceled ? 'bg-danger' : 'bg-secondary'))
+    %}
+
+    <div class="row g-3">
+
+      {# ===== Résumé commande ===== #}
+      <div class="col-12 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="fw-semibold">Résumé</div>
+              <span class="badge {{ badgeClass }}">{{ purchase.statusLabel }}</span>
+            </div>
+
+            <div class="mb-3">
+              <div class="text-muted small">Total</div>
+              <div class="fs-4 fw-semibold">{{ purchase.total|number_format(2, ',', ' ') }} €</div>
+            </div>
+
+            <div class="row g-2">
+              <div class="col-6">
+                <div class="text-muted small">Items</div>
+                <div class="fw-semibold">{{ items|length }}</div>
+              </div>
+
+              <div class="col-6">
+                <div class="text-muted small">Statut</div>
+                <div class="fw-semibold">{{ purchase.statusLabel }}</div>
+              </div>
+
+              <div class="col-12">
+                <div class="text-muted small">Créée</div>
+                <div class="fw-semibold">{{ purchase.createdAt|date('d/m/Y H:i') }}</div>
+              </div>
+
+              <div class="col-12">
+                <div class="text-muted small">Payée</div>
+                {% if purchase.paidAt %}
+                  <div class="fw-semibold">{{ purchase.paidAt|date('d/m/Y H:i') }}</div>
+                {% else %}
+                  <div class="text-muted">—</div>
+                {% endif %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {# ===== Client ===== #}
+      <div class="col-12 col-lg-8">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="fw-semibold mb-2">Client</div>
+
+            {% if purchase.user %}
+              <div class="row g-2">
+                <div class="col-12 col-md-6">
+                  <div class="text-muted small">Nom</div>
+                  <div class="fw-semibold">
+                    {{ purchase.user.lastName ?? '' }} {{ purchase.user.firstName ?? '' }}
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <div class="text-muted small">Email</div>
+                  <div class="fw-semibold">{{ purchase.user.email ?? '—' }}</div>
+                </div>
+              </div>
+            {% else %}
+              <div class="text-muted">Utilisateur introuvable.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {# ===== Items ===== #}
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body p-0">
+
+            <div class="p-3 border-bottom">
+              <div class="fw-semibold">Détail des articles</div>
+              <div class="text-muted small">Leçons et/ou cursus de la commande</div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-striped mb-0 align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 140px;">Type</th>
+                    <th>Intitulé</th>
+                    <th style="width: 240px;">Cursus</th>
+                    <th style="width: 220px;">Thème</th>
+                    <th class="text-center" style="width: 90px;">Qté</th>
+                    <th class="text-end" style="width: 140px;">PU</th>
+                    <th class="text-end" style="width: 160px;">Total</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                {% if items is empty %}
+                  <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                      Aucun item dans cette commande.
+                    </td>
+                  </tr>
+                {% else %}
+                  {% for it in items %}
+                    {# Type + titre #}
+                    {% set typeLabel = it.lesson ? 'Leçon' : (it.cursus ? 'Cursus' : '—') %}
+
+                    {% set title =
+                      it.lesson ? (it.lesson.title ?? ('Leçon #' ~ it.lesson.id)) :
+                      (it.cursus ? (it.cursus.name ?? ('Cursus #' ~ it.cursus.id)) : '—')
+                    %}
+
+                    {# Cursus + thème #}
+                    {% set cursusName = '—' %}
+                    {% set themeName = '—' %}
+
+                    {% if it.lesson and it.lesson.cursus %}
+                      {% set cursusName = it.lesson.cursus.name ?? '—' %}
+                      {% if it.lesson.cursus.theme %}
+                        {% set themeName = it.lesson.cursus.theme.name ?? '—' %}
+                      {% endif %}
+                    {% elseif it.cursus %}
+                      {% set cursusName = it.cursus.name ?? '—' %}
+                      {% if it.cursus.theme %}
+                        {% set themeName = it.cursus.theme.name ?? '—' %}
+                      {% endif %}
+                    {% endif %}
+
+                    {% set lineTotal = it.total %}
+
+                    <tr>
+                      <td>
+                        <span class="badge bg-light text-dark border">{{ typeLabel }}</span>
+                      </td>
+
+                      <td>
+                        <div class="fw-semibold">{{ title }}</div>
+                        <div class="small text-muted">Item #{{ it.id }}</div>
+                      </td>
+
+                      <td>
+                        <div class="fw-semibold">{{ cursusName }}</div>
+                      </td>
+
+                      <td>
+                        <div class="fw-semibold">{{ themeName }}</div>
+                      </td>
+
+                      <td class="text-center">{{ it.quantity }}</td>
+
+                      <td class="text-end">
+                        {{ it.unitPrice|number_format(2, ',', ' ') }} €
+                      </td>
+
+                      <td class="text-end fw-semibold">
+                        {{ lineTotal|number_format(2, ',', ' ') }} €
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% endif %}
+                </tbody>
+
+                {% if items is not empty %}
+                  <tfoot>
+                    <tr>
+                      <td colspan="6" class="text-end fw-semibold">Total commande</td>
+                      <td class="text-end fw-semibold">
+                        {{ purchase.total|number_format(2, ',', ' ') }} €
+                      </td>
+                    </tr>
+                  </tfoot>
+                {% endif %}
+              </table>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <a href="{{ path('admin_dashboard') }}" class="btn-back">
+    ← Retour au dashboard admin
+  </a>
+</div>
+{% endblock %}

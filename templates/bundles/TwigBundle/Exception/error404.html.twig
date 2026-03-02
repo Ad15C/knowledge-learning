@@ -1,0 +1,11 @@
+{% extends 'dashboard/admin/_base.html.twig' %}
+
+{% block body %}
+<div class="container py-5 text-center">
+    <h1>404</h1>
+    <p>La page demandée est introuvable.</p>
+    <a href="{{ path('admin_dashboard') }}" class="btn btn-primary">
+        Retour au dashboard
+    </a>
+</div>
+{% endblock %}

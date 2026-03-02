@@ -143,10 +143,9 @@
             {% else %}
               {% for p in purchases %}
                 {% set badgeClass =
-                  p.status == constant('App\\\\Entity\\\\Purchase::STATUS_PAID') ? 'bg-success' :
-                  (p.status == constant('App\\\\Entity\\\\Purchase::STATUS_PENDING') ? 'bg-warning text-dark' :
-                  (p.status == constant('App\\\\Entity\\\\Purchase::STATUS_CANCELED') ? 'bg-danger' :
-                  'bg-secondary'))
+                  p.isPaid ? 'bg-success' :
+                  (p.isPending ? 'bg-warning text-dark' :
+                  (p.isCanceled ? 'bg-danger' : 'bg-secondary'))
                 %}
 
                 <tr>
