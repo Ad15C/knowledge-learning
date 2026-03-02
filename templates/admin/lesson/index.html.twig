@@ -1,11 +1,5 @@
 {% extends 'dashboard/admin/_base.html.twig' %}
 
-{% block stylesheets %}
-    {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('styles/admin/admin-shared.css') }}">
-    <link rel="stylesheet" href="{{ asset('styles/admin/lesson.css') }}">
-{% endblock %}
-
 {% block title %}Admin - Leçons{% endblock %}
 
 {% block dashboard_content %}
@@ -91,7 +85,7 @@
             </option>
         </select>
 
-        <button class="btn btn-secondary" type="submit">Filtrer</button>
+        <button class="btn" type="submit">Filtrer</button>
         <a class="btn btn-secondary" href="{{ path('admin_lesson_index') }}">
             Réinitialiser
         </a>
@@ -155,7 +149,7 @@
 
                 {% if lesson.isActive %}
                     <a href="{{ path('admin_lesson_delete', {'id': lesson.id}) }}"
-                       class="btn btn-danger">
+                       class="btn btn-archive">
                         Archiver
                     </a>
                 {% else %}
@@ -168,7 +162,7 @@
                                name="_token"
                                value="{{ csrf_token('lesson_activate' ~ lesson.id) }}">
 
-                        <button class="btn" type="submit">
+                        <button class="btn btn-restore" type="submit">
                             Restaurer
                         </button>
                     </form>
@@ -185,6 +179,6 @@
 
 <a href="{{ path('admin_dashboard') }}" class="btn-back">
     ← Retour au dashboard admin
-</a>
+    </a>
 
 {% endblock %}

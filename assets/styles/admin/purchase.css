@@ -1,6 +1,5 @@
 /* ==========================================
-   ADMIN PURCHASES - INDEX
-   (complète admin-shared.css sans tout casser)
+   ADMIN PURCHASES
 ========================================== */
 
 .admin-purchase-page{
@@ -12,7 +11,7 @@
 /* Titre */
 .admin-purchase-page h1.h3{
   color:#00497c;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 /* Cards bootstrap -> style admin */
@@ -23,15 +22,16 @@
   box-shadow: 0 10px 22px rgba(0, 73, 124, 0.06);
 }
 
+/* Padding card body */
 .admin-purchase-page .card-body{
   padding: 16px;
 }
 
 /* Inputs */
 .admin-purchase-page .form-label{
-  font-weight: 700;
+  font-weight: 900;
   color:#384050;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .admin-purchase-page .form-control,
@@ -41,6 +41,7 @@
   padding: 11px 12px;
   background: #fff;
   color:#384050;
+  width:100%;
 }
 
 .admin-purchase-page .form-control:focus,
@@ -50,7 +51,50 @@
   box-shadow: 0 0 0 3px rgba(0, 116, 199, 0.15);
 }
 
-/* Table */
+/* ===================================================
+   FILTRES : on force un layout vertical "propre"
+   (comme tu veux : de l’espace, plus esthétique)
+=================================================== */
+
+.admin-purchase-page form.card{
+  padding: 8px; /* un petit padding interne */
+}
+
+/* La row bootstrap devient une colonne avec de vrais espaces */
+.admin-purchase-page form.card .row.g-3{
+  display:flex;
+  flex-direction:column;
+  gap: 18px; /* ← espace entre chaque bloc */
+  margin: 0;
+}
+
+/* Les colonnes bootstrap deviennent des blocs */
+.admin-purchase-page form.card .row.g-3 > [class^="col-"],
+.admin-purchase-page form.card .row.g-3 > [class*=" col-"]{
+  width:100%;
+  max-width: 620px; /* limite pour éviter l'effet "trop large" */
+  padding: 0;
+}
+
+/* Bloc boutons */
+.admin-purchase-page form.card .col-12.col-md-3.d-flex{
+  display:flex !important;
+  gap: 14px;
+  margin-top: 6px;
+  max-width: 420px; /* évite que ça s'étire trop */
+}
+
+/* Harmonise le look des boutons dans la card filtres */
+.admin-purchase-page form.card .btn{
+  font-weight: 900;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+/* ===================================================
+   TABLE
+=================================================== */
+
 .admin-purchase-page .table thead th{
   background: rgba(0, 116, 199, 0.06) !important;
   color:#00497c;
@@ -73,7 +117,7 @@
   color:#0074c7;
 }
 
-/* Badges statut : plus doux */
+/* Badges statut (bootstrap badges utilisés) */
 .admin-purchase-page .badge{
   border-radius: 999px;
   padding: 6px 10px;
@@ -108,38 +152,16 @@
   opacity: 0.55;
 }
 
-/* Bouton retour */
-.btn-back{
-  width: fit-content;
-  margin: 0 0 8px 0;
-  text-decoration: none;
-  color: #00497c;
-  font-weight: 800;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 116, 199, 0.18);
-  background: #fff;
-  box-shadow: 0 10px 22px rgba(0, 73, 124, 0.06);
-  transition: 0.2s ease;
-}
+/* ===================================================
+   RESPONSIVE (colonnes cachées)
+=================================================== */
 
-.btn-back:hover{
-  background: rgba(0, 116, 199, 0.08);
-  transform: translateY(-1px);
-}
-
-/* Responsive : masque colonne "Payée le" sur mobile */
 @media (max-width: 720px){
   .admin-purchase-page table thead th:nth-child(6),
-  .admin-purchase-page table tbody td:nth-child(6){
-    display:none;
-  }
+  .admin-purchase-page table tbody td:nth-child(6){ display:none; }
 }
 
 @media (max-width: 520px){
-  /* masque aussi Items */
   .admin-purchase-page table thead th:nth-child(7),
-  .admin-purchase-page table tbody td:nth-child(7){
-    display:none;
-  }
+  .admin-purchase-page table tbody td:nth-child(7){ display:none; }
 }

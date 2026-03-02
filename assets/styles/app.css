@@ -9,6 +9,10 @@ body {
     padding: 0;
 }
 
+body.admin main{
+  padding: 0;
+}
+
 /* =======================
    HEADER
 ======================= */

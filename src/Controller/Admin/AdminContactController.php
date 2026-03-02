@@ -7,28 +7,27 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('ROLE_ADMIN')]
 #[Route('/admin/contact', name: 'admin_contact_')]
 class AdminContactController extends AbstractController
 {
     #[Route('/', name: 'index', methods: ['GET'])]
     public function index(Request $request, ContactRepository $repo): Response
     {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
-
         // Filtres (query params)
         $filters = [
-            'subject' => $request->query->get('subject'), // ex: payment
-            'status'  => $request->query->get('status'),  // unread|read|handled
-            'q'       => $request->query->get('q'),       // texte libre
+            'subject' => $request->query->get('subject'),
+            'status'  => $request->query->get('status'),
+            'q'       => trim((string) $request->query->get('q', '')),
         ];
 
         // Filtre "client particulier" par email (facultatif)
-        $email = $request->query->get('email');
-        if (!empty($email)) {
-            // on ajoute à la recherche (simple)
-            $filters['q'] = trim(($filters['q'] ?? '') . ' ' . $email);
+        $email = trim((string) $request->query->get('email', ''));
+        if ($email !== '') {
+            $filters['q'] = trim($filters['q'] . ' ' . $email);
         }
 
         $contacts = $repo->findByFilters($filters);
@@ -56,8 +55,6 @@ class AdminContactController extends AbstractController
     #[Route('/{id}', name: 'show', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function show(int $id, ContactRepository $repo, EntityManagerInterface $em): Response
     {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
-
         $contact = $repo->find($id);
         if (!$contact) {
             throw $this->createNotFoundException();
@@ -77,8 +74,6 @@ class AdminContactController extends AbstractController
     #[Route('/{id}/read', name: 'mark_read', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function markRead(int $id, Request $request, ContactRepository $repo, EntityManagerInterface $em): Response
     {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
-
         if (!$this->isCsrfTokenValid('contact_'.$id, $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
         }
@@ -95,8 +90,6 @@ class AdminContactController extends AbstractController
     #[Route('/{id}/unread', name: 'mark_unread', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function markUnread(int $id, Request $request, ContactRepository $repo, EntityManagerInterface $em): Response
     {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
-
         if (!$this->isCsrfTokenValid('contact_'.$id, $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
         }
@@ -112,8 +105,6 @@ class AdminContactController extends AbstractController
     #[Route('/{id}/handled', name: 'mark_handled', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function markHandled(int $id, Request $request, ContactRepository $repo, EntityManagerInterface $em): Response
     {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
-
         if (!$this->isCsrfTokenValid('contact_'.$id, $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
         }

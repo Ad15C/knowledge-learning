@@ -1,11 +1,5 @@
 {% extends 'dashboard/admin/_base.html.twig' %}
 
-{% block stylesheets %}
-  {{ parent() }}
-  <link rel="stylesheet" href="{{ asset('styles/admin/admin-shared.css') }}">
-  <link rel="stylesheet" href="{{ asset('styles/admin/theme.css') }}">
-{% endblock %}
-
 {% block title %}Admin - Thèmes{% endblock %}
 
 {% block dashboard_content %}
@@ -21,13 +15,7 @@
 
 <form method="get" class="admin-filters">
   <div class="admin-filters-row">
-    <input
-      type="search"
-      name="q"
-      value="{{ filters.q ?? '' }}"
-      placeholder="Rechercher un thème…"
-      class="admin-filter-input"
-    >
+    <input type="search" name="q" value="{{ filters.q ?? '' }}" placeholder="Rechercher un thème…" class="admin-filter-input">
 
     <select name="status" class="admin-filter-select">
       <option value="all"      {{ (filters.status ?? 'all') == 'all' ? 'selected' }}>Tous</option>
@@ -41,7 +29,7 @@
       <option value="name_desc"    {{ (filters.sort ?? 'created_desc') == 'name_desc' ? 'selected' }}>Nom Z → A</option>
     </select>
 
-    <button class="btn btn-secondary" type="submit">Filtrer</button>
+    <button class="btn" type="submit">Filtrer</button>
     <a class="btn btn-secondary" href="{{ path('admin_theme_index') }}">Réinitialiser</a>
   </div>
 </form>
@@ -57,7 +45,6 @@
 
       <h2>
         <span>{{ theme.name }}</span>
-
         {% if theme.isActive %}
           <span class="badge badge-active">Actif</span>
         {% else %}
@@ -77,9 +64,7 @@
       {% endfor %}
 
       {% if names|length %}
-        <p class="theme-meta">
-          <strong>Cursus :</strong> {{ names|join(', ') }}
-        </p>
+        <p class="theme-meta"><strong>Cursus :</strong> {{ names|join(', ') }}</p>
       {% else %}
         <p class="theme-meta muted">Aucun cursus actif</p>
       {% endif %}
@@ -88,13 +73,11 @@
         <a href="{{ path('admin_theme_edit', {'id': theme.id}) }}" class="btn btn-secondary">Modifier</a>
 
         {% if theme.isActive %}
-          <a href="{{ path('admin_theme_delete', {'id': theme.id}) }}" class="btn btn-danger">
-            Archiver
-          </a>
+          <a href="{{ path('admin_theme_delete', {'id': theme.id}) }}" class="btn btn-archive">Archiver</a>
         {% else %}
           <form method="post" action="{{ path('admin_theme_activate', {'id': theme.id}) }}" class="inline-form">
             <input type="hidden" name="_token" value="{{ csrf_token('theme_activate' ~ theme.id) }}">
-            <button class="btn" type="submit">Restaurer</button>
+            <button class="btn btn-restore" type="submit">Restaurer</button>
           </form>
         {% endif %}
       </div>

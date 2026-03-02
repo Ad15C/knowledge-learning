@@ -1,62 +1,23 @@
 /* ==========================================
-   ADMIN USERS CSS
-   - index (liste)
-   - edit/show (fiche + formulaire)
-   - sections (historique / certifications)
+   ADMIN USERS (Clients + Fiche/Edition) - spécifique
 ========================================== */
 
-/* ==========================================
-   Base layout (edit/show container)
-========================================== */
 .admin-users-edit{
   max-width: 980px;
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
+  display:flex;
+  flex-direction:column;
   gap: 22px;
 }
 
-/* ==========================================
-   Header (shared)
-========================================== */
-.admin-page-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:14px;
-  padding-top: 6px;
-}
-
-.admin-page-title{
-  margin:0;
-  color:#00497c;
-}
-
-.admin-page-subtitle{
-  margin:8px 0 0;
-  color:#384050;
-  opacity:.9;
-}
-
-/* ==========================================
-   INDEX (liste clients)
-========================================== */
+/* Header list */
 .admin-page-header--list{
   align-items: flex-end;
   justify-content: space-between;
   flex-wrap: wrap;
 }
 
-.admin-page-title--list{
-  margin: 0;
-}
-
-.admin-page-subtitle--list{
-  margin: .25rem 0 0;
-  opacity: .8;
-}
-
-/* Groupes de boutons (modes + tabs) */
+/* Modes + tabs (spécifique users) */
 .admin-actions--modes,
 .admin-actions--tabs{
   display:flex;
@@ -64,283 +25,93 @@
   flex-wrap:wrap;
   margin-top: 1rem;
 }
+.admin-actions--tabs{ margin: 1rem 0; }
 
-.admin-actions--tabs{
-  margin: 1rem 0;
-}
-
-/* Alert spacing (uniquement sur la liste) */
-.admin-alert--spaced{
-  margin: 1rem 0;
-}
-
-/* Cellule user (nom + id) */
+/* Table helpers */
 .admin-user-cell{
   display:flex;
   flex-direction:column;
 }
+.admin-user-cell small{ opacity:.75; }
 
-.admin-user-cell small{
-  opacity: .75;
+/* Colonnes actions : empêche retour à la ligne */
+.admin-col-actions{ width: 1%; white-space:nowrap; }
+.admin-actions-cell{ white-space:nowrap; }
+
+/* Boutons dans table */
+.admin-actions-inline .btn{
+  padding: 7px 12px;
+  border-radius: 10px;
 }
 
-/* Pagination */
-.admin-pagination{
-  display:flex;
-  gap:.5rem;
-  justify-content:center;
-  align-items:center;
-  margin: 1rem 0;
-  flex-wrap:wrap;
-}
-
-.admin-pagination__label{
-  opacity: .8;
-}
-
-/* Désactivation visuelle (pagination) */
-.is-disabled{
-  pointer-events:none;
-  opacity:.5;
-}
-
-/* Bonus: si tu appliques is-disabled sur un bouton */
-.btn.is-disabled{
-  pointer-events:none;
-  opacity:.5;
-}
-
-/* ==========================================
-   Summary card (edit/show)
-========================================== */
+/* Summary (fiche client) */
 .admin-user-summary{
   display:flex;
   justify-content:space-between;
-  gap:22px;
+  gap: 22px;
   align-items:flex-start;
   padding: 22px;
 }
 
 .admin-user-summary__name{
   font-size:20px;
-  font-weight:700;
+  font-weight:900;
   color:#00497c;
 }
 
 .admin-user-summary__email{
   margin-top:4px;
-  color:#384050;
   opacity:.9;
 }
 
 .admin-user-summary__badges{
   margin-top:12px;
   display:flex;
-  gap:8px;
+  gap: 8px;
   flex-wrap:wrap;
 }
 
 .admin-user-summary__meta{
-  min-width:240px;
+  min-width: 240px;
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap: 12px;
   opacity:.95;
 }
 
 .meta-line{
   display:flex;
   justify-content:space-between;
-  gap:12px;
+  gap: 12px;
   font-size:14px;
 }
+.meta-label{ opacity:.75; }
+.meta-value{ font-weight: 800; }
 
-.meta-label{
-  color:#384050;
-  opacity:.75;
-}
-
-.meta-value{
-  color:#384050;
-  font-weight:600;
-}
-
-/* ==========================================
-   Alerts (shared)
-========================================== */
-.admin-alert{
-  padding:14px 16px;
-  border-radius:14px;
-  border:1px solid rgba(220,53,69,0.25);
-  background: rgba(220,53,69,0.08);
-  color:#b02a37;
-  font-weight:600;
-}
-
-/* ==========================================
-   Form card (edit)
-========================================== */
-.admin-form-card{
-  padding: 22px;
-}
-
-/* Symfony fields spacing */
-.admin-form-card .form-row,
-.admin-form-card .form-group{
-  margin-bottom: 14px;
-}
-
-.admin-form-card label{
-  display:block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color:#384050;
-}
-
-/* Inputs */
-.admin-form-card input,
-.admin-form-card select,
-.admin-form-card textarea{
-  width: 100%;
-  padding: 11px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 116, 199, 0.25);
-  background: #fff;
-  color:#384050;
-  outline: none;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-
-.admin-form-card input:focus,
-.admin-form-card select:focus,
-.admin-form-card textarea:focus{
-  border-color: rgba(0, 116, 199, 0.65);
-  box-shadow: 0 0 0 3px rgba(0, 116, 199, 0.15);
-}
-
-/* Grid */
-.admin-form-grid{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:18px 18px;
-}
-
-.admin-form-field--full{
-  grid-column: 1 / -1;
-}
-
-.admin-form-actions{
-  margin-top:18px;
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
-/* Checkboxes roles (expanded) : aère */
-.admin-form-card .form-check{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 12px;
-  border: 1px solid rgba(0, 116, 199, 0.18);
-  border-radius: 12px;
-  background: #f1f8fc;
-  margin-top: 10px;
-}
-
-.admin-form-card .form-check input{
-  width:auto;
-  padding:0;
-}
-
-/* ==========================================
-   Sections (Historique / Certifications)
-========================================== */
 .admin-section{
   padding: 22px;
 }
-
 .admin-section-title{
-  margin: 0 0 12px 0;
+  margin: 0 0 12px;
   color:#00497c;
-  font-size: 18px;
-  font-weight: 800;
+  font-size:18px;
+  font-weight: 900;
 }
 
-.admin-subtitle{
-  margin: 12px 0 10px 0;
-  color:#384050;
-  font-size: 15px;
-  font-weight: 800;
-}
+.admin-empty{ opacity:.85; }
 
-.admin-subtitle--spaced{
-  margin-top: 18px;
-}
-
-.admin-empty{
-  margin: 6px 0 0;
-  color:#384050;
-  opacity:.85;
-}
-
-/* Admin tables helpers */
-.admin-col-actions{
-  text-align: right;
-  width: 260px;
-}
-
-.admin-actions-cell{
-  text-align: right;
-  vertical-align: middle;
-}
-
-.admin-actions-inline{
-  display: inline-flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.admin-actions-inline form{
-  margin: 0;
-}
-
-/* Badge "En cours" */
 .badge-progress{
   display:inline-block;
   padding: 4px 10px;
   border-radius: 999px;
-  font-weight: 700;
+  font-weight: 900;
   font-size: 12px;
   border: 1px solid rgba(0, 73, 124, 0.25);
   background: rgba(0, 73, 124, 0.08);
-  color:#00497c;
+  color:#00497c !important;
 }
 
-/* ==========================================
-   Responsive
-========================================== */
 @media (max-width: 768px){
-  .admin-user-summary{
-    flex-direction:column;
-  }
-
-  .admin-user-summary__meta{
-    min-width:auto;
-    width:100%;
-  }
-
-  .admin-form-grid{
-    grid-template-columns: 1fr;
-  }
-
-  .admin-form-field--full{
-    grid-column:auto;
-  }
-
-  .admin-col-actions{
-    width: auto;
-  }
+  .admin-user-summary{ flex-direction:column; }
+  .admin-user-summary__meta{ min-width:auto; width:100%; }
 }

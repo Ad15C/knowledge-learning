@@ -1,51 +1,74 @@
 {% extends 'dashboard/base_dashboard.html.twig' %}
 
+{% set route = app.request.attributes.get('_route') %}
+
 {% block stylesheets %}
   {{ parent() }}
   <link rel="stylesheet" href="{{ asset('styles/dashboard.css') }}">
-  <link rel="stylesheet" href="{{ asset('styles/admin/dashboard.css') }}">
   <link rel="stylesheet" href="{{ asset('styles/admin/admin-shared.css') }}">
+
+  {# CSS contextuel selon la section #}
+  {% if route starts with 'admin_purchase' %}
+    <link rel="stylesheet" href="{{ asset('styles/admin/purchase.css') }}">
+  {% elseif route starts with 'admin_contact' %}
+    <link rel="stylesheet" href="{{ asset('styles/admin/contact.css') }}">
+  {% elseif route starts with 'admin_users' %}
+    <link rel="stylesheet" href="{{ asset('styles/admin/users.css') }}">
+  {% elseif route starts with 'admin_cursus' %}
+    <link rel="stylesheet" href="{{ asset('styles/admin/cursus.css') }}">
+  {% elseif route starts with 'admin_lesson' %}
+    <link rel="stylesheet" href="{{ asset('styles/admin/lesson.css') }}">
+  {% elseif route starts with 'admin_theme' %}
+    <link rel="stylesheet" href="{{ asset('styles/admin/theme.css') }}">
+  {% endif %}
 {% endblock %}
 
 {% block sidebar %}
-  {% set route = app.request.attributes.get('_route') %}
+  <div class="sidebar-header">Administration</div>
 
-  <div class="sidebar-header">Admin</div>
+  <nav class="sidebar-nav" aria-label="Navigation administration">
 
-  <nav class="sidebar-nav">
     <a href="{{ path('admin_dashboard') }}"
-       class="sidebar-link {{ route starts with 'admin_dashboard' ? 'active' : '' }}">
-      Vue d'ensemble
+       class="sidebar-link {{ route starts with 'admin_dashboard' ? 'active' : '' }}"
+       {{ route starts with 'admin_dashboard' ? 'aria-current="page"' : '' }}>
+      Vue d’ensemble
     </a>
 
     <a href="{{ path('admin_users_index') }}"
-       class="sidebar-link {{ route starts with 'admin_users' ? 'active' : '' }}">
-      Clients
+       class="sidebar-link {{ route starts with 'admin_users' ? 'active' : '' }}"
+       {{ route starts with 'admin_users' ? 'aria-current="page"' : '' }}>
+      Utilisateurs
     </a>
 
     <a href="{{ path('admin_theme_index') }}"
-       class="sidebar-link {{ route starts with 'admin_theme' ? 'active' : '' }}">
-      Thèmes
+       class="sidebar-link {{ route starts with 'admin_theme' ? 'active' : '' }}"
+       {{ route starts with 'admin_theme' ? 'aria-current="page"' : '' }}>
+      Thèmes pédagogiques
     </a>
 
     <a href="{{ path('admin_cursus_index') }}"
-       class="sidebar-link {{ route starts with 'admin_cursus' ? 'active' : '' }}">
-      Cursus
+       class="sidebar-link {{ route starts with 'admin_cursus' ? 'active' : '' }}"
+       {{ route starts with 'admin_cursus' ? 'aria-current="page"' : '' }}>
+      Parcours (Cursus)
     </a>
 
     <a href="{{ path('admin_lesson_index') }}"
-       class="sidebar-link {{ route starts with 'admin_lesson' ? 'active' : '' }}">
+       class="sidebar-link {{ route starts with 'admin_lesson' ? 'active' : '' }}"
+       {{ route starts with 'admin_lesson' ? 'aria-current="page"' : '' }}>
       Leçons
     </a>
 
     <a href="{{ path('admin_purchase_index') }}"
-       class="sidebar-link {{ route starts with 'admin_purchase' ? 'active' : '' }}">
-      Commandes
+       class="sidebar-link {{ route starts with 'admin_purchase' ? 'active' : '' }}"
+       {{ route starts with 'admin_purchase' ? 'aria-current="page"' : '' }}>
+      Commandes & paiements
     </a>
 
     <a href="{{ path('admin_contact_index') }}"
-       class="sidebar-link {{ route starts with 'admin_contact' ? 'active' : '' }}">
-      Messages contact
+       class="sidebar-link {{ route starts with 'admin_contact' ? 'active' : '' }}"
+       {{ route starts with 'admin_contact' ? 'aria-current="page"' : '' }}>
+      Messagerie
     </a>
+
   </nav>
 {% endblock %}

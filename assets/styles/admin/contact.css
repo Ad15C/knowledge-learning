@@ -1,0 +1,58 @@
+/* ==========================================
+   ADMIN CONTACT
+========================================== */
+
+.admin-contact-list,
+.admin-contact-show{ width:100%; }
+
+/* table list */
+.admin-contact-list .admin-table{
+  border: 1px solid rgba(0, 116, 199, 0.18);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* ligne non lue */
+.admin-row-unread td{
+  font-weight: 900;
+  background: rgba(0, 116, 199, 0.08);
+}
+
+/* Actions */
+.admin-row-actions{
+  display:flex;
+  gap:.5rem;
+  flex-wrap: wrap;
+  align-items:center;
+}
+.admin-row-actions form{ margin:0; }
+.admin-row-actions .btn{ padding: 0.45rem 0.75rem; font-size: .85rem; }
+
+/* show */
+.admin-contact-message{
+  background: #fff;
+  border: 1px solid rgba(0, 116, 199, 0.18);
+  border-radius: 12px;
+  padding: 1rem;
+  line-height: 1.6;
+  word-break: break-word;
+  box-shadow: 0 10px 22px rgba(0, 73, 124, 0.06);
+}
+
+/* badges spécifiques */
+.badge-unread{
+  background: rgba(0, 116, 199, 0.12);
+  color:#00497c !important;
+  border: 1px solid rgba(0, 116, 199, 0.25);
+}
+
+.badge-read{
+  background: rgba(56, 64, 80, 0.08);
+  color:#384050 !important;
+  border: 1px solid rgba(56, 64, 80, 0.18);
+}
+
+@media (max-width: 900px){
+  .admin-contact-list{ overflow-x:auto; }
+  .admin-contact-list .admin-table{ min-width: 900px; }
+}

@@ -1,0 +1,83 @@
+{% extends 'dashboard/admin/_base.html.twig' %}
+
+{% block title %}Admin - Message #{{ contact.id }}{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/admin/contact.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+
+  <header class="admin-page-header">
+    <div>
+      <h1 class="admin-page-title">Message #{{ contact.id }}</h1>
+      <p class="admin-page-subtitle">
+        Reçu le {{ contact.sentAt ? contact.sentAt|date('d/m/Y H:i') : '' }}
+      </p>
+    </div>
+
+    <div class="admin-page-actions">
+      <a class="btn btn-secondary" href="{{ path('admin_contact_index') }}">Retour</a>
+
+      <a class="btn"
+         href="mailto:{{ contact.email }}?subject={{ ('Re: ' ~ contact.subjectLabel)|url_encode }}">
+        Répondre
+      </a>
+    </div>
+  </header>
+
+  <section class="admin-contact-show admin-form-card">
+    <div class="admin-contact-meta">
+      <div><strong>Nom :</strong> {{ contact.fullname }}</div>
+      <div><strong>Email :</strong> {{ contact.email }}</div>
+      <div><strong>Sujet :</strong> {{ contact.subjectLabel }}</div>
+
+      <div>
+        <strong>Statut :</strong>
+        {% if contact.handled %}
+          <span class="badge badge-active">Traité</span>
+        {% elseif contact.readAt %}
+          <span class="badge badge-read">Lu</span>
+        {% else %}
+          <span class="badge badge-unread">Non lu</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="admin-contact-links">
+      <a href="{{ path('admin_contact_index', { q: contact.email }) }}">
+        Voir tous les messages de cet email
+      </a>
+    </div>
+
+    <hr class="admin-separator">
+
+    <h2 class="admin-section-title">Message</h2>
+    <div class="admin-contact-message">
+      {{ contact.message|nl2br }}
+    </div>
+
+    <div class="admin-form-actions">
+      {% if contact.readAt %}
+        <form method="post" action="{{ path('admin_contact_mark_unread', { id: contact.id }) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('contact_' ~ contact.id) }}">
+          <button class="btn btn-secondary" type="submit">Marquer non lu</button>
+        </form>
+      {% else %}
+        <form method="post" action="{{ path('admin_contact_mark_read', { id: contact.id }) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('contact_' ~ contact.id) }}">
+          <button class="btn btn-secondary" type="submit">Marquer lu</button>
+        </form>
+      {% endif %}
+
+      {% if not contact.handled %}
+        <form method="post" action="{{ path('admin_contact_mark_handled', { id: contact.id }) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('contact_' ~ contact.id) }}">
+          <button class="btn" type="submit">Marquer traité</button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
+<a href="{{ path('admin_dashboard') }}" class="btn-back">← Retour au dashboard admin</a>
+{% endblock %}
