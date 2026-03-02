@@ -1,28 +1,133 @@
-{% extends 'base.html.twig' %}
+{% extends 'dashboard/admin/_base.html.twig' %}
 
 {% block title %}Admin - Messages contact{% endblock %}
 
-{% block body %}
-  <h1>Messages de contact</h1>
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/admin/contact.css') }}">
+{% endblock %}
 
-  <div style="margin: 1rem 0;">
-    <a href="{{ path('admin_contact_index') }}">Tous</a> |
-    <a href="{{ path('admin_contact_unhandled') }}">Non traités</a> |
-    <a href="{{ path('admin_contact_handled') }}">Traités</a>
-  </div>
+{% block dashboard_content %}
 
-  {% if messages is empty %}
-    <p>Aucun message.</p>
-  {% else %}
-    <ul>
-      {% for m in messages %}
-        <li>
-          <strong>{{ m.subject ?? 'Sans sujet' }}</strong>
-          — {{ m.email ?? '' }}
-          — {{ m.createdAt ? m.createdAt|date('d/m/Y H:i') : '' }}
-          — {{ m.handled ? 'Traité' : 'Non traité' }}
-        </li>
-      {% endfor %}
-    </ul>
-  {% endif %}
+  <header class="admin-page-header">
+    <div>
+      <h1 class="admin-page-title">Messages contact</h1>
+      <p class="admin-page-subtitle">
+        Filtre par sujet, statut, ou recherche (nom / email / message).
+      </p>
+    </div>
+
+    <div class="admin-page-actions">
+      <a class="btn btn-secondary" href="{{ path('admin_contact_index', { status: 'unread' }) }}">Non lus</a>
+      <a class="btn btn-secondary" href="{{ path('admin_contact_index', { status: 'read' }) }}">Lus</a>
+      <a class="btn btn-secondary" href="{{ path('admin_contact_index', { status: 'handled' }) }}">Traités</a>
+    </div>
+  </header>
+
+  <section class="admin-filters">
+    <form method="get">
+      <div class="admin-filters-row">
+        <input
+          class="admin-filter-input"
+          type="text"
+          name="q"
+          value="{{ filters.q }}"
+          placeholder="Rechercher (nom, email, contenu)"
+        />
+
+        <select class="admin-filter-select" name="subject">
+          <option value="">Tous les sujets</option>
+          {% for key, label in subjects %}
+            <option value="{{ key }}" {% if filters.subject == key %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <select class="admin-filter-select" name="status">
+          <option value="">Tous les statuts</option>
+          <option value="unread" {% if filters.status == 'unread' %}selected{% endif %}>Non lus</option>
+          <option value="read" {% if filters.status == 'read' %}selected{% endif %}>Lus</option>
+          <option value="handled" {% if filters.status == 'handled' %}selected{% endif %}>Traités</option>
+        </select>
+
+        <button class="btn" type="submit">Filtrer</button>
+        <a class="btn btn-secondary" href="{{ path('admin_contact_index') }}">Réinitialiser</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="admin-contact-list">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Nom</th>
+          <th>Email</th>
+          <th>Sujet</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for c in contacts %}
+          {% set isUnread = (c.readAt is null) and (not c.handled) %}
+
+          <tr class="{{ isUnread ? 'admin-row-unread' : '' }}">
+            <td>{{ c.sentAt ? c.sentAt|date('d/m/Y H:i') : '' }}</td>
+            <td>{{ c.fullname }}</td>
+            <td>
+              <a href="{{ path('admin_contact_index', { q: c.email }) }}">
+                {{ c.email }}
+              </a>
+            </td>
+            <td>{{ c.subjectLabel }}</td>
+
+            <td>
+              {% if c.handled %}
+                <span class="badge badge-active">Traité</span>
+              {% elseif c.readAt %}
+                <span class="badge badge-archived">Lu</span>
+              {% else %}
+                <span class="badge badge-archived">Non lu</span>
+              {% endif %}
+            </td>
+
+            <td>
+              <div class="admin-row-actions">
+                <a class="btn btn-secondary" href="{{ path('admin_contact_show', { id: c.id }) }}">
+                  Voir
+                </a>
+
+                {% if c.readAt %}
+                  <form method="post" action="{{ path('admin_contact_mark_unread', { id: c.id }) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('contact_' ~ c.id) }}">
+                    <button class="btn btn-secondary" type="submit">Marquer non lu</button>
+                  </form>
+                {% else %}
+                  <form method="post" action="{{ path('admin_contact_mark_read', { id: c.id }) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('contact_' ~ c.id) }}">
+                    <button class="btn btn-secondary" type="submit">Marquer lu</button>
+                  </form>
+                {% endif %}
+
+                {% if not c.handled %}
+                  <form method="post" action="{{ path('admin_contact_mark_handled', { id: c.id }) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('contact_' ~ c.id) }}">
+                    <button class="btn" type="submit">Marquer traité</button>
+                  </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="6">Aucun message.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
 {% endblock %}
