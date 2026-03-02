@@ -12,17 +12,6 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
-    App\Twig\AppExtension:
-        tags: [ 'twig.extension' ]
-
-    App\Twig\MoneyExtension:
-        tags: [ 'twig.extension' ]
-
-    App\Twig\PurchaseExtension:
-        tags: [ 'twig.extension' ]
-
-    App\Twig\PurchaseItemsExtension:
-        tags: [ 'twig.extension' ]
 
     # Force le listener Doctrine à être enregistré
     App\EventListener\ContactSentAtListener:

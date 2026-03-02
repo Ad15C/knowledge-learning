@@ -105,7 +105,7 @@ class AdminPurchaseController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'show', methods: ['GET'])]
+    #[Route('/{id<\d+>}', name: 'show', methods: ['GET'], priority: -10)]
     public function show(int $id, PurchaseRepository $repo, EntityManagerInterface $em): Response
     {
         $filters = $em->getFilters();
