@@ -38,8 +38,14 @@ class Contact
     #[ORM\Column]
     private ?\DateTimeImmutable $sentAt = null;
 
-    #[ORM\Column]
+    #[ORM\Column(options: ['default' => false])]
     private bool $handled = false;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $readAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $handledAt = null;
 
     public function getId(): ?int { return $this->id; }
 
@@ -58,6 +64,78 @@ class Contact
     public function getSentAt(): ?\DateTimeImmutable { return $this->sentAt; }
     public function setSentAt(\DateTimeImmutable $sentAt): static { $this->sentAt = $sentAt; return $this; }
 
-    public function isHandled(): bool { return $this->handled; }
-    public function setHandled(bool $handled): static { $this->handled = $handled; return $this; }
+    public function getReadAt(): ?\DateTimeImmutable { return $this->readAt; }
+
+    public function markRead(): static
+    {
+        $this->readAt = new \DateTimeImmutable();
+        return $this;
+    }
+
+    public function markUnread(): static
+    {
+        $this->readAt = null;
+        return $this;
+    }
+
+    public function isRead(): bool
+    {
+        return $this->readAt !== null;
+    }
+
+    public function getHandledAt(): ?\DateTimeImmutable { return $this->handledAt; }
+
+    public function isHandled(): bool
+    {
+        return $this->handled;
+    }
+
+    public function setHandled(bool $handled): static
+    {
+        $this->handled = $handled;
+
+        if ($handled && $this->handledAt === null) {
+            $this->handledAt = new \DateTimeImmutable();
+        }
+
+        if (!$handled) {
+            $this->handledAt = null;
+        }
+
+        return $this;
+    }
+
+    public function setHandledAt(?\DateTimeImmutable $handledAt): static
+    {
+        $this->handledAt = $handledAt;
+        $this->handled = ($handledAt !== null);
+        return $this;
+    }
+
+    public function getStatus(): string
+    {
+        if ($this->handled || $this->handledAt !== null) {
+            return 'handled';
+        }
+        if ($this->isRead()) {
+            return 'read';
+        }
+        return 'unread';
+    }
+
+    public function getSubjectLabel(): string
+    {
+        return match ($this->subject) {
+            'theme' => 'Question sur un thème',
+            'cursus' => 'Question sur un cursus',
+            'lesson' => 'Question sur une leçon',
+            'payment' => 'Question sur le paiement',
+            'validation' => 'Question sur la validation du cours',
+            'certification' => 'Question sur la certification',
+            'registration' => 'Question sur l’inscription',
+            'login' => 'Question sur la connexion',
+            'other' => 'Autre question',
+            default => $this->subject ?? '',
+        };
+    }
 }
