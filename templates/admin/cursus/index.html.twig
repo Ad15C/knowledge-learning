@@ -1,10 +1,5 @@
 {% extends 'dashboard/admin/_base.html.twig' %}
 
-{% block stylesheets %}
-  {{ parent() }}
-  <link rel="stylesheet" href="{{ asset('styles/admin/admin-shared.css') }}">
-{% endblock %}
-
 {% block title %}Admin - Cursus{% endblock %}
 
 {% block dashboard_content %}
@@ -53,7 +48,7 @@
         <option value="price_desc"  {{ (filters.sort ?? 'id_desc') == 'price_desc' ? 'selected' }}>Prix décroissant</option>
       </select>
 
-      <button class="btn btn-secondary" type="submit">Filtrer</button>
+      <button class="btn" type="submit">Filtrer</button>
 
       <a class="btn btn-secondary" href="{{ path('admin_cursus_index') }}">Réinitialiser</a>
     </div>
@@ -92,7 +87,7 @@
         </a>
 
         {% if cursus.isActive %}
-          <a href="{{ path('admin_cursus_delete', {'id': cursus.id}) }}" class="btn btn-danger">
+          <a href="{{ path('admin_cursus_delete', {'id': cursus.id}) }}" class="btn btn-archive">
             Archiver
           </a>
         {% else %}
@@ -100,7 +95,7 @@
                 action="{{ path('admin_cursus_activate', {'id': cursus.id}) }}"
                 class="inline-form">
             <input type="hidden" name="_token" value="{{ csrf_token('cursus_activate' ~ cursus.id) }}">
-            <button class="btn" type="submit">Restaurer</button>
+            <button class="btn btn-restore" type="submit">Restaurer</button>
           </form>
         {% endif %}
       </div>

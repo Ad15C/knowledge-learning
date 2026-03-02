@@ -1,14 +1,9 @@
 {% extends 'dashboard/admin/_base.html.twig' %}
 
-{% block stylesheets %}
-  {{ parent() }}
-  <link rel="stylesheet" href="{{ asset('styles/admin/admin-shared.css') }}">
-  <link rel="stylesheet" href="{{ asset('styles/admin/purchase.css') }}">
-{% endblock %}
-
 {% block title %}Commande {{ purchase.orderNumber }}{% endblock %}
 
-{% block body %}
+{% block dashboard_content %}
+
 <div class="admin-purchase-page">
   <div class="container-fluid py-4">
 
@@ -29,11 +24,10 @@
       </div>
     </div>
 
-    {# Badge statut #}
     {% set badgeClass =
-        purchase.isPaid ? 'bg-success' :
-        (purchase.isPending ? 'bg-warning text-dark' :
-        (purchase.isCanceled ? 'bg-danger' : 'bg-secondary'))
+      purchase.isPaid ? 'bg-success' :
+      (purchase.isPending ? 'bg-warning text-dark' :
+      (purchase.isCanceled ? 'bg-danger' : 'bg-secondary'))
     %}
 
     <div class="row g-3">
@@ -54,7 +48,7 @@
 
             <div class="row g-2">
               <div class="col-6">
-                <div class="text-muted small">Items</div>
+                <div class="text-muted small">Articles</div>
                 <div class="fw-semibold">{{ items|length }}</div>
               </div>
 
@@ -137,12 +131,11 @@
                 {% if items is empty %}
                   <tr>
                     <td colspan="7" class="text-center text-muted py-4">
-                      Aucun item dans cette commande.
+                      Aucun article dans cette commande.
                     </td>
                   </tr>
                 {% else %}
                   {% for it in items %}
-                    {# Type + titre #}
                     {% set typeLabel = it.lesson ? 'Leçon' : (it.cursus ? 'Cursus' : '—') %}
 
                     {% set title =
@@ -150,7 +143,6 @@
                       (it.cursus ? (it.cursus.name ?? ('Cursus #' ~ it.cursus.id)) : '—')
                     %}
 
-                    {# Cursus + thème #}
                     {% set cursusName = '—' %}
                     {% set themeName = '—' %}
 
@@ -166,8 +158,6 @@
                       {% endif %}
                     {% endif %}
 
-                    {% set lineTotal = it.total %}
-
                     <tr>
                       <td>
                         <span class="badge bg-light text-dark border">{{ typeLabel }}</span>
@@ -175,16 +165,11 @@
 
                       <td>
                         <div class="fw-semibold">{{ title }}</div>
-                        <div class="small text-muted">Item #{{ it.id }}</div>
+                        <div class="small text-muted">Article #{{ it.id }}</div>
                       </td>
 
-                      <td>
-                        <div class="fw-semibold">{{ cursusName }}</div>
-                      </td>
-
-                      <td>
-                        <div class="fw-semibold">{{ themeName }}</div>
-                      </td>
+                      <td><div class="fw-semibold">{{ cursusName }}</div></td>
+                      <td><div class="fw-semibold">{{ themeName }}</div></td>
 
                       <td class="text-center">{{ it.quantity }}</td>
 
@@ -193,7 +178,7 @@
                       </td>
 
                       <td class="text-end fw-semibold">
-                        {{ lineTotal|number_format(2, ',', ' ') }} €
+                        {{ it.total|number_format(2, ',', ' ') }} €
                       </td>
                     </tr>
                   {% endfor %}
@@ -224,4 +209,5 @@
     ← Retour au dashboard admin
   </a>
 </div>
+
 {% endblock %}

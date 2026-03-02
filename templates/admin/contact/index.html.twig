@@ -88,9 +88,9 @@
               {% if c.handled %}
                 <span class="badge badge-active">Traité</span>
               {% elseif c.readAt %}
-                <span class="badge badge-archived">Lu</span>
+                <span class="badge badge-read">Lu</span>
               {% else %}
-                <span class="badge badge-archived">Non lu</span>
+                <span class="badge badge-unread">Non lu</span>
               {% endif %}
             </td>
 
@@ -129,5 +129,5 @@
       </tbody>
     </table>
   </section>
-
+<a href="{{ path('admin_dashboard') }}" class="btn-back">← Retour au dashboard admin</a>
 {% endblock %}

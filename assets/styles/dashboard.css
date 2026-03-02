@@ -1,166 +1,145 @@
 /* =======================
-   DASHBOARD LAYOUT
+   DASHBOARD LAYOUT + SIDEBAR BLEUE + CARDS
+   (utilisé admin + user)
 ======================= */
-.dashboard-layout {
-    display: flex;
-    min-height: 100vh;
-    background-color: #f1f8fc;
+
+.dashboard-layout{
+  display:flex;
+  min-height:100vh;
+  background:#f1f8fc;
 }
 
-/* --- SIDEBAR --- */
-.dashboard-sidebar {
-    width: 220px;
-    background-color: #00497c; /* couleur sombre */
-    color: #f1f8fc;
-    flex-shrink: 0;
-    padding: 20px;
+/* Sidebar bleue */
+.dashboard-sidebar{
+  width:240px;
+  background:#00497c;
+  color:#f1f8fc;
+  flex-shrink:0;
+  padding:18px 14px;
 }
 
-.sidebar-header {
-    font-size: 1.3em;
-    font-weight: bold;
-    margin-bottom: 30px;
+.sidebar-header{
+  font-size:1.1rem;
+  font-weight:900;
+  margin:5px 10px 18px;
 }
 
-.sidebar-nav {
-    display: flex;
-    flex-direction: column;
+.sidebar-nav{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
 }
 
-.sidebar-link {
-    color: #ecf0f1;
-    text-decoration: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    transition: background 0.2s;
+.sidebar-link{
+  color:#ecf0f1;
+  text-decoration:none;
+  padding:10px 12px;
+  border-radius:8px;
+  font-weight:700;
+  transition: background .2s ease, transform .15s ease;
+  display:block;
 }
 
-.sidebar-link:hover,
-.sidebar-link.active {
-    background-color: #0074c7; /* bleu charte pour hover et active */
+.sidebar-link:hover{
+  background: rgba(255,255,255,0.12);
+  transform: translateY(-1px);
 }
 
-/* --- CONTENU --- */
-.dashboard-content {
-    flex: 1;
-    padding: 30px;
-    background-color: #f1f8fc;
+.sidebar-link.active{
+  background:#0074c7;
 }
 
-.dashboard-content h1 {
-    margin-top: 0;
+/* Contenu */
+.dashboard-content{
+  flex:1;
+  padding:28px;
+  background:#f1f8fc;
+  min-width:0;
 }
 
-/* --- CARTES --- */
-.dashboard-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
+.dashboard-content h1{ margin-top:0; }
+
+/* Cards dashboard */
+.dashboard-cards{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap:22px;
+  margin-top:25px;
 }
 
-.dashboard-card {
-    background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    border: 2px solid #0074c7;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.2s, box-shadow 0.2s;
+.dashboard-card{
+  background:#fff;
+  padding:22px;
+  border-radius:14px;
+  border:1px solid rgba(0, 116, 199, 0.18);
+  box-shadow:0 8px 22px rgba(0, 73, 124, 0.08);
+  display:flex;
+  flex-direction:column;
+  min-height:230px;
+  transition: transform .15s ease, box-shadow .15s ease;
 }
 
-.dashboard-card h2 {
-    margin-top: 0;
-    font-size: 1.2em;
+.dashboard-card:hover{
+  transform: translateY(-4px);
+  box-shadow:0 16px 32px rgba(0, 73, 124, 0.12);
 }
 
-/* CARDS CLIQUABLES */
-.dashboard-card-clickable {
-    display: block;
-    color: inherit;
-    text-decoration: none;
-    cursor: pointer;
+.dashboard-card h2{
+  margin:0 0 14px;
+  font-size:18px;
+  font-weight:900;
+  color:#00497c;
 }
 
-.dashboard-card-clickable:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+/* Liens un par ligne */
+.card-links{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin:0 0 18px;
 }
 
-/* --- BARRE DE PROGRESSION --- */
-.progress-bar {
-    background: #dceaf7; /* léger bleu */
-    border-radius: 5px;
-    overflow: hidden;
-    height: 15px;
-    margin: 10px 0;
+.card-links a{
+  text-decoration:none;
+  color:#0074c7;
+  font-weight:600;
+  transition: color .2s ease;
 }
 
-.progress-fill {
-    background: #0074c7; /* bleu charte */
-    height: 100%;
-    width: 0;
-    transition: width 0.4s ease;
+.card-links a:hover{
+  color:#00497c;
+  text-decoration:underline;
 }
 
-.purchases-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
+/* "Accéder →" en bas */
+.card-link-indicator{
+  margin-top:auto;
+  font-weight:700;
+  color:#0074c7;
+  text-decoration:none;
+  align-self:flex-start;
 }
 
-.purchases-table th,
-.purchases-table td {
-    border: 1px solid #dceaf7;
-    padding: 12px;
-    text-align: left;
+.card-link-indicator:hover{
+  color:#00497c;
+  text-decoration:underline;
 }
 
-.purchases-table th {
-    background-color: #0074c7;
-    color: #fff;
-}
+.dashboard-card-clickable{ cursor:pointer; }
 
-.status {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 0.9em;
-    display: inline-block;
-}
+/* Responsive */
+@media (max-width: 992px){
+  .dashboard-layout{ flex-direction:column; }
+  .dashboard-sidebar{ width:100%; }
 
-.status-pending { background-color: #ffc107; color: #212529; }
-.status-paid    { background-color: #28a745; color: #fff; }
-.status-cancelled { background-color: #dc3545; color: #fff; }
+  .sidebar-nav{
+    flex-direction:row;
+    flex-wrap:wrap;
+    gap:8px;
+  }
 
-.purchases-table ul {
-    margin: 0;
-    padding-left: 15px;
-    list-style: disc;
-}
+  .sidebar-link{ white-space:nowrap; }
 
-
-/* --- RESPONSIVE --- */
-@media (max-width: 992px) {
-    .dashboard-layout {
-        flex-direction: column;
-    }
-    .dashboard-sidebar {
-        width: 100%;
-        display: flex;
-        flex-direction: row;
-        overflow-x: auto;
-        padding: 10px;
-        gap: 10px;
-    }
-    .sidebar-nav {
-        flex-direction: row;
-        gap: 10px;
-    }
-    .sidebar-link {
-        flex-shrink: 0;
-    }
-    .dashboard-cards {
-        grid-template-columns: 1fr; /* cartes empilées sur mobile */
-    }
+  .dashboard-cards{ grid-template-columns:1fr; }
+  .dashboard-content{ padding:18px; }
 }

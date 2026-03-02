@@ -39,23 +39,21 @@ class ContactRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('c');
 
-        // Filtre sujet
         if (!empty($filters['subject'])) {
             $qb->andWhere('c.subject = :subject')
-               ->setParameter('subject', $filters['subject']);
+            ->setParameter('subject', $filters['subject']);
         }
 
-        // Filtre statut
         if (!empty($filters['status'])) {
             switch ($filters['status']) {
                 case 'unread':
                     $qb->andWhere('c.readAt IS NULL')
-                       ->andWhere('c.handled = false');
+                    ->andWhere('c.handled = false');
                     break;
 
                 case 'read':
                     $qb->andWhere('c.readAt IS NOT NULL')
-                       ->andWhere('c.handled = false');
+                    ->andWhere('c.handled = false');
                     break;
 
                 case 'handled':
@@ -64,18 +62,12 @@ class ContactRepository extends ServiceEntityRepository
             }
         }
 
-        // Recherche texte (nom, email, message)
-        if (!empty($filters['q'])) {
-            $qb->andWhere(
-                'c.fullname LIKE :q 
-                 OR c.email LIKE :q 
-                 OR c.message LIKE :q'
-            )
-            ->setParameter('q', '%' . $filters['q'] . '%');
+        $q = trim((string) ($filters['q'] ?? ''));
+        if ($q !== '') {
+            $qb->andWhere('c.fullname LIKE :q OR c.email LIKE :q OR c.message LIKE :q')
+            ->setParameter('q', '%' . $q . '%');
         }
 
-        return $qb->orderBy('c.sentAt', 'DESC')
-                  ->getQuery()
-                  ->getResult();
+        return $qb->orderBy('c.sentAt', 'DESC')->getQuery()->getResult();
     }
 }
