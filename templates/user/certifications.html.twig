@@ -1,13 +1,12 @@
 {% extends 'dashboard/user/_base.html.twig' %}
 
-{% block title %}Mes Certifications{% endblock %}
+{% block title %}Mes certificats{% endblock %}
 
 {% block dashboard_content %}
 
-  <h1>Mes Certifications</h1>
+  <h1>Mes certificats</h1>
 
-  <!-- FILTRES -->
-  <form method="get" class="dashboard-filters">
+  <form method="get" class="dashboard-filters" autocomplete="off">
     <label for="cursus">Cursus :</label>
     <select name="cursus" id="cursus">
       <option value="">Tous</option>
@@ -18,17 +17,17 @@
       {% endfor %}
     </select>
 
-    <label for="from">De :</label>
+    <label for="from">Du :</label>
     <input type="date" name="from" id="from" value="{{ filter_from|default('') }}">
 
-    <label for="to">À :</label>
+    <label for="to">Au :</label>
     <input type="date" name="to" id="to" value="{{ filter_to|default('') }}">
 
     <button type="submit" class="btn">Filtrer</button>
   </form>
 
   {% if certifications is empty %}
-    <p>Vous n'avez aucune certification pour le moment.</p>
+    <p>Vous n’avez aucun certificat pour le moment.</p>
   {% else %}
     <div class="dashboard-cards">
       {% for cert in certifications %}
@@ -41,15 +40,15 @@
             {% elseif cert.theme %}
               Thème : {{ cert.theme.name }}
             {% else %}
-              Certification
+              Certificat
             {% endif %}
           </h2>
 
           <p>Code : <strong>{{ cert.certificateCode }}</strong></p>
-          <p>Émise le : {{ cert.issuedAt|date('d/m/Y') }}</p>
+          <p>Délivré le : {{ cert.issuedAt|date('d/m/Y') }}</p>
 
           <a href="{{ path('certification_show', {'id': cert.id}) }}" class="card-link-detail">
-            Voir le détail →
+            Voir le certificat →
           </a>
         </div>
       {% endfor %}

@@ -64,37 +64,6 @@ a.btn-back:hover {
     transform: translateY(-2px);
 }
 
-/* Formulaire filtres */
-.dashboard-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.dashboard-filters label {
-    margin-right: 5px;
-}
-
-.dashboard-filters select,
-.dashboard-filters input,
-.dashboard-filters button {
-    padding: 6px 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-}
-
-.dashboard-filters button {
-    background-color: #0074c7;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-}
-
-.dashboard-filters button:hover {
-    background-color: #00497c;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
     .dashboard-cards {

@@ -17,19 +17,19 @@
     <h2>{{ cert.user.firstName }} {{ cert.user.lastName }}</h2>
 
     {% if cert.lesson %}
-      <p>a validé la leçon : <strong>{{ cert.lesson.title ?? '—' }}</strong></p>
+      <p>a complété la leçon : <strong>{{ cert.lesson.title ?? '—' }}</strong></p>
     {% elseif cert.cursus %}
-      <p>a validé le cursus : <strong>{{ cert.cursus.name ?? '—' }}</strong></p>
+      <p>a complété le cursus : <strong>{{ cert.cursus.name ?? '—' }}</strong></p>
     {% elseif cert.theme %}
-      <p>a validé le thème : <strong>{{ cert.theme.name ?? '—' }}</strong></p>
+      <p>a complété le thème : <strong>{{ cert.theme.name ?? '—' }}</strong></p>
     {% else %}
       <p>Certification : <strong>—</strong></p>
     {% endif %}
 
-    <p>Délivré le : {{ cert.issuedAt|date('d/m/Y') }}</p>
+    <p>Délivré le {{ cert.issuedAt|date('d/m/Y') }}</p>
 
     <div class="code">
-      Code certificat : {{ cert.certificateCode }}
+      Code du certificat : {{ cert.certificateCode }}
     </div>
   </div>
 </body>
