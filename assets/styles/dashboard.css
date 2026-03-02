@@ -9,6 +9,12 @@
   background:#f1f8fc;
 }
 
+.dashboard-subtitle {
+  margin-top: 6px;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
 /* Sidebar bleue */
 .dashboard-sidebar{
   width:240px;

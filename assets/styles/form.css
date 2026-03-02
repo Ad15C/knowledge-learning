@@ -74,6 +74,14 @@
     gap: 20px;
 }
 
+.form-container form > div {
+margin-bottom: 22px;
+}
+
+.form-container form > div:last-child {
+margin-bottom: 0;
+}
+
 /* Checkbox */
 .checkbox-container {
     display: flex;
@@ -95,7 +103,7 @@
 .form-container input[type="email"],
 .form-container input[type="password"] {
     width: 100%;
-    padding: 10px 12px;
+    padding: 12px 14px;
     border: 1px solid #ccc;
     border-radius: 5px;
     font-size: 1rem;
@@ -110,7 +118,7 @@
 /* Labels */
 .form-container label {
     font-weight: 500;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
     display: block;
     color: #384050;
 }

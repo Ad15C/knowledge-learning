@@ -1,6 +1,6 @@
 {% extends 'dashboard/user/_base.html.twig' %}
 
-{% block title %}Mon Dashboard{% endblock %}
+{% block title %}Tableau de bord{% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
@@ -9,35 +9,35 @@
 
 {% block dashboard_content %}
 
-  <h1>Bienvenue, {{ user.firstName }} {{ user.lastName }} !</h1>
-
+  <h1>Bonjour, {{ user.firstName }} {{ user.lastName }} !</h1>
+  <p class="dashboard-subtitle">Voici un aperçu de votre activité</p>
   <div class="dashboard-cards">
 
-    <!-- STATUT ET PROGRESSION -->
+    <!-- Progression -->
     <div class="dashboard-card">
-      <h2>Mon statut et progression</h2>
-      <p>Statut actuel : <strong>{{ status }}</strong></p>
+      <h2>Progression</h2>
+      <p>Niveau actuel : <strong>{{ status }}</strong></p>
 
       <div class="progress-bar">
         <div class="progress-fill" style="width: {{ progressPercent }}%"></div>
       </div>
 
-      <small>{{ progressPercent }}% vers {{ nextStatus }}</small>
+      <small>Progression vers {{ nextStatus }} : {{ progressPercent }}%</small>
     </div>
 
-    <!-- COMMANDES -->
+    <!-- Mes achats -->
     <a href="{{ path('user_dashboard_purchases') }}" class="dashboard-card dashboard-card-clickable">
-      <h2>Mes commandes</h2>
-      <p>Total commandes : <strong>{{ totalOrders }}</strong></p>
+      <h2>Mes achats</h2>
+      <p>Total achats : <strong>{{ totalOrders }}</strong></p>
       <p>Total dépensé : <strong>{{ totalSpent }} €</strong></p>
-      <span class="card-link-indicator">Voir mes commandes →</span>
+      <span class="card-link-indicator">Voir mes achats →</span>
     </a>
 
-    <!-- CERTIFICATIONS -->
+    <!-- Mes certificats -->
     <a href="{{ path('user_dashboard_certifications') }}" class="dashboard-card dashboard-card-clickable">
-      <h2>Mes certifications</h2>
-      <p>Certifications obtenues : <strong>{{ certificationsCount }}</strong></p>
-      <span class="card-link-indicator">Voir mes certifications →</span>
+      <h2>Mes certificats</h2>
+      <p>Certificats obtenus <strong>{{ certificationsCount }}</strong></p>
+      <span class="card-link-indicator">Voir mes certificats →</span>
     </a>
 
   </div>

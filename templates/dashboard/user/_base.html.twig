@@ -1,5 +1,9 @@
-{# templates/dashboard/user/_base.html.twig #}
 {% extends 'dashboard/base_dashboard.html.twig' %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/user-shared.css') }}">
+{% endblock %}
 
 {% block sidebar %}
   {% set route = app.request.attributes.get('_route') %}
@@ -9,27 +13,27 @@
   <nav class="sidebar-nav">
     <a href="{{ path('user_dashboard') }}"
        class="sidebar-link {{ route == 'user_dashboard' ? 'active' : '' }}">
-      Dashboard
+      Vue d’ensemble
     </a>
 
     <a href="{{ path('user_dashboard_edit') }}"
        class="sidebar-link {{ route == 'user_dashboard_edit' ? 'active' : '' }}">
-      Modifier profil
+      Mon profil
     </a>
 
     <a href="{{ path('app_change_password') }}"
        class="sidebar-link {{ route == 'app_change_password' ? 'active' : '' }}">
-      Mot de passe
+      Sécurité
     </a>
 
     <a href="{{ path('user_dashboard_purchases') }}"
        class="sidebar-link {{ route == 'user_dashboard_purchases' ? 'active' : '' }}">
-      Mes commandes
+      Mes achats
     </a>
 
     <a href="{{ path('user_dashboard_certifications') }}"
        class="sidebar-link {{ route == 'user_dashboard_certifications' ? 'active' : '' }}">
-      Mes certifications
+      Mes certificats
     </a>
   </nav>
 {% endblock %}

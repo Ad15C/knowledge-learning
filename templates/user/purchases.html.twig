@@ -11,7 +11,7 @@
 
 <h1>Mes Achats</h1>
 
-<form method="get" class="filter-form">
+<form method="get" class="dashboard-filters" autocomplete="off">
   <label>
     Statut :
     <select name="status">
@@ -44,19 +44,19 @@
       <div class="cart-item-card">
         <div class="cart-item-info">
           <h3>Commande #{{ purchase.id }}</h3>
-          <p><strong>Date :</strong> {{ purchase.createdAt|date('d/m/Y H:i') }}</p>
-          <p><strong>Total :</strong> {{ purchase.total|number_format(2, '.', ' ') }} €</p>
-          <p><strong>Statut :</strong> {{ purchase.statusLabel }}</p>
+          <p><strong>Date </strong> {{ purchase.createdAt|date('d/m/Y H:i') }}</p>
+          <p><strong>Total </strong> {{ purchase.total|number_format(2, '.', ' ') }} €</p>
+          <p><strong>Statut </strong> {{ purchase.statusLabel }}</p>
 
           {% if purchase.items is not empty %}
-            <h4>Articles :</h4>
+            <h4>Articles </h4>
             <ul>
               {% for item in purchase.items %}
                 <li>
                   {% if item.lesson %}
                     {{ item.lesson.title }} - {{ item.total|number_format(2, '.', ' ') }} €
                     <span class="cart-type">(Leçon)</span>
-                    — Quantité : {{ item.quantity }}
+                    — Quantité  {{ item.quantity }}
 
                     <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}" class="cart-link">
                       Accéder

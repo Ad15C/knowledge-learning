@@ -1,0 +1,77 @@
+/* ==========================================
+   USER SHARED (filtres propres)
+========================================== */
+
+.dashboard-filters{
+  margin: 14px 0 20px;
+  padding: 14px 16px;
+  background:#fff;
+  border:1px solid rgba(0,116,199,0.18);
+  border-radius:14px;
+  box-shadow: 0 10px 22px rgba(0,73,124,0.06);
+
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px 16px;        /* espace horizontal + vertical */
+  align-items:flex-end;
+}
+
+.dashboard-filters label{
+  font-weight:900;
+  color:#384050;
+  margin:0;
+}
+
+.dashboard-filters input[type="text"],
+.dashboard-filters input[type="search"],
+.dashboard-filters input[type="date"],
+.dashboard-filters select{
+  padding:10px 12px;
+  min-height:42px;
+  border-radius:10px;
+  border:1px solid rgba(0,116,199,0.25);
+  background:#fff;
+  color:#384050;
+  outline:none;
+}
+
+.dashboard-filters input:focus,
+.dashboard-filters select:focus{
+  border-color: rgba(0,116,199,0.65);
+  box-shadow: 0 0 0 3px rgba(0,116,199,0.15);
+}
+
+.dashboard-filters button,
+.dashboard-filters .btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:42px;
+  padding:10px 14px;
+  border-radius:10px;
+  border:1px solid #0074c7;
+  background:#0074c7;
+  color:#fff;
+  font-weight:900;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+.dashboard-filters button:hover,
+.dashboard-filters .btn:hover{
+  background:#00497c;
+  border-color:#00497c;
+}
+
+@media (max-width: 520px){
+  .dashboard-filters{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .dashboard-filters input,
+  .dashboard-filters select,
+  .dashboard-filters button,
+  .dashboard-filters .btn{
+    width:100%;
+  }
+}
