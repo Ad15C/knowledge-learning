@@ -28,17 +28,28 @@ class LessonType extends AbstractType
                 'choice_label' => 'name',
                 'label' => 'Cursus',
                 'placeholder' => '— Choisir un cursus —',
-                'query_builder' => fn (CursusRepository $cr) => $cr->createQueryBuilder('c')
-                    ->andWhere('c.isActive = true')
-                    ->orderBy('c.name', 'ASC'),
+                'query_builder' => function (CursusRepository $cr) use ($builder) {
+                    /** @var Lesson|null $lesson */
+                    $lesson = $builder->getData();
+                    $currentId = $lesson?->getCursus()?->getId();
+
+                    $qb = $cr->createQueryBuilder('c')
+                        ->orderBy('c.name', 'ASC');
+
+                    if ($currentId) {
+                        $qb->andWhere('(c.isActive = true OR c.id = :currentId)')
+                           ->setParameter('currentId', $currentId);
+                    } else {
+                        $qb->andWhere('c.isActive = true');
+                    }
+
+                    return $qb;
+                },
             ])
             ->add('price', MoneyType::class, [
                 'label' => 'Prix',
                 'currency' => 'EUR',
                 'required' => true,
-
-                // IMPORTANT : pas de empty_data ici
-                // sinon '' peut finir converti en 0.00 → form valide → redirect
                 'constraints' => [
                     new Assert\NotBlank(message: 'Le prix est obligatoire.'),
                 ],
