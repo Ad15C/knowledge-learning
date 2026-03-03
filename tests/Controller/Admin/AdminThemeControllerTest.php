@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Controller;
+namespace App\Tests\Controller\Admin;
 
 use App\DataFixtures\TestUserFixtures;
 use App\DataFixtures\ThemeFixtures;
