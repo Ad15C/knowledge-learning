@@ -3,9 +3,9 @@
 {% block title %}Page introuvable{% endblock %}
 
 {% block body %}
-<div class="container py-5 text-center">
-  <h1 class="mb-3">404</h1>
-  <p class="mb-4">La page demandée est introuvable.</p>
-  <a href="{{ path('homepage') }}" class="btn btn-primary">Retour à l’accueil</a>
-</div>
+<main class="container py-5 text-center">
+  <h1>404</h1>
+  <p>La page demandée est introuvable.</p>
+  <a class="btn btn-primary" href="{{ path('homepage') }}">Retour à l’accueil</a>
+</main>
 {% endblock %}

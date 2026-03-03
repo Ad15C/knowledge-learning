@@ -45,10 +45,16 @@ security:
                 lifetime: 604800 # 1 semaine
 
     access_control:
+        # Pages publiques
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/register, roles: PUBLIC_ACCESS }
+        - { path: ^/logout, roles: PUBLIC_ACCESS }
+
         # Dashboard réservé aux utilisateurs connectés
         - { path: ^/dashboard, roles: ROLE_USER }
+
         # Zone admin
-        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/admin, roles: ROLE_ADMIN, requires_channel: https }
 
 when@test:
     security:

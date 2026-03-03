@@ -29,8 +29,7 @@
                    autocomplete="current-password">
 
             {# CSRF token #}
-            <input type="hidden" name="_csrf_token"
-                   value="{{ csrf_token('authenticate') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
 
             <label>
                 <input type="checkbox" name="_remember_me">

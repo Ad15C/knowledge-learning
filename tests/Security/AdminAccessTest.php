@@ -80,24 +80,18 @@ class AdminAccessTest extends WebTestCase
         $routes = $this->getAdminRoutes($router);
         $this->assertNotEmpty($routes, 'Aucune route /admin trouvée.');
 
-        // 1) Visiteur => 302 vers /login
+        // 1) VISITEUR => doit finir sur /login (en suivant redirects http->https, slash, etc.)
         foreach ($routes as [$name, $path, $methods]) {
             $url = $this->fillPlaceholders($path);
             $method = $this->pickMethod($methods);
 
             $client->request($method, $url);
-            $response = $client->getResponse();
+            $this->followRedirects($client);
 
-            $this->assertTrue(
-                $response->isRedirect(),
-                sprintf('[VISITEUR] %s %s (%s) devrait rediriger (got %d).', $method, $url, $name, $response->getStatusCode())
-            );
-
-            $location = (string) $response->headers->get('Location');
             $this->assertStringContainsString(
                 '/login',
-                $location,
-                sprintf('[VISITEUR] %s %s (%s) devrait rediriger vers /login (Location=%s).', $method, $url, $name, $location)
+                $client->getRequest()->getPathInfo(),
+                sprintf('[VISITEUR] %s %s (%s) devrait finir sur /login (got %s).', $method, $url, $name, $client->getRequest()->getPathInfo())
             );
         }
 
@@ -109,6 +103,7 @@ class AdminAccessTest extends WebTestCase
             $method = $this->pickMethod($methods);
 
             $client->request($method, $url);
+            $this->followRedirects($client);
 
             $this->assertSame(
                 403,
@@ -117,26 +112,34 @@ class AdminAccessTest extends WebTestCase
             );
         }
 
-        // 3) ROLE_ADMIN => pas 403 ; pas redirect /login ; on accepte 200/302/404
+        // 3) ROLE_ADMIN
+        // - GET : jamais 403 ; jamais /login ; status final 200/302/404
+        // - POST-only : CSRF possible => on valide seulement "pas /login" et status dans une whitelist (incluant 403)
         $client->loginUser($admin);
 
         foreach ($routes as [$name, $path, $methods]) {
             $url = $this->fillPlaceholders($path);
             $method = $this->pickMethod($methods);
 
-            // POST-only : on ne force pas (CSRF possible) -> on ne valide ici que "pas redirect /login"
+            // POST-only : CSRF possible => ne PAS exiger "pas 403"
             if ($method === 'POST' && !(in_array('GET', $methods, true) || empty($methods))) {
                 $client->request('POST', $url);
-                $response = $client->getResponse();
+                $this->followRedirects($client);
 
-                if ($response->isRedirect()) {
-                    $location = (string) $response->headers->get('Location');
-                    $this->assertStringNotContainsString(
-                        '/login',
-                        $location,
-                        sprintf('[ADMIN][POST] %s (%s) ne doit pas rediriger vers /login (Location=%s).', $url, $name, $location)
-                    );
-                }
+                // Un admin ne doit jamais être renvoyé au login
+                $this->assertStringNotContainsString(
+                    '/login',
+                    $client->getRequest()->getPathInfo(),
+                    sprintf('[ADMIN][POST] %s (%s) ne doit pas finir sur /login (got %s).', $url, $name, $client->getRequest()->getPathInfo())
+                );
+
+                // On tolère 403 (CSRF), 400, 404, 200, 302
+                $this->assertContains(
+                    $client->getResponse()->getStatusCode(),
+                    [200, 302, 400, 403, 404],
+                    sprintf('[ADMIN][POST] %s (%s) statut inattendu %d.', $url, $name, $client->getResponse()->getStatusCode())
+                );
+
                 continue;
             }
 
@@ -146,17 +149,15 @@ class AdminAccessTest extends WebTestCase
             }
 
             $client->request($method, $url);
-            $response = $client->getResponse();
-            $status = $response->getStatusCode();
+            $this->followRedirects($client);
 
-            if ($response->isRedirect()) {
-                $location = (string) $response->headers->get('Location');
-                $this->assertStringNotContainsString(
-                    '/login',
-                    $location,
-                    sprintf('[ADMIN] %s %s (%s) ne doit pas rediriger vers /login (Location=%s).', $method, $url, $name, $location)
-                );
-            }
+            $status = $client->getResponse()->getStatusCode();
+
+            $this->assertStringNotContainsString(
+                '/login',
+                $client->getRequest()->getPathInfo(),
+                sprintf('[ADMIN] %s %s (%s) ne doit pas finir sur /login (got %s).', $method, $url, $name, $client->getRequest()->getPathInfo())
+            );
 
             $this->assertNotSame(
                 403,
@@ -167,7 +168,7 @@ class AdminAccessTest extends WebTestCase
             $this->assertContains(
                 $status,
                 [200, 302, 404],
-                sprintf('[ADMIN] %s %s (%s) statut inattendu %d (attendu 200/302/404).', $method, $url, $name, $status)
+                sprintf('[ADMIN] %s %s (%s) statut inattendu %d (attendu 200/302/404 après redirects).', $method, $url, $name, $status)
             );
         }
     }
@@ -189,8 +190,7 @@ class AdminAccessTest extends WebTestCase
         $this->assertSame(
             $expected,
             $actual,
-            "Snapshot des routes /admin différent.\n" .
-            "Si tu as ajouté/modifié une route admin, mets à jour EXPECTED_ADMIN_ROUTES."
+            "Snapshot des routes /admin différent.\nSi tu as ajouté/modifié une route admin, mets à jour EXPECTED_ADMIN_ROUTES."
         );
     }
 
@@ -250,8 +250,10 @@ class AdminAccessTest extends WebTestCase
         $targetId = $user->getId();
         $this->assertNotNull($targetId);
 
-        // ===== ARCHIVE : on récupère le token depuis le HTML, puis on submit le vrai formulaire =====
+        // ===== ARCHIVE : récupère le vrai formulaire (avec CSRF) depuis l'HTML =====
         $crawler = $client->request('GET', '/admin/users?action=delete&status=active');
+        $this->followRedirects($client, $crawler);
+
         $this->assertSame(200, $client->getResponse()->getStatusCode(), 'La page /admin/users doit être accessible en admin.');
 
         $archiveFormNode = $crawler->filter('form')->reduce(function ($node) use ($targetId) {
@@ -261,16 +263,15 @@ class AdminAccessTest extends WebTestCase
 
         $this->assertGreaterThan(0, $archiveFormNode->count(), 'Formulaire archive introuvable pour user id=' . $targetId);
 
-        // Soumission du formulaire réel (inclut _token)
         $client->submit($archiveFormNode->form());
+        $this->followRedirects($client);
 
         $status = $client->getResponse()->getStatusCode();
         $this->assertNotSame(403, $status, sprintf('Archive: ne devrait pas être 403 (status=%d).', $status));
         $this->assertNotSame(500, $status, sprintf('Archive: ne devrait pas être 500 (status=%d).', $status));
 
+        // Vérifie DB (désactive filter archived_user si présent)
         $em->clear();
-
-        // IMPORTANT : ton Doctrine Filter masque les utilisateurs archivés -> on le désactive pour vérifier l'état
         $filters = $em->getFilters();
         if ($filters->isEnabled('archived_user')) {
             $filters->disable('archived_user');
@@ -278,15 +279,13 @@ class AdminAccessTest extends WebTestCase
 
         $reloaded = $em->getRepository(User::class)->find($targetId);
         $this->assertNotNull($reloaded, 'User introuvable après archive (filter disabled), id=' . $targetId);
+        $this->assertTrue($reloaded->isArchived(), 'Le user devrait être archivé après submit du formulaire /delete.');
 
-        // ===== RESTORE : même logique dans l’onglet archived =====
+        // ===== RESTORE =====
         $crawlerArchived = $client->request('GET', '/admin/users?action=delete&status=archived');
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
-        $this->assertGreaterThan(
-            0,
-            $crawlerArchived->filter(sprintf('form[action*="/admin/users/%d/restore"]', $targetId))->count(),
-            'Après archive, le user doit apparaître dans l’onglet archived avec un bouton Restaurer.'
-        );
+        $this->followRedirects($client, $crawlerArchived);
+
+        $this->assertSame(200, $client->getResponse()->getStatusCode(), 'La page /admin/users (archived) doit être accessible en admin.');
 
         $restoreFormNode = $crawlerArchived->filter('form')->reduce(function ($node) use ($targetId) {
             $action = (string) $node->attr('action');
@@ -296,6 +295,7 @@ class AdminAccessTest extends WebTestCase
         $this->assertGreaterThan(0, $restoreFormNode->count(), 'Formulaire restore introuvable pour user id=' . $targetId);
 
         $client->submit($restoreFormNode->form());
+        $this->followRedirects($client);
 
         $status2 = $client->getResponse()->getStatusCode();
         $this->assertNotSame(403, $status2, sprintf('Restore: ne devrait pas être 403 (status=%d).', $status2));
@@ -348,5 +348,107 @@ class AdminAccessTest extends WebTestCase
             }
         }
         return false;
+    }
+
+    /**
+     * Suit les redirects techniques (301/302/303/307/308), sans boucle infinie.
+     * Si un Crawler est fourni (première requête GET), il est mis à jour avec le crawler de la page finale.
+     */
+    private function followRedirects($client, &$crawler = null, int $max = 7): void
+    {
+        while ($client->getResponse()->isRedirect() && $max-- > 0) {
+            $crawler = $client->followRedirect();
+        }
+    }
+
+    public function test_admin_routes_http_method_constraints(): void
+    {
+        [$client, , $router, , $admin] = $this->bootAndLoadFixtures();
+
+        $client->loginUser($admin);
+
+        foreach ($router->getRouteCollection()->all() as $name => $route) {
+            $path = (string) $route->getPath();
+
+            if (!str_starts_with($path, '/admin')) {
+                continue;
+            }
+
+            $methods = $route->getMethods();
+            $url = preg_replace('/\{[^}]+\}/', '1', $path) ?? $path;
+
+            // Si aucun method défini => ANY => on ignore
+            if (empty($methods)) {
+                continue;
+            }
+
+            // === GET-only ===
+            if ($methods === ['GET']) {
+                $client->request('POST', $url);
+                $status = $client->getResponse()->getStatusCode();
+
+                $this->assertSame(
+                    405,
+                    $status,
+                    sprintf('[HTTP] %s (%s) est GET-only mais POST retourne %d au lieu de 405.', $url, $name, $status)
+                );
+            }
+
+            // === POST-only ===
+            if ($methods === ['POST']) {
+                $client->request('GET', $url);
+                $status = $client->getResponse()->getStatusCode();
+
+                $this->assertSame(
+                    405,
+                    $status,
+                    sprintf('[HTTP] %s (%s) est POST-only mais GET retourne %d au lieu de 405.', $url, $name, $status)
+                );
+            }
+        }
+    }
+
+    public function test_admin_id_routes_reject_non_numeric_ids_with_404(): void
+    {
+        [$client, , $router, , $admin] = $this->bootAndLoadFixtures();
+        $client->loginUser($admin);
+
+        foreach ($router->getRouteCollection()->all() as $name => $route) {
+            $path = (string) $route->getPath();
+            if (!str_starts_with($path, '/admin')) {
+                continue;
+            }
+            if (!str_contains($path, '{id}')) {
+                continue;
+            }
+
+            // si la route a un requirement id (recommandé), on peut être strict
+            $requirements = $route->getRequirements();
+            $hasNumericRequirement = isset($requirements['id']);
+
+            // On ne teste que les routes où l'ID est censé être numérique
+            // (si tu veux, enlève ce if et teste tout)
+            if (!$hasNumericRequirement) {
+                continue;
+            }
+
+            $methods = $route->getMethods();
+            $method = empty($methods) ? 'GET' : (in_array('GET', $methods, true) ? 'GET' : $methods[0]);
+
+            // Pour POST-only, ça serait 405 en GET, donc on évite
+            if ($method !== 'GET') {
+                continue;
+            }
+
+            $url = str_replace('{id}', 'abc', $path);
+
+            $client->request('GET', $url);
+
+            $this->assertSame(
+                404,
+                $client->getResponse()->getStatusCode(),
+                sprintf('[404][regex] %s (%s) devrait retourner 404 avec id non numérique.', $url, $name)
+            );
+        }
     }
 }
