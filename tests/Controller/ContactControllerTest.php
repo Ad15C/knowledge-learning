@@ -55,7 +55,7 @@ class ContactControllerTest extends WebTestCase
 
         $this->assertResponseIsSuccessful();
 
-        $this->assertSelectorTextContains('h1', "Contactez l'administration");
+        $this->assertSelectorTextContains('h1', 'Nous contacter');
         $this->assertSelectorExists('input[placeholder="Votre nom"]');
         $this->assertSelectorExists('input[placeholder="Votre e-mail"]');
         $this->assertSelectorExists('textarea[placeholder="Votre message"]');
@@ -69,8 +69,9 @@ class ContactControllerTest extends WebTestCase
 
         $this->assertResponseIsSuccessful();
 
-        $this->assertSelectorTextContains('h1', "Contactez l'administration");
-        $this->assertSelectorTextContains('p', "Vous pouvez nous envoyer un message");
+        $this->assertSelectorTextContains('h1', 'Nous contacter');
+        $this->assertSelectorExists('.contact-page p');
+        $this->assertSelectorTextContains('.contact-page p', "n’hésitez pas à nous écrire");
 
         $this->assertSelectorExists('input[placeholder="Votre nom"]');
         $this->assertSelectorExists('input[placeholder="Votre e-mail"]');

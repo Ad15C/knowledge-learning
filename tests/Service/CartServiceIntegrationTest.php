@@ -34,7 +34,10 @@ class CartServiceIntegrationTest extends WebTestCase
 
         $client->loginUser($user);
 
-        $purchase = (new Purchase())->setUser($user)->setStatus('cart');
+        $purchase = (new Purchase())
+            ->setUser($user)
+            ->setStatus(Purchase::STATUS_CART);
+
         $purchase->generateOrderNumber();
         $em->persist($purchase);
 

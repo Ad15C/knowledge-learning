@@ -12,7 +12,7 @@
         <h1>Bravo {{ app.user.firstname ?? app.user.username }} !</h1>
 
         {% if lessonValidated.lesson %}
-            <p>Vous avez terminé la leçon : <strong>{{ lessonValidated.lesson.title }}</strong> ✅</p>
+            <p>Vous avez terminé la leçon : <strong>{{ lessonValidated.lesson.title }}</strong></p>
 
             {% set theme = lessonValidated.lesson.cursus?->theme %}
             {% if theme %}

@@ -24,13 +24,23 @@ class CursusControllerTest extends WebTestCase
     {
         self::ensureKernelShutdown();
 
-        // Un seul createClient() pour éviter "kernel booted twice"
         $this->client = static::createClient();
 
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
         $this->databaseTool = static::getContainer()
             ->get(DatabaseToolCollection::class)
             ->get();
+    }
+
+    private function forceOrderNumber(Purchase $purchase): void
+    {
+        $ref = new \ReflectionClass(Purchase::class);
+        $propOrderNumber = $ref->getProperty('orderNumber');
+        $propOrderNumber->setAccessible(true);
+        $propOrderNumber->setValue(
+            $purchase,
+            'ORD-TEST-' . date('YmdHis') . '-' . bin2hex(random_bytes(4))
+        );
     }
 
     public function test_show_not_logged_in_only_add_to_cart(): void
@@ -45,16 +55,16 @@ class CursusControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/cursus/' . $cursus->getId());
         self::assertResponseIsSuccessful();
 
-        // Pas connecté => 0 bouton "Valider"
+        // Pas connecté => 0 bouton "Accéder & valider"
         self::assertSame(
             0,
-            $crawler->filter('button.btn.btn-success:contains("Valider la leçon")')->count()
+            $crawler->filter('a.btn.btn-success:contains("Accéder")')->count()
         );
 
-        // 2 leçons => 2 liens "Ajouter au panier"
+        // 2 leçons => 2 boutons "Ajouter au panier" (dans ton twig c'est un <button>)
         self::assertSame(
             2,
-            $crawler->filter('a.btn.btn-outline:contains("Ajouter au panier")')->count()
+            $crawler->filter('button.btn.btn-outline:contains("Ajouter au panier")')->count()
         );
 
         self::assertSelectorTextContains('h1', $cursus->getName());
@@ -80,8 +90,10 @@ class CursusControllerTest extends WebTestCase
         // Achat paid de 1 leçon
         $purchase = (new Purchase())
             ->setUser($user)
-            ->setStatus('paid')
+            ->setStatus(Purchase::STATUS_PAID)
             ->setPaidAt(new \DateTimeImmutable());
+
+        $this->forceOrderNumber($purchase);
 
         $item = (new PurchaseItem())
             ->setPurchase($purchase)
@@ -101,16 +113,16 @@ class CursusControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/cursus/' . $cursus->getId());
         self::assertResponseIsSuccessful();
 
-        // 1 leçon achetée => 1 bouton "Valider"
+        // Dans ton twig: si accès => lien "Accéder & valider" (pas un button)
         self::assertSame(
             1,
-            $crawler->filter('button.btn.btn-success:contains("Valider la leçon")')->count()
+            $crawler->filter('a.btn.btn-success:contains("Accéder")')->count()
         );
 
-        // l’autre non achetée => 1 lien "Ajouter au panier"
+        // l’autre non achetée => 1 bouton "Ajouter au panier"
         self::assertSame(
             1,
-            $crawler->filter('a.btn.btn-outline:contains("Ajouter au panier")')->count()
+            $crawler->filter('button.btn.btn-outline:contains("Ajouter au panier")')->count()
         );
     }
 
@@ -130,8 +142,10 @@ class CursusControllerTest extends WebTestCase
         // Achat paid du cursus
         $purchase = (new Purchase())
             ->setUser($user)
-            ->setStatus('paid')
+            ->setStatus(Purchase::STATUS_PAID)
             ->setPaidAt(new \DateTimeImmutable());
+
+        $this->forceOrderNumber($purchase);
 
         $item = (new PurchaseItem())
             ->setPurchase($purchase)
@@ -151,16 +165,16 @@ class CursusControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/cursus/' . $cursus->getId());
         self::assertResponseIsSuccessful();
 
-        // cursus acheté => accès aux 2 leçons => 2 boutons "Valider"
+        // cursus acheté => accès aux 2 leçons => 2 liens "Accéder & valider"
         self::assertSame(
             2,
-            $crawler->filter('button.btn.btn-success:contains("Valider la leçon")')->count()
+            $crawler->filter('a.btn.btn-success:contains("Accéder")')->count()
         );
 
-        // 0 lien "Ajouter au panier"
+        // 0 bouton "Ajouter au panier"
         self::assertSame(
             0,
-            $crawler->filter('a.btn.btn-outline:contains("Ajouter au panier")')->count()
+            $crawler->filter('button.btn.btn-outline:contains("Ajouter au panier")')->count()
         );
     }
 
@@ -177,7 +191,10 @@ class CursusControllerTest extends WebTestCase
         $cursus = $fixtures->getReferenceRepository()
             ->getReference(ThemeFixtures::CURSUS_GUITARE_REF, Cursus::class);
 
-        $this->client->request('GET', '/cart/add/cursus/' . $cursus->getId());
+        // IMPORTANT: route en POST (pas GET)
+        $this->client->request('POST', '/cart/add/cursus/' . $cursus->getId(), [
+            '_token' => 'dummy', // pas besoin d'un vrai token: l'accès est refusé avant
+        ]);
 
         self::assertResponseRedirects(); // vers app_login
     }

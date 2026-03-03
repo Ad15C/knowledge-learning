@@ -37,15 +37,23 @@ class UserDashboardFullWorkflowTest extends WebTestCase
     {
         $this->client->request('GET', '/dashboard');
         $this->assertTrue($this->client->getResponse()->isRedirection());
-        $this->client->followRedirect();
+
+        $crawler = $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
-        $this->assertSelectorExists('form'); // page login
+
+        // Page login : form + bouton "Se connecter"
+        $this->assertSelectorExists('form');
+        $this->assertGreaterThan(
+            0,
+            $crawler->selectButton('Se connecter')->count(),
+            'Le bouton "Se connecter" doit exister sur la page login'
+        );
     }
 
-    public function testFullDashboardWorkflow(): void
+    public function testFullDashboardWorkflowWithFullAssertions(): void
     {
         // -----------------------------
-        // Arrange: user + purchase paid + certif
+        // Arrange: user + theme/cursus/lesson + purchase paid + certif
         // -----------------------------
         $passwordHasher = self::getContainer()->get(UserPasswordHasherInterface::class);
 
@@ -76,7 +84,7 @@ class UserDashboardFullWorkflowTest extends WebTestCase
         $this->em->persist($user);
         $this->em->flush();
 
-        // Paid purchase + item => accès aux leçons via tes contrôleurs
+        // Purchase paid + item
         $purchase = new Purchase();
         $purchase->setUser($user);
         $purchase->setStatus('paid');
@@ -86,13 +94,21 @@ class UserDashboardFullWorkflowTest extends WebTestCase
         $item->setPurchase($purchase);
         $item->setLesson($lesson);
         $item->setUnitPrice($lesson->getPrice());
+        // si tu as quantity obligatoire côté entité:
+        if (method_exists($item, 'setQuantity')) {
+            $item->setQuantity(1);
+        }
 
         $this->em->persist($purchase);
         $this->em->persist($item);
         $purchase->addItem($item);
-        $purchase->calculateTotal();
 
-        // Certification existante (pour tester /dashboard/certifications + show + pdf)
+        // si ta méthode existe
+        if (method_exists($purchase, 'calculateTotal')) {
+            $purchase->calculateTotal();
+        }
+
+        // Certification existante
         $cert = new Certification();
         $cert->setUser($user);
         $cert->setLesson($lesson);
@@ -109,6 +125,9 @@ class UserDashboardFullWorkflowTest extends WebTestCase
         $crawler = $this->client->request('GET', '/login');
         $this->assertResponseIsSuccessful();
 
+        // Vérifie header visiteur (avant login) : Accueil / Thèmes / S'inscrire / Se connecter
+        $this->assertHeaderMenuContains(['Accueil', 'Thèmes', 'S\'inscrire', 'Se connecter']);
+
         $loginForm = $crawler->selectButton('Se connecter')->form([
             '_username' => 'dash@example.com',
             '_password' => 'OldPass123!',
@@ -116,26 +135,44 @@ class UserDashboardFullWorkflowTest extends WebTestCase
         $this->client->submit($loginForm);
 
         $this->assertTrue($this->client->getResponse()->isRedirection());
-        $this->client->followRedirect(); // /dashboard
+        $crawler = $this->client->followRedirect(); // /dashboard
         $this->assertResponseIsSuccessful();
 
+        // Après login : header user (non admin) => Accueil/Thèmes/Panier/Dashboard User/Contact/Déconnexion
+        $this->assertHeaderMenuContains(['Accueil', 'Thèmes', 'Panier', 'Dashboard User', 'Contact', 'Déconnexion']);
+
+        // Sidebar dashboard existe
+        $this->assertSelectorExists('.dashboard-layout');
+        $this->assertSelectorExists('.dashboard-sidebar');
+        $this->assertSelectorTextContains('.sidebar-header', 'Espace membre');
+
         // -----------------------------
-        // 2) Dashboard accessible
+        // 2) Dashboard content (home)
         // -----------------------------
         $this->client->request('GET', '/dashboard');
         $this->assertResponseIsSuccessful();
 
+        // "Bonjour, ..." + cards
+        $this->assertSelectorExists('h1');
+        $this->assertSelectorExists('.dashboard-cards');
+
+        // Les liens cards attendus existent (au moins)
+        $this->assertSelectorExists('a[href="/dashboard/purchases"]');
+        $this->assertSelectorExists('a[href="/dashboard/certifications"]');
+
         // -----------------------------
-        // 3) Edit profile (prenom/nom)
+        // 3) Edit profile
         // -----------------------------
         $crawler = $this->client->request('GET', '/dashboard/edit');
         $this->assertResponseIsSuccessful();
 
+        // page contient le container de form générique (selon ton include)
+        $this->assertSelectorExists('form');
+
         $form = $crawler->filter('form')->form();
 
-        // Renseigne automatiquement les champs contenant firstName / lastName (robuste)
+        // robust: trouve first/last
         $values = $form->getValues();
-
         $firstKey = null;
         $lastKey  = null;
 
@@ -155,7 +192,6 @@ class UserDashboardFullWorkflowTest extends WebTestCase
         $form[$lastKey]  = 'NewLast';
 
         $this->client->submit($form);
-
         $this->assertTrue($this->client->getResponse()->isRedirection());
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
@@ -172,41 +208,25 @@ class UserDashboardFullWorkflowTest extends WebTestCase
         // -----------------------------
         $crawler = $this->client->request('GET', '/dashboard/password');
         $this->assertResponseIsSuccessful();
+        $this->assertSelectorExists('form');
 
-        // Selon ton template, le bouton peut être "Envoyer" ou "Mettre à jour" ou "Changer"
-        // On prend le premier bouton submit trouvé si besoin.
-        $button = null;
-        foreach (['Mettre à jour', 'Envoyer', 'Valider', 'Changer', 'Enregistrer'] as $label) {
-            if ($crawler->selectButton($label)->count() > 0) {
-                $button = $label;
-                break;
-            }
-        }
-        if ($button === null) {
-            // fallback : premier submit
-            $this->assertGreaterThan(0, $crawler->filter('form button[type="submit"], form input[type="submit"]')->count());
-            $form = $crawler->filter('form')->form();
-        } else {
-            $form = $crawler->selectButton($button)->form();
-        }
+        $form = $this->findFirstSubmitForm($crawler);
 
-        // champs probables :
-        // change_password_form[plainPassword][first]/[second]
-        // ou change_password_form[plainPassword]
+        // Champs probables
         $this->setIfExists($form, 'change_password_form[plainPassword][first]', 'NewPass123!');
         $this->setIfExists($form, 'change_password_form[plainPassword][second]', 'NewPass123!');
         $this->setIfExists($form, 'change_password_form[plainPassword]', 'NewPass123!');
         $this->setIfExists($form, 'change_password[plainPassword][first]', 'NewPass123!');
         $this->setIfExists($form, 'change_password[plainPassword][second]', 'NewPass123!');
+        $this->setIfExists($form, 'change_password[plainPassword]', 'NewPass123!');
 
         $this->client->submit($form);
 
-        // changePassword() redirect vers dashboard
         $this->assertTrue($this->client->getResponse()->isRedirection());
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
-        // Vérif que le nouveau mot de passe fonctionne : on logout + login avec NewPass
+        // Logout + relogin avec new pass
         $this->client->request('GET', '/logout');
         $this->assertTrue($this->client->getResponse()->isRedirection());
         $this->client->followRedirect();
@@ -214,57 +234,144 @@ class UserDashboardFullWorkflowTest extends WebTestCase
 
         $crawler = $this->client->request('GET', '/login');
         $this->assertResponseIsSuccessful();
+
         $loginForm = $crawler->selectButton('Se connecter')->form([
             '_username' => 'dash@example.com',
             '_password' => 'NewPass123!',
         ]);
         $this->client->submit($loginForm);
+
         $this->assertTrue($this->client->getResponse()->isRedirection());
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
         // -----------------------------
-        // 5) Accès commandes
+        // 5) Purchases page + access lesson
         // -----------------------------
-        $this->client->request('GET', '/dashboard/purchases');
+        $crawler = $this->client->request('GET', '/dashboard/purchases');
         $this->assertResponseIsSuccessful();
 
-        // Et l'accès direct à une leçon achetée (via lesson_show)
+        // Vérifs génériques : au minimum un contenu listant une commande / achat
+        // (selon template, adapte les sélecteurs si tu as une table ou cards)
+        $this->assertTrue(
+            $crawler->filter('body')->text() !== '',
+            'La page purchases ne doit pas être vide'
+        );
+
+        // Accès direct à la leçon achetée
         $lessonDb = $this->em->getRepository(Lesson::class)->findOneBy(['title' => 'Lesson Dash']);
         $this->assertNotNull($lessonDb);
 
-        $this->client->request('GET', '/lesson/' . $lessonDb->getId());
+        $crawler = $this->client->request('GET', '/lesson/' . $lessonDb->getId());
         $this->assertResponseIsSuccessful();
 
+        // Page lesson contient le titre
+        $this->assertSelectorTextContains('h1', 'Lesson Dash');
+
+        // Avec achat paid item lesson, l'utilisateur devrait avoir accès :
+        // soit bouton "Marquer comme complétée" (si pas complétée),
+        // soit texte "déjà complété"
+        $pageText = $crawler->filter('body')->text();
+        $this->assertTrue(
+            str_contains($pageText, 'Marquer comme complétée')
+            || str_contains($pageText, 'déjà complété')
+            || str_contains($pageText, 'déjà complétée'),
+            'La page leçon doit afficher le bouton de complétion ou indiquer que la leçon est déjà complétée'
+        );
+
         // -----------------------------
-        // 6) Accès certifications + impression PDF
+        // 6) Certifications list + show + filters + pdf
         // -----------------------------
-        $this->client->request('GET', '/dashboard/certifications');
+        $crawler = $this->client->request('GET', '/dashboard/certifications');
         $this->assertResponseIsSuccessful();
+
+        // Form de filtres
+        $this->assertSelectorExists('form.dashboard-filters');
+        $this->assertSelectorExists('select#cursus');
+        $this->assertSelectorExists('input#from');
+        $this->assertSelectorExists('input#to');
+
+        // La certif créée doit apparaître (code)
+        $this->assertSelectorTextContains('body', 'KL-TEST-001');
 
         $certDb = $this->em->getRepository(Certification::class)->findOneBy([
             'user' => $userDb,
             'certificateCode' => 'KL-TEST-001',
         ]);
-        if ($certDb === null) {
-            // re-fetch user (au cas où)
-            $userDb = $this->em->getRepository(User::class)->findOneBy(['email' => 'dash@example.com']);
-            $certDb = $this->em->getRepository(Certification::class)->findOneBy([
-                'user' => $userDb,
-                'certificateCode' => 'KL-TEST-001',
-            ]);
-        }
         $this->assertNotNull($certDb);
 
         // show
-        $this->client->request('GET', '/dashboard/certification/' . $certDb->getId());
+        $crawler = $this->client->request('GET', '/dashboard/certification/' . $certDb->getId());
         $this->assertResponseIsSuccessful();
+
+        // "CERTIFICAT OFFICIEL" + identité user
+        $this->assertSelectorTextContains('body', 'CERTIFICAT OFFICIEL');
+        $this->assertSelectorTextContains('body', 'NewFirst');
+        $this->assertSelectorTextContains('body', 'NewLast');
+        $this->assertSelectorTextContains('body', 'KL-TEST-001');
+
+        // lien PDF présent sur la page show
+        $this->assertSelectorExists('a[href="/dashboard/certification/' . $certDb->getId() . '/pdf"]');
 
         // pdf
         $this->client->request('GET', '/dashboard/certification/' . $certDb->getId() . '/pdf');
         $this->assertResponseStatusCodeSame(200);
+
         $contentType = (string) $this->client->getResponse()->headers->get('Content-Type');
-        $this->assertTrue(str_contains($contentType, 'application/pdf'));
+        $this->assertTrue(str_contains($contentType, 'application/pdf'), 'Le Content-Type doit être application/pdf');
+
+        $pdf = $this->client->getResponse()->getContent();
+        $this->assertNotFalse($pdf);
+        $this->assertStringStartsWith('%PDF', $pdf, 'Le contenu retourné doit être un PDF');
+
+        // -----------------------------
+        // 7) Bonus : vérifie que l'accès aux pages dashboard est bien autorisé (pas de redirect)
+        // -----------------------------
+        foreach ([
+            '/dashboard',
+            '/dashboard/edit',
+            '/dashboard/password',
+            '/dashboard/purchases',
+            '/dashboard/certifications',
+        ] as $url) {
+            $this->client->request('GET', $url);
+            $this->assertResponseIsSuccessful(sprintf('La page %s doit être accessible une fois connecté', $url));
+        }
+    }
+
+    /**
+     * Vérifie que les labels apparaissent dans le header menu (sans être trop strict sur la structure HTML).
+     */
+    private function assertHeaderMenuContains(array $labels): void
+    {
+        $crawler = $this->client->getCrawler();
+        $this->assertSelectorExists('header.main-header');
+        $this->assertSelectorExists('nav.main-nav');
+
+        $text = $crawler->filter('header.main-header')->text();
+
+        foreach ($labels as $label) {
+            $this->assertTrue(
+                str_contains($text, $label),
+                sprintf('Le header doit contenir "%s"', $label)
+            );
+        }
+    }
+
+    /**
+     * Trouve le formulaire associé au premier bouton submit "connu", sinon le premier <form>.
+     */
+    private function findFirstSubmitForm($crawler)
+    {
+        foreach (['Mettre à jour', 'Envoyer', 'Valider', 'Changer', 'Enregistrer', 'Modifier le mot de passe'] as $label) {
+            if ($crawler->selectButton($label)->count() > 0) {
+                return $crawler->selectButton($label)->form();
+            }
+        }
+
+        // fallback : premier form
+        $this->assertGreaterThan(0, $crawler->filter('form')->count(), 'Aucun <form> trouvé sur la page');
+        return $crawler->filter('form')->form();
     }
 
     /**

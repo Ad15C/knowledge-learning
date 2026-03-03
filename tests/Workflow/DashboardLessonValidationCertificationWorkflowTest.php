@@ -12,7 +12,6 @@ use App\Tests\DoctrineSchemaTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class DashboardLessonValidationCertificationWorkflowTest extends WebTestCase
 {
@@ -34,16 +33,15 @@ class DashboardLessonValidationCertificationWorkflowTest extends WebTestCase
 
     public function testDashboardToLessonCompleteGeneratesCertification(): void
     {
-        // --- Arrange: verified user + theme + cursus + lesson
-        $passwordHasher = self::getContainer()->get(UserPasswordHasherInterface::class);
-
+        // --- Arrange: user + theme + cursus + lesson
         $user = new User();
         $user->setEmail('user@example.com');
         $user->setFirstName('User');
         $user->setLastName('Test');
         $user->setRoles(['ROLE_USER']);
         $user->setIsVerified(true);
-        $user->setPassword($passwordHasher->hashPassword($user, 'Test1234Secure!'));
+        // Pas besoin d'un vrai hash si on utilise loginUser()
+        $user->setPassword('irrelevant');
 
         $theme = new Theme();
         $theme->setName('Theme Dashboard');
@@ -64,10 +62,7 @@ class DashboardLessonValidationCertificationWorkflowTest extends WebTestCase
         $this->em->persist($user);
         $this->em->flush();
 
-        // IMPORTANT: le LessonController est protégé et vérifie aussi l'accès via PurchaseItem(status=paid).
-        // Comme on veut tester "dashboard > lesson > validation > certification" sans achat,
-        // on achète la leçon en DB en créant un Purchase "paid" + PurchaseItem(lesson).
-        // (On réutilise tes entités Purchase / PurchaseItem)
+        // IMPORTANT: LessonController protégé et vérifie l'accès via PurchaseItem(status=paid)
         $purchase = new \App\Entity\Purchase();
         $purchase->setUser($user);
         $purchase->setStatus('paid');
@@ -78,42 +73,46 @@ class DashboardLessonValidationCertificationWorkflowTest extends WebTestCase
         $item->setLesson($lesson);
         $item->setUnitPrice(0.00);
 
-        $this->em->persist($purchase);
-        $this->em->persist($item);
         $purchase->addItem($item);
         $purchase->calculateTotal();
 
+        $this->em->persist($purchase);
+        $this->em->persist($item);
         $this->em->flush();
 
-        // --- Login
-        $crawler = $this->client->request('GET', '/login');
-        $this->assertResponseIsSuccessful();
-
-        $loginForm = $crawler->selectButton('Se connecter')->form([
-            '_username' => 'user@example.com',
-            '_password' => 'Test1234Secure!',
-        ]);
-        $this->client->submit($loginForm);
-
-        $this->assertTrue($this->client->getResponse()->isRedirection());
-        $this->client->followRedirect(); // /dashboard
-        $this->assertResponseIsSuccessful();
+        // --- Login (stable, ne dépend pas du formulaire / champs)
+        $this->client->loginUser($user);
 
         // --- Dashboard OK
         $this->client->request('GET', '/dashboard');
         $this->assertResponseIsSuccessful();
 
         // --- Open lesson page (should be accessible)
-        $this->client->request('GET', '/lesson/' . $lesson->getId());
+        $crawler = $this->client->request('GET', '/lesson/' . $lesson->getId());
         $this->assertResponseIsSuccessful();
 
-        // --- Complete lesson (POST)
-        $this->client->request('POST', '/lesson/' . $lesson->getId() . '/complete');
+        // --- Récupère le CSRF token depuis le formulaire rendu (robuste + session OK)
+        // Le formulaire Twig:
+        // <input type="hidden" name="_token" value="{{ csrf_token('lesson_complete_' ~ lesson.id) }}">
+        $tokenNode = $crawler->filter('form input[name="_token"]');
+        $this->assertGreaterThan(
+            0,
+            $tokenNode->count(),
+            'Token CSRF introuvable dans le formulaire de validation de leçon.'
+        );
+        $tokenValue = (string) $tokenNode->attr('value');
+        $this->assertNotSame('', $tokenValue, 'Token CSRF vide.');
+
+        // --- Complete lesson (POST) avec CSRF
+        $this->client->request('POST', '/lesson/' . $lesson->getId() . '/complete', [
+            '_token' => $tokenValue,
+        ]);
+
         $this->assertTrue($this->client->getResponse()->isRedirection());
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
-        // Re-fetch & assert in DB
+        // --- Re-fetch & assert in DB
         $this->em->clear();
 
         $userDb = $this->em->getRepository(User::class)->findOneBy(['email' => 'user@example.com']);
@@ -135,11 +134,11 @@ class DashboardLessonValidationCertificationWorkflowTest extends WebTestCase
         $this->assertNotNull($lessonCert);
         $this->assertNotEmpty($lessonCert->getCertificateCode());
 
-        // Optionnel: PDF route
+        // --- PDF route
         $this->client->request('GET', '/dashboard/certification/' . $lessonCert->getId() . '/pdf');
         $this->assertResponseStatusCodeSame(200);
 
         $contentType = (string) $this->client->getResponse()->headers->get('Content-Type');
-        $this->assertTrue(str_contains($contentType, 'application/pdf'));
+        $this->assertStringContainsString('application/pdf', $contentType);
     }
 }

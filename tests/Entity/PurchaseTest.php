@@ -13,11 +13,17 @@ class PurchaseTest extends TestCase
     {
         $purchase = new Purchase();
 
-        $this->assertSame('cart', $purchase->getStatus());
-        $this->assertSame(0.0, $purchase->getTotal());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $purchase->getCreatedAt());
-        $this->assertNull($purchase->getPaidAt());
-        $this->assertCount(0, $purchase->getItems());
+        self::assertNull($purchase->getId());
+        self::assertSame(Purchase::STATUS_CART, $purchase->getStatus());
+
+        // total est stocké en decimal string => float cast
+        self::assertEqualsWithDelta(0.00, $purchase->getTotal(), 0.0001);
+
+        self::assertInstanceOf(\DateTimeImmutable::class, $purchase->getCreatedAt());
+        self::assertNull($purchase->getPaidAt());
+
+        self::assertCount(0, $purchase->getItems());
+        self::assertNull($purchase->getOrderNumber()); // avant persist / prePersist
     }
 
     public function testSetUser(): void
@@ -25,18 +31,24 @@ class PurchaseTest extends TestCase
         $purchase = new Purchase();
         $user = $this->createMock(User::class);
 
-        $purchase->setUser($user);
-
-        $this->assertSame($user, $purchase->getUser());
+        self::assertSame($purchase, $purchase->setUser($user));
+        self::assertSame($user, $purchase->getUser());
     }
 
     public function testSetStatus(): void
     {
         $purchase = new Purchase();
 
-        $purchase->setStatus('paid');
+        $purchase->setStatus(Purchase::STATUS_PAID);
+        self::assertSame(Purchase::STATUS_PAID, $purchase->getStatus());
+    }
 
-        $this->assertSame('paid', $purchase->getStatus());
+    public function testSetStatusThrowsOnInvalidValue(): void
+    {
+        $purchase = new Purchase();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $purchase->setStatus('invalid-status');
     }
 
     public function testSetPaidAt(): void
@@ -44,9 +56,8 @@ class PurchaseTest extends TestCase
         $purchase = new Purchase();
         $dt = new \DateTimeImmutable('2026-02-24 10:00:00');
 
-        $purchase->setPaidAt($dt);
-
-        $this->assertSame($dt, $purchase->getPaidAt());
+        self::assertSame($purchase, $purchase->setPaidAt($dt));
+        self::assertSame($dt, $purchase->getPaidAt());
     }
 
     public function testGenerateOrderNumberIfMissing(): void
@@ -55,15 +66,14 @@ class PurchaseTest extends TestCase
 
         $purchase->generateOrderNumber();
 
-        $this->assertNotNull($purchase->getOrderNumber());
-        $this->assertMatchesRegularExpression('/^ORD-\d{8}-[a-f0-9]{8}$/', $purchase->getOrderNumber());
+        self::assertNotNull($purchase->getOrderNumber());
+        self::assertMatchesRegularExpression('/^ORD-\d{8}-[a-f0-9]{8}$/', $purchase->getOrderNumber());
     }
 
     public function testGenerateOrderNumberDoesNotOverrideExisting(): void
     {
         $purchase = new Purchase();
 
-        // on force la propriété privée via reflection (pas de setter)
         $ref = new \ReflectionClass($purchase);
         $prop = $ref->getProperty('orderNumber');
         $prop->setAccessible(true);
@@ -71,7 +81,7 @@ class PurchaseTest extends TestCase
 
         $purchase->generateOrderNumber();
 
-        $this->assertSame('ORD-20260101-deadbeef', $purchase->getOrderNumber());
+        self::assertSame('ORD-20260101-deadbeef', $purchase->getOrderNumber());
     }
 
     public function testAddItemSetsOwningSide(): void
@@ -79,13 +89,12 @@ class PurchaseTest extends TestCase
         $purchase = new Purchase();
         $item = new PurchaseItem();
 
-        // PurchaseItem::setUnitPrice est typé float, on le met pour cohérence
         $item->setUnitPrice(10.0)->setQuantity(2);
 
         $purchase->addItem($item);
 
-        $this->assertCount(1, $purchase->getItems());
-        $this->assertSame($purchase, $item->getPurchase());
+        self::assertCount(1, $purchase->getItems());
+        self::assertSame($purchase, $item->getPurchase());
     }
 
     public function testAddItemTwiceDoesNotDuplicate(): void
@@ -97,7 +106,7 @@ class PurchaseTest extends TestCase
         $purchase->addItem($item);
         $purchase->addItem($item);
 
-        $this->assertCount(1, $purchase->getItems());
+        self::assertCount(1, $purchase->getItems());
     }
 
     public function testRemoveItemUnsetsOwningSide(): void
@@ -109,8 +118,8 @@ class PurchaseTest extends TestCase
         $purchase->addItem($item);
         $purchase->removeItem($item);
 
-        $this->assertCount(0, $purchase->getItems());
-        $this->assertNull($item->getPurchase());
+        self::assertCount(0, $purchase->getItems());
+        self::assertNull($item->getPurchase());
     }
 
     public function testCalculateTotal(): void
@@ -128,27 +137,83 @@ class PurchaseTest extends TestCase
 
         $purchase->calculateTotal();
 
-        $this->assertEqualsWithDelta(35.20, $purchase->getTotal(), 0.0001);
+        self::assertEqualsWithDelta(35.20, $purchase->getTotal(), 0.0001);
     }
 
     public function testCalculateTotalRoundsToTwoDecimals(): void
     {
         $purchase = new Purchase();
 
+        // PurchaseItem::setUnitPrice() formatte à 2 décimales => 10.01
         $item = new PurchaseItem();
-        $item->setUnitPrice(10.005)->setQuantity(1); // selon number_format => 10.01
-        $purchase->addItem($item);
+        $item->setUnitPrice(10.005)->setQuantity(1);
 
+        $purchase->addItem($item);
         $purchase->calculateTotal();
 
-        $this->assertEqualsWithDelta(10.01, $purchase->getTotal(), 0.0001);
+        self::assertEqualsWithDelta(10.01, $purchase->getTotal(), 0.0001);
     }
 
     public function testCalculateTotalWithNoItems(): void
     {
         $purchase = new Purchase();
+
         $purchase->calculateTotal();
 
-        $this->assertSame(0.0, $purchase->getTotal());
+        self::assertEqualsWithDelta(0.00, $purchase->getTotal(), 0.0001);
+    }
+
+    public function testMarkPaidSetsStatusAndPaidAt(): void
+    {
+        $purchase = new Purchase();
+
+        self::assertSame($purchase, $purchase->markPaid());
+        self::assertSame(Purchase::STATUS_PAID, $purchase->getStatus());
+        self::assertInstanceOf(\DateTimeImmutable::class, $purchase->getPaidAt());
+    }
+
+    public function testMarkPendingSetsStatus(): void
+    {
+        $purchase = new Purchase();
+
+        self::assertSame($purchase, $purchase->markPending());
+        self::assertSame(Purchase::STATUS_PENDING, $purchase->getStatus());
+    }
+
+    public function testMarkCanceledSetsStatus(): void
+    {
+        $purchase = new Purchase();
+
+        self::assertSame($purchase, $purchase->markCanceled());
+        self::assertSame(Purchase::STATUS_CANCELED, $purchase->getStatus());
+    }
+
+    public function testStatusHelpers(): void
+    {
+        $p = new Purchase();
+
+        self::assertTrue($p->isCart());
+        self::assertFalse($p->isPaid());
+
+        $p->setStatus(Purchase::STATUS_PAID);
+        self::assertTrue($p->isPaid());
+        self::assertFalse($p->isCart());
+    }
+
+    public function testGetStatusLabel(): void
+    {
+        $p = new Purchase();
+
+        $p->setStatus(Purchase::STATUS_CART);
+        self::assertSame('Panier', $p->getStatusLabel());
+
+        $p->setStatus(Purchase::STATUS_PENDING);
+        self::assertSame('En attente', $p->getStatusLabel());
+
+        $p->setStatus(Purchase::STATUS_PAID);
+        self::assertSame('Payée', $p->getStatusLabel());
+
+        $p->setStatus(Purchase::STATUS_CANCELED);
+        self::assertSame('Annulée', $p->getStatusLabel());
     }
 }

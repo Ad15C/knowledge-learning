@@ -31,7 +31,10 @@ class CartServiceTest extends TestCase
         $purchaseRepo = $this->createMock(PurchaseRepository::class);
         $purchaseRepo->expects(self::once())
             ->method('findOneBy')
-            ->with(['user' => $user, 'status' => 'cart'])
+            ->with([
+                'user' => $user,
+                'status' => Purchase::STATUS_CART,
+            ])
             ->willReturn(null);
 
         $security = $this->createMock(Security::class);
@@ -47,7 +50,7 @@ class CartServiceTest extends TestCase
         $user = $this->createMock(UserInterface::class);
 
         $purchase = new Purchase();
-        $purchase->setStatus('cart');
+        $purchase->setStatus(Purchase::STATUS_CART);
 
         $item1 = (new PurchaseItem())->setUnitPrice(10.0)->setQuantity(1);
         $item2 = (new PurchaseItem())->setUnitPrice(20.0)->setQuantity(1);
@@ -58,7 +61,10 @@ class CartServiceTest extends TestCase
         $purchaseRepo = $this->createMock(PurchaseRepository::class);
         $purchaseRepo->expects(self::once())
             ->method('findOneBy')
-            ->with(['user' => $user, 'status' => 'cart'])
+            ->with([
+                'user' => $user,
+                'status' => Purchase::STATUS_CART,
+            ])
             ->willReturn($purchase);
 
         $security = $this->createMock(Security::class);

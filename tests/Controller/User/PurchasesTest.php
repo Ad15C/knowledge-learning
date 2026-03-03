@@ -6,17 +6,23 @@ use App\Entity\Purchase;
 
 class PurchasesTest extends AbstractUserWebTestCase
 {
-    private function createPurchase(string $status, string $createdAt = '2026-02-10 10:00:00'): Purchase
+    private function createPurchase(string $status): Purchase
     {
         $purchase = new Purchase();
         $purchase->setUser($this->getFixtureUser());
         $purchase->setStatus($status);
 
-        // createdAt est set dans le constructeur => on ne peut pas le setter sans méthode.
-        // Donc on ne le change pas ici. On teste surtout le filtre status.
-        // (Si tu veux tester from/to strict, il faut ajouter un setter ou utiliser Reflection en test.)
+        $ref = new \ReflectionClass(Purchase::class);
 
-        if ($status === 'paid') {
+        // orderNumber obligatoire (NOT NULL + unique)
+        $propOrderNumber = $ref->getProperty('orderNumber');
+        $propOrderNumber->setAccessible(true);
+        $propOrderNumber->setValue(
+            $purchase,
+            'ORD-TEST-' . date('YmdHis') . '-' . bin2hex(random_bytes(4))
+        );
+
+        if ($status === Purchase::STATUS_PAID) {
             $purchase->setPaidAt(new \DateTimeImmutable('2026-02-10 11:00:00'));
         }
 
@@ -36,7 +42,8 @@ class PurchasesTest extends AbstractUserWebTestCase
 
         $this->assertSelectorTextContains('h1', 'Mes Achats');
 
-        $this->assertSelectorExists('form.filter-form');
+        // Le form a la classe dashboard-filters (d'après ton Twig)
+        $this->assertSelectorExists('form.dashboard-filters');
         $this->assertSelectorExists('select[name="status"]');
         $this->assertSelectorExists('input[type="date"][name="from"]');
         $this->assertSelectorExists('input[type="date"][name="to"]');
@@ -45,6 +52,7 @@ class PurchasesTest extends AbstractUserWebTestCase
         $this->assertSelectorExists('p.cart-empty');
         $this->assertSelectorTextContains('p.cart-empty', "Vous n'avez aucun achat");
 
+        // Ton twig: class="btn-back" et lien route user_dashboard => /dashboard
         $this->assertSelectorExists('a.btn-back[href="/dashboard"]');
     }
 
@@ -53,20 +61,18 @@ class PurchasesTest extends AbstractUserWebTestCase
         $client = $this->client;
         $client->loginUser($this->getFixtureUser());
 
-        $p1 = $this->createPurchase('paid');
-        $p2 = $this->createPurchase('pending');
+        $p1 = $this->createPurchase(Purchase::STATUS_PAID);
+        $p2 = $this->createPurchase(Purchase::STATUS_PENDING);
 
         $client->request('GET', '/dashboard/purchases');
         $this->assertResponseIsSuccessful();
 
-        // On ne doit plus voir le message vide
         $this->assertSelectorNotExists('p.cart-empty');
 
-        // Vérifie que les commandes apparaissent (Commande #ID)
+        // Ton twig affiche "Commande #{{ purchase.id }}"
         $this->assertSelectorTextContains('.cart-items', 'Commande #' . $p1->getId());
         $this->assertSelectorTextContains('.cart-items', 'Commande #' . $p2->getId());
 
-        // Vérifie que le statut est affiché
         $this->assertSelectorTextContains('.cart-items', 'Statut');
     }
 
@@ -75,8 +81,8 @@ class PurchasesTest extends AbstractUserWebTestCase
         $client = $this->client;
         $client->loginUser($this->getFixtureUser());
 
-        $paid = $this->createPurchase('paid');
-        $pending = $this->createPurchase('pending');
+        $paid = $this->createPurchase(Purchase::STATUS_PAID);
+        $pending = $this->createPurchase(Purchase::STATUS_PENDING);
 
         $client->request('GET', '/dashboard/purchases?status=paid');
         $this->assertResponseIsSuccessful();
@@ -84,7 +90,7 @@ class PurchasesTest extends AbstractUserWebTestCase
         $this->assertSelectorTextContains('.cart-items', 'Commande #' . $paid->getId());
         $this->assertSelectorTextNotContains('body', 'Commande #' . $pending->getId());
 
-        // option selected
+        // Ton twig met selected si filter_status == 'paid'
         $this->assertSelectorExists('select[name="status"] option[value="paid"][selected]');
     }
 }

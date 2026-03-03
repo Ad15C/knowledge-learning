@@ -2,32 +2,59 @@
 
 namespace App\Tests\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use App\Repository\UserRepository;
 use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
+use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class RegistrationFormTypeTest extends WebTestCase
 {
-    private $client;
-    private $entityManager;
+    private KernelBrowser $client;
+    private EntityManagerInterface $em;
+    private UserPasswordHasherInterface $hasher;
+    private $databaseTool;
 
     protected function setUp(): void
     {
+        self::ensureKernelShutdown();
+
         $this->client = static::createClient();
+        $container = static::getContainer();
 
-        $this->entityManager = $this->client->getContainer()
-            ->get('doctrine')
-            ->getManager();
+        // Reset DB (évite les soucis de FK quand on "DELETE FROM user")
+        $this->databaseTool = $container->get(DatabaseToolCollection::class)->get();
+        $this->databaseTool->loadFixtures([]); // purge + schema déjà présent
 
-        // Nettoyer la table User avant chaque test
-        $this->entityManager->createQuery('DELETE FROM App\Entity\User u')->execute();
+        $this->em = $container->get(EntityManagerInterface::class);
+        $this->hasher = $container->get(UserPasswordHasherInterface::class);
+    }
+
+    private function createExistingUser(string $email = 'jane@example.com'): User
+    {
+        $user = new User();
+        $user->setEmail($email)
+            ->setFirstName('Jane')
+            ->setLastName('Doe')
+            ->setIsVerified(true);
+
+        // Ton User attend un password hashé (ou au moins non-null)
+        $user->setPassword($this->hasher->hashPassword($user, 'Password123!'));
+
+        $this->em->persist($user);
+        $this->em->flush();
+
+        return $user;
     }
 
     public function testRegistrationWithValidData(): void
     {
         $crawler = $this->client->request('GET', '/register');
+        self::assertResponseIsSuccessful();
 
-        $form = $crawler->selectButton('S\'inscrire')->form([
+        // IMPORTANT: le bouton doit matcher ton template
+        $form = $crawler->selectButton("S'inscrire")->form([
             'registration_form[firstName]' => 'John',
             'registration_form[lastName]' => 'Doe',
             'registration_form[email]' => 'john.doe@example.com',
@@ -37,57 +64,48 @@ class RegistrationFormTypeTest extends WebTestCase
 
         $this->client->submit($form);
 
-        // Vérifie la redirection après succès
-        $this->assertResponseRedirects('/login');
+        // selon ton contrôleur c’est souvent /login (ou route app_login)
+        self::assertResponseRedirects('/login');
 
-        // Vérifie que l'utilisateur a bien été créé
-        $user = $this->entityManager->getRepository(User::class)
-            ->findOneBy(['email' => 'john.doe@example.com']);
-        $this->assertNotNull($user);
-        $this->assertSame('John', $user->getFirstName());
-        $this->assertSame('Doe', $user->getLastName());
+        $this->em->clear();
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'john.doe@example.com']);
+
+        self::assertNotNull($user);
+        self::assertSame('John', $user->getFirstName());
+        self::assertSame('Doe', $user->getLastName());
+        self::assertNotEmpty((string) $user->getPassword());
     }
 
     public function testDuplicateEmailFails(): void
     {
-        // Crée déjà un utilisateur avec l'email existant
-        $user = new User();
-        $user->setFirstName('Jane')
-            ->setLastName('Doe')
-            ->setEmail('jane@example.com')
-            ->setPassword('Password123!');
-        $this->entityManager->persist($user);
-        $this->entityManager->flush();
+        $this->createExistingUser('jane@example.com');
 
-        // Accède à la page d'inscription
         $crawler = $this->client->request('GET', '/register');
+        self::assertResponseIsSuccessful();
 
-        // Remplit le formulaire avec le même email
-        $form = $crawler->selectButton('S\'inscrire')->form([
+        $form = $crawler->selectButton("S'inscrire")->form([
             'registration_form[firstName]' => 'John',
             'registration_form[lastName]' => 'Doe',
-            'registration_form[email]' => 'jane@example.com', // Email déjà existant
+            'registration_form[email]' => 'jane@example.com', // déjà existant
             'registration_form[plainPassword][first]' => 'Password123!',
             'registration_form[plainPassword][second]' => 'Password123!',
         ]);
 
-        // Soumet le formulaire
         $crawler = $this->client->submit($form);
 
-        // Le formulaire doit être de nouveau affiché (statut 200)
-        $this->assertResponseStatusCodeSame(200);
+        // pas de redirect => le form est ré-affiché
+        self::assertResponseStatusCodeSame(200);
 
-        // Vérifie que le message d'erreur UniqueEntity est présent dans le formulaire
-        $this->assertStringContainsString(
+        // Message UniqueEntity défini sur User:
+        // #[UniqueEntity(fields: ['email'], message: 'Cet email est déjà utilisé.')]
+        self::assertSelectorExists('form[name="registration_form"]');
+        self::assertStringContainsString(
             'Cet email est déjà utilisé',
             $crawler->filter('form[name="registration_form"]')->text()
         );
-    }
 
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-        $this->entityManager->close();
-        $this->entityManager = null; // évite les fuites de mémoire
+        // sécurité: il n'y a qu'un seul user en DB pour cet email
+        $users = $this->em->getRepository(User::class)->findBy(['email' => 'jane@example.com']);
+        self::assertCount(1, $users);
     }
 }

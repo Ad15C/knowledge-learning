@@ -2,52 +2,137 @@
 
 namespace App\Tests\Integration\Repository;
 
+use App\DataFixtures\ThemeFixtures;
+use App\Entity\Theme;
 use App\Repository\ThemeRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 class ThemeRepositoryTest extends KernelTestCase
 {
-    private $databaseTool;
+    private EntityManagerInterface $em;
+    private ThemeRepository $repo;
 
     protected function setUp(): void
     {
+        parent::setUp();
         self::bootKernel();
-        $this->databaseTool = static::getContainer()->get(DatabaseToolCollection::class)->get();
-        $this->databaseTool->loadFixtures([
-            \App\DataFixtures\ThemeFixtures::class,
+
+        $container = static::getContainer();
+
+        $container->get(DatabaseToolCollection::class)->get()->loadFixtures([
+            ThemeFixtures::class,
         ]);
+
+        $this->em = $container->get(EntityManagerInterface::class);
+
+        $repo = $this->em->getRepository(Theme::class);
+        self::assertInstanceOf(ThemeRepository::class, $repo);
+        $this->repo = $repo;
+
+        $this->em->clear();
     }
 
-    public function testFindThemesWithNoFilters(): void
+    public function testFindThemesWithNoFiltersReturnsOnlyActiveAndSortedByName(): void
     {
-        $repo = static::getContainer()->get(ThemeRepository::class);
+        $themes = $this->repo->findThemesWithFilters();
 
-        $themes = $repo->findThemesWithFilters();
-        $this->assertNotEmpty($themes);
+        self::assertNotEmpty($themes);
 
-        // Vérifie que les cursus/lessons sont bien préchargés (leftJoin + addSelect)
-        $this->assertNotEmpty($themes[0]->getCursus());
+        // uniquement actifs
+        foreach ($themes as $t) {
+            self::assertTrue($t->isActive(), 'findThemesWithFilters() doit retourner uniquement des thèmes actifs.');
+        }
+
+        // tri ASC sur t.name
+        $names = array_map(static fn(Theme $t) => $t->getName(), $themes);
+        $sorted = $names;
+        sort($sorted, SORT_STRING);
+        self::assertSame($sorted, $names, 'Les thèmes doivent être triés par nom ASC.');
     }
 
-    public function testFilterByName(): void
+    public function testFilterByNameIsCaseInsensitive(): void
     {
-        $repo = static::getContainer()->get(ThemeRepository::class);
+        $themes = $this->repo->findThemesWithFilters('muSiQue');
 
-        $themes = $repo->findThemesWithFilters('Musique', null, null);
-        $this->assertCount(1, $themes);
-        $this->assertSame('Musique', $themes[0]->getName());
+        self::assertCount(1, $themes);
+        self::assertSame('Musique', $themes[0]->getName());
+        self::assertTrue($themes[0]->isActive());
     }
 
-    public function testFilterByMinMaxPrice(): void
+    public function testFilterByMinPrice(): void
     {
-        $repo = static::getContainer()->get(ThemeRepository::class);
+        $themes = $this->repo->findThemesWithFilters(null, 55, null);
 
-        $themes = $repo->findThemesWithFilters(null, 55, null); // minPrice sur cursus.price
-        // Devrait retourner Informatique (cursus 60), et pas Musique (50), Cuisine (44/48), Jardinage (30)
-        $this->assertNotEmpty($themes);
-        $names = array_map(fn($t) => $t->getName(), $themes);
-        $this->assertContains('Informatique', $names);
-        $this->assertNotContains('Jardinage', $names);
+        self::assertNotEmpty($themes);
+
+        $names = array_map(static fn(Theme $t) => $t->getName(), $themes);
+
+        // Avec tes fixtures : Informatique a un cursus à 60 => doit passer
+        self::assertContains('Informatique', $names);
+
+        // Jardinage (30) ne doit pas passer (sauf si thème sans cursus, mais ici il en a)
+        self::assertNotContains('Jardinage', $names);
+    }
+
+    public function testFilterByMinAndMaxPrice(): void
+    {
+        // Entre 45 et 55 => Musique (50) doit passer, Informatique (60) non,
+        // Cuisine (44/48) : 48 passe, 44 non => au moins Cuisine peut passer selon query.
+        $themes = $this->repo->findThemesWithFilters(null, 45, 55);
+
+        $names = array_map(static fn(Theme $t) => $t->getName(), $themes);
+
+        self::assertContains('Musique', $names);
+        self::assertNotContains('Informatique', $names);
+    }
+
+    public function testCreateActiveThemesQueryBuilderReturnsOnlyActive(): void
+    {
+        $qb = $this->repo->createActiveThemesQueryBuilder();
+        $themes = $qb->getQuery()->getResult();
+
+        self::assertNotEmpty($themes);
+
+        foreach ($themes as $t) {
+            self::assertInstanceOf(Theme::class, $t);
+            self::assertTrue($t->isActive());
+        }
+    }
+
+    public function testCreateAdminFilterQueryBuilderRequireCursus(): void
+    {
+        $qb = $this->repo->createAdminFilterQueryBuilder(
+            q: null,
+            status: 'all',
+            sort: 'name_asc',
+            onlyActiveCursus: false,
+            requireCursus: true
+        );
+
+        $themes = $qb->getQuery()->getResult();
+        self::assertNotEmpty($themes);
+
+        // requireCursus => pas de thème sans cursus joint
+        foreach ($themes as $theme) {
+            self::assertGreaterThan(
+                0,
+                $theme->getCursus()->count(),
+                'requireCursus=true doit exclure les thèmes sans cursus.'
+            );
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
+
+        unset($this->em, $this->repo);
+        self::ensureKernelShutdown();
     }
 }

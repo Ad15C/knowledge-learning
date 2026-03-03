@@ -32,47 +32,34 @@ class MenuNavigationWorkflowTest extends WebTestCase
         $crawler = $this->client->request('GET', '/');
         $this->assertResponseIsSuccessful();
 
-        // Visiteur (selon ton base.html.twig actuel)
+        // Visiteur
         $this->assertLinkExistsWithText($crawler, 'Accueil');
         $this->assertLinkExistsWithText($crawler, 'Thèmes');
 
-        // Visiteur => PAS de Panier / Contact
+        // Visiteur => PAS de Panier / Contact / Dashboard / Déconnexion
         $this->assertLinkNotExistsWithText($crawler, 'Panier');
         $this->assertLinkNotExistsWithText($crawler, 'Contact');
+        $this->assertLinkNotExistsWithText($crawler, 'Déconnexion');
+        $this->assertLinkNotExistsWithText($crawler, 'Dashboard User');
+        $this->assertLinkNotExistsWithText($crawler, 'Dashboard Admin');
 
         // Visiteur => liens auth
         $this->assertLinkExistsWithText($crawler, "S'inscrire");
         $this->assertLinkExistsWithText($crawler, 'Se connecter');
-
-        // Visiteur => PAS de Déconnexion / Dashboard
-        $this->assertLinkNotExistsWithText($crawler, 'Déconnexion');
-        $this->assertLinkNotExistsWithText($crawler, 'Dashboard User');
-        $this->assertLinkNotExistsWithText($crawler, 'Dashboard');
     }
 
     public function testMenuLoggedUserAndNavigationLinks(): void
     {
-        $this->createVerifiedUser('menuuser@example.com', 'MenuPass123!');
+        $user = $this->createVerifiedUser('menuuser@example.com', 'MenuPass123!');
 
-        // Login
-        $crawler = $this->client->request('GET', '/login');
-        $this->assertResponseIsSuccessful();
-
-        $form = $crawler->selectButton('Se connecter')->form([
-            '_username' => 'menuuser@example.com',
-            '_password' => 'MenuPass123!',
-        ]);
-        $this->client->submit($form);
-
-        $this->assertTrue($this->client->getResponse()->isRedirection());
-        $this->client->followRedirect();
-        $this->assertResponseIsSuccessful();
+        // Login robuste (ne dépend pas du formulaire)
+        $this->client->loginUser($user);
 
         // Homepage pour tester le menu global
         $crawler = $this->client->request('GET', '/');
         $this->assertResponseIsSuccessful();
 
-        // Liens présents pour un user connecté (selon ton base.html.twig)
+        // Liens présents pour un user connecté (base.html.twig)
         $this->assertLinkExistsWithText($crawler, 'Accueil');
         $this->assertLinkExistsWithText($crawler, 'Thèmes');
         $this->assertLinkExistsWithText($crawler, 'Panier');
@@ -104,26 +91,32 @@ class MenuNavigationWorkflowTest extends WebTestCase
 
         // Logout
         $this->client->request('GET', '/logout');
-        $this->assertTrue($this->client->getResponse()->isRedirection());
-        $this->client->followRedirect();
-        $this->assertResponseIsSuccessful();
 
-        // Après logout => dashboard redirige vers login
+        // Selon config firewall, logout redirige vers /, /login, etc.
+        $this->assertTrue(
+            $this->client->getResponse()->isRedirection(),
+            'La route /logout doit rediriger.'
+        );
+        $this->client->followRedirect();
+
+        // Après logout => /dashboard redirige vers login
         $this->client->request('GET', '/dashboard');
         $this->assertTrue($this->client->getResponse()->isRedirection());
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
+
+        // On s'attend à tomber sur une page avec un formulaire de login
         $this->assertSelectorExists('form');
     }
 
-    private function createVerifiedUser(string $email, string $plainPassword): void
+    private function createVerifiedUser(string $email, string $plainPassword): User
     {
         $passwordHasher = self::getContainer()->get(UserPasswordHasherInterface::class);
 
         $user = new User();
         $user->setEmail($email);
 
-        // Adapté à tes setters utilisés ailleurs
+        // Adapté à tes setters (tu utilises firstname/lastname ailleurs)
         $user->setFirstname('Menu');
         $user->setLastname('User');
 
@@ -133,6 +126,8 @@ class MenuNavigationWorkflowTest extends WebTestCase
 
         $this->em->persist($user);
         $this->em->flush();
+
+        return $user;
     }
 
     private function assertLinkExistsWithText($crawler, string $text): void

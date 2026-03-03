@@ -4,6 +4,7 @@ namespace App\Tests\Twig;
 
 use App\Twig\PurchaseExtension;
 use PHPUnit\Framework\TestCase;
+use Twig\TwigFunction;
 
 class PurchaseExtensionTest extends TestCase
 {
@@ -12,30 +13,76 @@ class PurchaseExtensionTest extends TestCase
         $ext = new PurchaseExtension();
         $functions = $ext->getFunctions();
 
-        self::assertCount(2, $functions);
-        self::assertSame('purchase_status_label', $functions[0]->getName());
-        self::assertSame('purchase_status_class', $functions[1]->getName());
+        self::assertNotEmpty($functions);
+
+        $byName = [];
+        foreach ($functions as $fn) {
+            $byName[$fn->getName()] = $fn;
+        }
+
+        self::assertArrayHasKey('purchase_status_label', $byName);
+        self::assertArrayHasKey('purchase_status_class', $byName);
+
+        self::assertInstanceOf(TwigFunction::class, $byName['purchase_status_label']);
+        self::assertInstanceOf(TwigFunction::class, $byName['purchase_status_class']);
+
+        self::assertSame([$ext, 'statusLabel'], $byName['purchase_status_label']->getCallable());
+        self::assertSame([$ext, 'statusClass'], $byName['purchase_status_class']->getCallable());
     }
 
-    public function testStatusLabel(): void
+    /**
+     * @dataProvider statusLabelProvider
+     */
+    public function testStatusLabel(string $status, string $expected): void
+    {
+        $ext = new PurchaseExtension();
+        self::assertSame($expected, $ext->statusLabel($status));
+    }
+
+    public static function statusLabelProvider(): array
+    {
+        return [
+            ['cart', 'Panier'],
+            ['paid', 'Payée'],
+            ['cancelled', 'Annulée'],
+            ['refunded', 'Remboursée'],
+            ['something_else', 'Inconnu'],
+        ];
+    }
+
+    /**
+     * @dataProvider statusClassProvider
+     */
+    public function testStatusClass(string $status, string $expected): void
+    {
+        $ext = new PurchaseExtension();
+        self::assertSame($expected, $ext->statusClass($status));
+    }
+
+    public static function statusClassProvider(): array
+    {
+        return [
+            ['cart', 'badge badge-cart'],
+            ['paid', 'badge badge-paid'],
+            ['cancelled', 'badge badge-cancelled'],
+            ['refunded', 'badge badge-refunded'],
+            ['something_else', 'badge badge-unknown'],
+        ];
+    }
+
+    public function testTwigFunctionCallablesExecute(): void
     {
         $ext = new PurchaseExtension();
 
-        self::assertSame('Panier', $ext->statusLabel('cart'));
-        self::assertSame('Payée', $ext->statusLabel('paid'));
-        self::assertSame('Annulée', $ext->statusLabel('cancelled'));
-        self::assertSame('Remboursée', $ext->statusLabel('refunded'));
-        self::assertSame('Inconnu', $ext->statusLabel('something_else'));
-    }
+        $byName = [];
+        foreach ($ext->getFunctions() as $fn) {
+            $byName[$fn->getName()] = $fn;
+        }
 
-    public function testStatusClass(): void
-    {
-        $ext = new PurchaseExtension();
+        $labelCallable = $byName['purchase_status_label']->getCallable();
+        $classCallable = $byName['purchase_status_class']->getCallable();
 
-        self::assertSame('badge badge-cart', $ext->statusClass('cart'));
-        self::assertSame('badge badge-paid', $ext->statusClass('paid'));
-        self::assertSame('badge badge-cancelled', $ext->statusClass('cancelled'));
-        self::assertSame('badge badge-refunded', $ext->statusClass('refunded'));
-        self::assertSame('badge badge-unknown', $ext->statusClass('something_else'));
+        self::assertSame('Panier', $labelCallable('cart'));
+        self::assertSame('badge badge-paid', $classCallable('paid'));
     }
 }

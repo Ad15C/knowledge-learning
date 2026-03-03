@@ -43,7 +43,7 @@ class CertificationsTest extends AbstractUserWebTestCase
         $client->request('GET', '/dashboard/certifications');
         $this->assertResponseIsSuccessful();
 
-        $this->assertSelectorTextContains('h1', 'Mes Certifications');
+        $this->assertSelectorTextContains('h1', 'Mes certificats');
 
         $this->assertSelectorExists('form.dashboard-filters');
         $this->assertSelectorExists('select#cursus');
@@ -53,7 +53,7 @@ class CertificationsTest extends AbstractUserWebTestCase
         $this->assertSelectorTextContains('.dashboard-card', 'CERT-UI-001');
         $this->assertSelectorExists('a.card-link-detail');
 
-        $this->assertSelectorTextContains('a.sidebar-link.active', 'Mes certifications');
+        $this->assertSelectorTextContains('a.sidebar-link.active', 'Mes certificats');
         $this->assertSelectorExists('a.btn-back[href="/dashboard"]');
     }
 

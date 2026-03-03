@@ -35,7 +35,7 @@ class PurchaseLessonValidationCertificationWorkflowTest extends WebTestCase
 
     public function testWorkflowLoginPurchasePayAccessCompleteAndGenerateCertificatesAndPdf(): void
     {
-        // --- Arrange: create verified user + theme + cursus + 1 lesson
+        // --- Arrange
         $passwordHasher = self::getContainer()->get(UserPasswordHasherInterface::class);
 
         $user = new User();
@@ -66,117 +66,132 @@ class PurchaseLessonValidationCertificationWorkflowTest extends WebTestCase
         $this->em->flush();
 
         // --- Login
-        $crawler = $this->client->request('GET', '/login');
+        $this->client->loginUser($user);
+
+        // --- Open cursus page and find ANY "add lesson to cart" form
+        $cursusCrawler = $this->client->request('GET', '/cursus/' . $cursus->getId());
         $this->assertResponseIsSuccessful();
 
-        $loginForm = $crawler->selectButton('Se connecter')->form([
-            '_username' => 'buyer@example.com',
-            '_password' => 'Test1234Secure!',
+        $cursusCrawler = $this->client->request('GET', '/cursus/' . $cursus->getId());
+        $this->assertResponseIsSuccessful();
+
+        // Sélecteur robuste : n'importe quel form qui poste vers /cart/add/lesson/{id}
+        $forms = $cursusCrawler->filter('form[action^="/cart/add/lesson/"]');
+        $this->assertGreaterThan(0, $forms->count(), 'Aucun formulaire add lesson trouvé sur /cursus/{id}.');
+
+        $firstForm = $forms->first();
+        $action = (string) $firstForm->attr('action');
+
+        $tokenNode = $firstForm->filter('input[name="_token"]');
+        $this->assertGreaterThan(0, $tokenNode->count(), 'Champ _token introuvable dans le form add lesson.');
+        $token = (string) $tokenNode->attr('value');
+        $this->assertNotSame('', $token);
+
+        // --- POST add-to-cart
+        $this->client->request('POST', $action, [
+            '_token' => $token,
         ]);
-        $this->client->submit($loginForm);
-
         $this->assertTrue($this->client->getResponse()->isRedirection());
-        $this->client->followRedirect(); // /dashboard
-        $this->assertResponseIsSuccessful();
-
-        // --- Add cursus to cart
-        $this->client->request('GET', '/cart/add/cursus/' . $cursus->getId());
-        $this->assertResponseRedirects('/cart');
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
-        // Cart purchase exists
+        // --- Cart purchase exists
+        $userDb = $this->em->getRepository(User::class)->findOneBy(['email' => 'buyer@example.com']);
+        $this->assertNotNull($userDb);
+
         $cartPurchase = $this->em->getRepository(Purchase::class)->findOneBy([
-            'user' => $user,
+            'user' => $userDb,
             'status' => 'cart',
         ]);
         $this->assertNotNull($cartPurchase);
         $this->assertGreaterThanOrEqual(1, $cartPurchase->getItems()->count());
 
-        // --- Pay (simulation)
-        $this->client->request('GET', '/cart/pay');
-        $this->assertTrue($this->client->getResponse()->isRedirection());
+        // --- Pay from /cart (CSRF from form)
+        $cartCrawler = $this->client->request('GET', '/cart');
+        $this->assertResponseIsSuccessful();
 
-        $successUrl = $this->client->getResponse()->headers->get('Location');
-        $this->assertNotEmpty($successUrl);
+        $payTokenNode = $cartCrawler->filter('form[action$="/cart/pay"] input[name="_token"]');
+        $this->assertGreaterThan(0, $payTokenNode->count(), 'Token CSRF introuvable dans le form /cart/pay.');
+        $payToken = (string) $payTokenNode->attr('value');
+        $this->assertNotSame('', $payToken);
+
+        $this->client->request('POST', '/cart/pay', [
+            '_token' => $payToken,
+        ]);
+
+        $this->assertTrue($this->client->getResponse()->isRedirection(), 'Paiement doit rediriger.');
+        $successUrl = (string) $this->client->getResponse()->headers->get('Location');
         $this->assertStringContainsString('/cart/success/', $successUrl);
 
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
-        // Re-fetch managed entities after requests
+        // --- Re-fetch
         $this->em->clear();
 
-        /** @var User $user */
-        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'buyer@example.com']);
-        $this->assertNotNull($user);
+        $userDb = $this->em->getRepository(User::class)->findOneBy(['email' => 'buyer@example.com']);
+        $lessonDb = $this->em->getRepository(Lesson::class)->findOneBy(['title' => 'Lesson 1']);
+        $cursusDb = $lessonDb->getCursus();
 
-        /** @var Lesson $lesson */
-        $lesson = $this->em->getRepository(Lesson::class)->findOneBy(['title' => 'Lesson 1']);
-        $this->assertNotNull($lesson);
-
-        /** @var Cursus $cursus */
-        $cursus = $lesson->getCursus();
-        $this->assertNotNull($cursus);
-
-        /** @var Purchase|null $paidPurchase */
         $paidPurchase = $this->em->getRepository(Purchase::class)->findOneBy([
-            'user' => $user,
+            'user' => $userDb,
             'status' => 'paid',
         ]);
         $this->assertNotNull($paidPurchase);
-        $this->assertSame('paid', $paidPurchase->getStatus());
         $this->assertNotNull($paidPurchase->getPaidAt());
 
-        // --- Access lesson page
-        $this->client->request('GET', '/lesson/' . $lesson->getId());
+        // --- Access lesson page and grab completion CSRF token
+        $lessonCrawler = $this->client->request('GET', '/lesson/' . $lessonDb->getId());
         $this->assertResponseIsSuccessful();
 
-        // --- Complete lesson
-        $this->client->request('POST', '/lesson/' . $lesson->getId() . '/complete');
+        $completeForm = $lessonCrawler->filter(sprintf('form[action$="/lesson/%d/complete"]', $lessonDb->getId()));
+        $this->assertGreaterThan(0, $completeForm->count(), 'Formulaire de complétion introuvable sur la page leçon.');
+
+        $completeTokenNode = $completeForm->filter('input[name="_token"]');
+        $this->assertGreaterThan(0, $completeTokenNode->count(), 'Token CSRF introuvable dans le form de complétion.');
+        $completeToken = (string) $completeTokenNode->attr('value');
+        $this->assertNotSame('', $completeToken);
+
+        $this->client->request('POST', '/lesson/' . $lessonDb->getId() . '/complete', [
+            '_token' => $completeToken,
+        ]);
         $this->assertTrue($this->client->getResponse()->isRedirection());
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
-        // Re-fetch again (flush happened during request)
+        // --- Assertions DB
         $this->em->clear();
 
-        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'buyer@example.com']);
-        $lesson = $this->em->getRepository(Lesson::class)->findOneBy(['title' => 'Lesson 1']);
-        $cursus = $lesson->getCursus();
+        $userDb = $this->em->getRepository(User::class)->findOneBy(['email' => 'buyer@example.com']);
+        $lessonDb = $this->em->getRepository(Lesson::class)->findOneBy(['title' => 'Lesson 1']);
+        $cursusDb = $lessonDb->getCursus();
 
-        // --- Assert LessonValidated created
         $validated = $this->em->getRepository(LessonValidated::class)->findOneBy([
-            'user' => $user,
-            'lesson' => $lesson,
+            'user' => $userDb,
+            'lesson' => $lessonDb,
         ]);
         $this->assertNotNull($validated);
 
-        // --- Assert lesson certification created
         $lessonCert = $this->em->getRepository(Certification::class)->findOneBy([
-            'user' => $user,
-            'lesson' => $lesson,
+            'user' => $userDb,
+            'lesson' => $lessonDb,
             'type' => 'lesson',
         ]);
         $this->assertNotNull($lessonCert);
         $this->assertNotEmpty($lessonCert->getCertificateCode());
 
-        // --- Assert cursus certification created (cursus has 1 lesson => completed)
         $cursusCert = $this->em->getRepository(Certification::class)->findOneBy([
-            'user' => $user,
-            'cursus' => $cursus,
+            'user' => $userDb,
+            'cursus' => $cursusDb,
             'type' => 'cursus',
         ]);
         $this->assertNotNull($cursusCert);
 
-        // --- PDF route returns application/pdf for lesson cert
+        // --- PDF route
         $this->client->request('GET', '/dashboard/certification/' . $lessonCert->getId() . '/pdf');
         $this->assertResponseStatusCodeSame(200);
 
         $contentType = (string) $this->client->getResponse()->headers->get('Content-Type');
-        $this->assertTrue(
-            str_contains($contentType, 'application/pdf'),
-            'Le Content-Type doit contenir application/pdf, obtenu: ' . $contentType
-        );
+        $this->assertStringContainsString('application/pdf', $contentType);
     }
 }

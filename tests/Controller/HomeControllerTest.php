@@ -30,6 +30,17 @@ final class HomeControllerTest extends WebTestCase
         $this->em->createQuery('DELETE FROM App\Entity\User')->execute();
     }
 
+    private function forceOrderNumber(Purchase $purchase): void
+    {
+        $ref = new \ReflectionClass(Purchase::class);
+        $propOrderNumber = $ref->getProperty('orderNumber');
+        $propOrderNumber->setAccessible(true);
+        $propOrderNumber->setValue(
+            $purchase,
+            'ORD-TEST-' . date('YmdHis') . '-' . bin2hex(random_bytes(4))
+        );
+    }
+
     private function createThemes(): void
     {
         $t1 = (new Theme())
@@ -71,7 +82,10 @@ final class HomeControllerTest extends WebTestCase
     {
         $purchase = (new Purchase())
             ->setUser($user)
-            ->setStatus('cart');
+            ->setStatus(Purchase::STATUS_CART);
+
+        // orderNumber obligatoire (NOT NULL + unique)
+        $this->forceOrderNumber($purchase);
 
         $this->em->persist($purchase);
 
