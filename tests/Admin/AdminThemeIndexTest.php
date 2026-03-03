@@ -240,4 +240,84 @@ class AdminThemeIndexTest extends WebTestCase
         self::assertNotContains('Actif Sans Cursus', $names);
         self::assertNotContains('Actif Cursus Inactif', $names);
     }
+
+    private function assertSelectedOption(string $html, string $selectName, string $expectedValue): void
+    {
+        // Cherche: <select name="status"> ... <option value="archived" selected> ...
+        $pattern = sprintf(
+            '/<select[^>]*name="%s"[^>]*>.*?<option[^>]*value="%s"[^>]*(selected)?[^>]*>/s',
+            preg_quote($selectName, '/'),
+            preg_quote($expectedValue, '/')
+        );
+
+        self::assertMatchesRegularExpression($pattern, $html, sprintf(
+            'Expected option "%s" to be selected for select "%s".',
+            $expectedValue,
+            $selectName
+        ));
+    }
+
+    public function testStatusAllExplicitShowsAllThemes(): void
+    {
+        $this->loginAsAdmin();
+
+        $this->client->request('GET', 'https://localhost/admin/themes?status=all');
+        self::assertResponseIsSuccessful();
+
+        $html = (string) $this->client->getResponse()->getContent();
+        $names = $this->extractThemeNames($html);
+
+        self::assertContains('Musique', $names);
+        self::assertContains('Informatique', $names);
+        self::assertContains('Jardinage', $names);
+        self::assertContains('Cuisine', $names);
+
+        // Bonus: le select status reste sur "all"
+        $this->assertSelectedOption($html, 'status', 'all');
+    }
+
+    public function testQAndStatusActiveCombined(): void
+    {
+        $this->loginAsAdmin();
+
+        // Musique (fixture) a des cursus actifs -> doit sortir en status=active
+        $this->client->request('GET', 'https://localhost/admin/themes?q=mus&status=active');
+        self::assertResponseIsSuccessful();
+
+        $html = (string) $this->client->getResponse()->getContent();
+        $names = $this->extractThemeNames($html);
+
+        self::assertContains('Musique', $names);
+        self::assertNotContains('Cuisine', $names);
+        self::assertNotContains('Informatique', $names);
+        self::assertNotContains('Jardinage', $names);
+
+        // Bonus: le select status reste sur "active"
+        $this->assertSelectedOption($html, 'status', 'active');
+    }
+
+    public function testFiltersPersistInSelects(): void
+    {
+        $this->loginAsAdmin();
+
+        // On force un thème inactif pour avoir quelque chose en archived
+        $themeCuisine = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Cuisine']);
+        self::assertNotNull($themeCuisine);
+        $themeCuisine->setIsActive(false);
+        $this->em->flush();
+
+        $this->client->request('GET', 'https://localhost/admin/themes?status=archived&sort=name_desc&q=cui');
+        self::assertResponseIsSuccessful();
+
+        $html = (string) $this->client->getResponse()->getContent();
+
+        // Le champ q doit être rempli
+        self::assertStringContainsString('name="q" value="cui"', $html);
+
+        // status sélectionné = archived
+        $this->assertSelectedOption($html, 'status', 'archived');
+
+        // sort sélectionné = name_desc
+        $this->assertSelectedOption($html, 'sort', 'name_desc');
+    }
 }
