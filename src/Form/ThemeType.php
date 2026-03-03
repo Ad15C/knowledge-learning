@@ -16,6 +16,7 @@ class ThemeType extends AbstractType
         $builder
             ->add('name', TextType::class, [
                 'label' => 'Nom',
+                'empty_data' => '',
             ])
             ->add('description', TextareaType::class, [
                 'label' => 'Description',
