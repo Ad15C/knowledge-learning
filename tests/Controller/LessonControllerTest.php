@@ -35,8 +35,18 @@ class LessonControllerTest extends WebTestCase
             TestUserFixtures::class,
         ]);
 
-        // Doctrine ReferenceRepository (signature getReference($name, $class))
         $this->refRepo = $fixtureExecutor->getReferenceRepository();
+    }
+
+    private function forceOrderNumber(Purchase $purchase): void
+    {
+        $ref = new \ReflectionClass(Purchase::class);
+        $propOrderNumber = $ref->getProperty('orderNumber');
+        $propOrderNumber->setAccessible(true);
+        $propOrderNumber->setValue(
+            $purchase,
+            'ORD-TEST-' . date('YmdHis') . '-' . bin2hex(random_bytes(4))
+        );
     }
 
     private function getFixtureUser(): User
@@ -45,7 +55,6 @@ class LessonControllerTest extends WebTestCase
         $user = $this->refRepo->getReference(TestUserFixtures::USER_REF, User::class);
         self::assertInstanceOf(User::class, $user);
 
-        // Re-fetch managed entity for safety (loginUser préfère un objet managed)
         return $this->em->getRepository(User::class)->find($user->getId());
     }
 
@@ -60,20 +69,25 @@ class LessonControllerTest extends WebTestCase
 
     private function createPaidPurchaseForLesson(User $user, Lesson $lesson): void
     {
-        $purchase = new Purchase();
-        $purchase->setUser($user)
-            ->setStatus('paid')
+        $purchase = (new Purchase())
+            ->setUser($user)
+            ->setStatus(Purchase::STATUS_PAID)
             ->setPaidAt(new \DateTimeImmutable());
 
-        $item = new PurchaseItem();
-        $item->setLesson($lesson)
+        // orderNumber obligatoire (NOT NULL + unique)
+        $this->forceOrderNumber($purchase);
+
+        $item = (new PurchaseItem())
+            ->setPurchase($purchase)
+            ->setLesson($lesson)
             ->setQuantity(1)
             ->setUnitPrice((float) $lesson->getPrice());
 
         $purchase->addItem($item);
         $purchase->calculateTotal();
 
-        $this->em->persist($purchase); // cascade persist items
+        $this->em->persist($purchase);
+        $this->em->persist($item);
         $this->em->flush();
     }
 
@@ -103,7 +117,7 @@ class LessonControllerTest extends WebTestCase
 
         self::assertGreaterThan(
             0,
-            $crawler->filter('form[action$="/lesson/'.$lesson->getId().'/complete"] button')->count(),
+            $crawler->filter('form[action$="/lesson/'.$lesson->getId().'/complete"] button:contains("Marquer comme complétée")')->count(),
             'Complete button should be visible when purchase is paid.'
         );
     }
@@ -117,7 +131,18 @@ class LessonControllerTest extends WebTestCase
 
         $this->client->loginUser($user);
 
-        $this->client->request('POST', '/lesson/' . $lesson->getId() . '/complete');
+        // IMPORTANT: démarre une session (CSRF TokenManager utilise la session)
+        $crawler = $this->client->request('GET', '/lesson/' . $lesson->getId());
+        self::assertResponseIsSuccessful();
+
+        // Récupère directement le token depuis le champ caché (encore plus fiable)
+        $token = $crawler->filter('input[name="_token"]')->attr('value');
+        self::assertNotEmpty($token);
+
+        $this->client->request('POST', '/lesson/' . $lesson->getId() . '/complete', [
+            '_token' => $token,
+        ]);
+
         self::assertResponseRedirects('/lesson/' . $lesson->getId());
 
         $this->client->followRedirect();

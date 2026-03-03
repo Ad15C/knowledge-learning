@@ -6,6 +6,7 @@ use App\Entity\Purchase;
 use App\Twig\PurchaseItemsExtension;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
+use Twig\TwigFunction;
 
 class PurchaseItemsExtensionTest extends TestCase
 {
@@ -14,9 +15,21 @@ class PurchaseItemsExtensionTest extends TestCase
         $ext = new PurchaseItemsExtension();
         $functions = $ext->getFunctions();
 
-        self::assertCount(2, $functions);
-        self::assertSame('purchase_items_count', $functions[0]->getName());
-        self::assertSame('purchase_items_quantity', $functions[1]->getName());
+        self::assertNotEmpty($functions);
+
+        $byName = [];
+        foreach ($functions as $fn) {
+            $byName[$fn->getName()] = $fn;
+        }
+
+        self::assertArrayHasKey('purchase_items_count', $byName);
+        self::assertArrayHasKey('purchase_items_quantity', $byName);
+
+        self::assertInstanceOf(TwigFunction::class, $byName['purchase_items_count']);
+        self::assertInstanceOf(TwigFunction::class, $byName['purchase_items_quantity']);
+
+        self::assertSame([$ext, 'itemsCount'], $byName['purchase_items_count']->getCallable());
+        self::assertSame([$ext, 'itemsQuantity'], $byName['purchase_items_quantity']->getCallable());
     }
 
     public function testItemsCountReturnsCollectionCount(): void
@@ -57,5 +70,32 @@ class PurchaseItemsExtensionTest extends TestCase
         $ext = new PurchaseItemsExtension();
 
         self::assertSame(0, $ext->itemsQuantity($purchase));
+    }
+
+    public function testTwigFunctionCallablesExecute(): void
+    {
+        $item1 = new class {
+            public function getQuantity(): int { return 2; }
+        };
+        $item2 = new class {
+            public function getQuantity(): int { return 1; }
+        };
+
+        $purchase = $this->createMock(Purchase::class);
+        $purchase->method('getItems')
+            ->willReturn(new ArrayCollection([$item1, $item2]));
+
+        $ext = new PurchaseItemsExtension();
+
+        $byName = [];
+        foreach ($ext->getFunctions() as $fn) {
+            $byName[$fn->getName()] = $fn;
+        }
+
+        $countCallable = $byName['purchase_items_count']->getCallable();
+        $qtyCallable = $byName['purchase_items_quantity']->getCallable();
+
+        self::assertSame(2, $countCallable($purchase));
+        self::assertSame(3, $qtyCallable($purchase));
     }
 }

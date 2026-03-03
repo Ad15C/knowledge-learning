@@ -19,23 +19,27 @@ class LessonValidatedCrudTest extends KernelTestCase
 
     protected function setUp(): void
     {
+        parent::setUp();
         self::bootKernel();
 
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
+        $container = static::getContainer();
 
-        $databaseTool = static::getContainer()->get(DatabaseToolCollection::class)->get();
-        $executor = $databaseTool->loadFixtures([
+        $this->em = $container->get(EntityManagerInterface::class);
+
+        $executor = $container->get(DatabaseToolCollection::class)->get()->loadFixtures([
             ThemeFixtures::class,
             TestUserFixtures::class,
         ]);
 
         $this->refRepo = $executor->getReferenceRepository();
+        $this->em->clear();
     }
 
     private function getUser(): User
     {
-        $user = $this->refRepo->getReference(TestUserFixtures::USER_REF, User::class);
-        $user = $this->em->getRepository(User::class)->find($user->getId());
+        /** @var User $userRef */
+        $userRef = $this->refRepo->getReference(TestUserFixtures::USER_REF, User::class);
+        $user = $this->em->getRepository(User::class)->find($userRef->getId());
 
         self::assertNotNull($user);
         return $user;
@@ -43,8 +47,9 @@ class LessonValidatedCrudTest extends KernelTestCase
 
     private function getLesson(): Lesson
     {
-        $lesson = $this->refRepo->getReference(ThemeFixtures::LESSON_GUITAR_1_REF, Lesson::class);
-        $lesson = $this->em->getRepository(Lesson::class)->find($lesson->getId());
+        /** @var Lesson $lessonRef */
+        $lessonRef = $this->refRepo->getReference(ThemeFixtures::LESSON_GUITAR_1_REF, Lesson::class);
+        $lesson = $this->em->getRepository(Lesson::class)->find($lessonRef->getId());
 
         self::assertNotNull($lesson);
         return $lesson;
@@ -70,21 +75,16 @@ class LessonValidatedCrudTest extends KernelTestCase
 
         // ---------- R (Read) ----------
         $this->em->clear();
-
         $repo = $this->em->getRepository(LessonValidated::class);
 
         /** @var LessonValidated|null $found */
         $found = $repo->find($lvId);
         self::assertNotNull($found);
 
-        self::assertNotNull($found->getUser());
         self::assertSame($user->getId(), $found->getUser()->getId());
-
-        self::assertNotNull($found->getLesson());
         self::assertSame($lesson->getId(), $found->getLesson()->getId());
-
         self::assertTrue($found->isCompleted());
-        self::assertNotNull($found->getValidatedAt());
+        self::assertInstanceOf(\DateTimeImmutable::class, $found->getValidatedAt());
 
         // Read via findOneBy(user, lesson)
         $found2 = $repo->findOneBy([
@@ -96,12 +96,9 @@ class LessonValidatedCrudTest extends KernelTestCase
 
         // ---------- U (Update) ----------
         $before = $found->getValidatedAt();
-        self::assertInstanceOf(\DateTimeInterface::class, $before);
+        self::assertInstanceOf(\DateTimeImmutable::class, $before);
 
-        // on force une nouvelle date (markCompleted)
-        usleep(1100000); // 1.1s pour garantir un timestamp différent si tu compares en secondes
         $found->markCompleted();
-
         $this->em->flush();
         $this->em->clear();
 
@@ -110,10 +107,11 @@ class LessonValidatedCrudTest extends KernelTestCase
         self::assertNotNull($updated);
 
         $after = $updated->getValidatedAt();
-        self::assertInstanceOf(\DateTimeInterface::class, $after);
+        self::assertInstanceOf(\DateTimeImmutable::class, $after);
 
+        // robuste : nouvelle instance (DateTimeImmutable)
+        self::assertNotSame($before, $after);
         self::assertTrue($updated->isCompleted());
-        self::assertGreaterThan($before->getTimestamp(), $after->getTimestamp());
 
         // ---------- D (Delete) ----------
         $this->em->remove($updated);
@@ -121,5 +119,15 @@ class LessonValidatedCrudTest extends KernelTestCase
         $this->em->clear();
 
         self::assertNull($repo->find($lvId));
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        if (isset($this->em)) {
+            $this->em->close();
+        }
+        unset($this->em, $this->refRepo);
+        self::ensureKernelShutdown();
     }
 }

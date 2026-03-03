@@ -4,11 +4,12 @@ namespace App\Repository;
 
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 
 /**
  * @extends ServiceEntityRepository<User>
@@ -42,6 +43,45 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
+    private function applySearch(QueryBuilder $qb, string $q): void
+    {
+        $expr = $qb->expr();
+
+        $qb->andWhere(
+            $expr->orX(
+                $expr->like('LOWER(u.firstName)', ':q'),
+                $expr->like('LOWER(u.lastName)', ':q'),
+                $expr->like('LOWER(u.email)', ':q')
+            )
+        )->setParameter('q', '%'.mb_strtolower($q).'%');
+    }
+
+    /**
+     * Désactive temporairement tous les filtres Doctrine activés,
+     * exécute $fn, puis réactive les filtres.
+     *
+     * @template T
+     * @param callable():T $fn
+     * @return T
+     */
+    private function withoutEnabledDoctrineFilters(callable $fn)
+    {
+        $filters = $this->getEntityManager()->getFilters();
+        $enabled = array_keys($filters->getEnabledFilters());
+
+        foreach ($enabled as $name) {
+            $filters->disable($name);
+        }
+
+        try {
+            return $fn();
+        } finally {
+            foreach ($enabled as $name) {
+                $filters->enable($name);
+            }
+        }
+    }
+
     /**
      * @return User[]
      */
@@ -51,71 +91,84 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         string $direction = 'ASC',
         bool $includeArchived = false
     ): array {
-        $qb = $this->createQueryBuilder('u');
+        $runner = function () use ($search, $sort, $direction, $includeArchived): array {
+            $qb = $this->createQueryBuilder('u');
 
-        if (!$includeArchived) {
-            $qb->andWhere('u.archivedAt IS NULL');
-        }
+            if (!$includeArchived) {
+                $qb->andWhere('u.archivedAt IS NULL');
+            }
 
-        if ($search) {
-            $qb->andWhere('LOWER(u.firstName) LIKE :q OR LOWER(u.lastName) LIKE :q OR LOWER(u.email) LIKE :q')
-               ->setParameter('q', '%'.mb_strtolower($search).'%');
-        }
+            if ($search) {
+                $this->applySearch($qb, $search);
+            }
 
-        $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+            $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
 
-        if ($sort === 'recent') {
-            $qb->addOrderBy('u.createdAt', $direction)
-               ->addOrderBy('u.id', $direction);
-        } else {
-            $qb->orderBy('u.lastName', $direction)
-               ->addOrderBy('u.firstName', $direction);
-        }
+            if ($sort === 'recent') {
+                $qb->addOrderBy('u.createdAt', $direction)
+                   ->addOrderBy('u.id', $direction);
+            } else {
+                $qb->orderBy('u.lastName', $direction)
+                   ->addOrderBy('u.firstName', $direction);
+            }
 
-        return $qb->getQuery()->getResult();
+            return $qb->getQuery()->getResult();
+        };
+
+        // si on veut inclure les archivés, on bypass tous les filtres Doctrine actifs
+        return $includeArchived
+            ? $this->withoutEnabledDoctrineFilters($runner)
+            : $runner();
     }
 
     public function findForAdminListPaginated(
         string $q,
-        string $status,  // active|archived|all
+        string $status, // active|archived|all
         string $sort,
         string $dir,
         int $page,
         int $perPage
     ): array {
-        $qb = $this->createQueryBuilder('u');
+        $runner = function () use ($q, $status, $sort, $dir, $page, $perPage): array {
+            $qb = $this->createQueryBuilder('u');
 
-        if ($q !== '') {
-            $qb->andWhere('LOWER(u.firstName) LIKE :q OR LOWER(u.lastName) LIKE :q OR LOWER(u.email) LIKE :q')
-            ->setParameter('q', '%'.mb_strtolower($q).'%');
-        }
+            if ($q !== '') {
+                $this->applySearch($qb, $q);
+            }
 
-        // Filtre statut (onglets)
-        if ($status === 'active') {
-            $qb->andWhere('u.archivedAt IS NULL');
-        } elseif ($status === 'archived') {
-            $qb->andWhere('u.archivedAt IS NOT NULL');
-        } // all => pas de filtre
+            if ($status === 'active') {
+                $qb->andWhere('u.archivedAt IS NULL');
+            } elseif ($status === 'archived') {
+                $qb->andWhere('u.archivedAt IS NOT NULL');
+            } // all => pas de filtre
 
-        $dir = strtoupper($dir) === 'DESC' ? 'DESC' : 'ASC';
+            $dir = strtoupper($dir) === 'DESC' ? 'DESC' : 'ASC';
 
-        if ($sort === 'recent') {
-            $qb->orderBy('u.createdAt', $dir)
-            ->addOrderBy('u.id', $dir);
-        } else {
-            $qb->orderBy('u.lastName', $dir)
-            ->addOrderBy('u.firstName', $dir);
-        }
+            if ($sort === 'recent') {
+                $qb->orderBy('u.createdAt', $dir)
+                   ->addOrderBy('u.id', $dir);
+            } else {
+                $qb->orderBy('u.lastName', $dir)
+                   ->addOrderBy('u.firstName', $dir);
+            }
 
-        $qb->setFirstResult(($page - 1) * $perPage)
-        ->setMaxResults($perPage);
+            $qb->setFirstResult(($page - 1) * $perPage)
+               ->setMaxResults($perPage);
 
-        $paginator = new Paginator($qb->getQuery(), true);
+            $paginator = new Paginator($qb->getQuery(), true);
 
-        return [
-            'items' => iterator_to_array($paginator->getIterator(), false),
-            'total' => count($paginator),
-        ];
+            return [
+                'items' => iterator_to_array($paginator->getIterator(), false),
+                'total' => count($paginator),
+            ];
+        };
+
+        // Si on veut voir archived/all, on bypass les filtres globaux
+        $needsArchived = ($status === 'archived' || $status === 'all');
+
+        return $needsArchived
+            ? $this->withoutEnabledDoctrineFilters($runner)
+            : $runner();
     }
 
     public function findActiveUsers(): array

@@ -15,23 +15,26 @@ class CertificationTest extends TestCase
     {
         $cert = new Certification();
 
-        $this->assertInstanceOf(\DateTimeInterface::class, $cert->getIssuedAt());
-        $this->assertNull($cert->getUser());
-        $this->assertNull($cert->getCursus());
-        $this->assertNull($cert->getTheme());
-        $this->assertNull($cert->getLesson());
-        $this->assertNull($cert->getCertificateCode());
-        $this->assertNull($cert->getType());
+        self::assertNull($cert->getId(), 'ID should be null before persistence.');
+
+        self::assertInstanceOf(\DateTimeInterface::class, $cert->getIssuedAt());
+        self::assertNull($cert->getUser());
+        self::assertNull($cert->getCursus());
+        self::assertNull($cert->getTheme());
+        self::assertNull($cert->getLesson());
+        self::assertNull($cert->getCertificateCode());
+        self::assertNull($cert->getType());
     }
 
     public function testSettersAndGetters(): void
     {
         $cert = new Certification();
 
-        $user = $this->createMock(User::class);
-        $cursus = $this->createMock(Cursus::class);
-        $theme = $this->createMock(Theme::class);
-        $lesson = $this->createMock(Lesson::class);
+        $user = new User();
+        $cursus = new Cursus();
+        $theme = new Theme();
+        $lesson = new Lesson();
+
         $issuedAt = new \DateTime('2026-02-24 14:00:00');
 
         $cert->setUser($user)
@@ -42,12 +45,24 @@ class CertificationTest extends TestCase
             ->setCertificateCode('CERT-ABC-123')
             ->setType('lesson');
 
-        $this->assertSame($user, $cert->getUser());
-        $this->assertSame($cursus, $cert->getCursus());
-        $this->assertSame($theme, $cert->getTheme());
-        $this->assertSame($lesson, $cert->getLesson());
-        $this->assertSame($issuedAt, $cert->getIssuedAt());
-        $this->assertSame('CERT-ABC-123', $cert->getCertificateCode());
-        $this->assertSame('lesson', $cert->getType());
+        self::assertSame($user, $cert->getUser());
+        self::assertSame($cursus, $cert->getCursus());
+        self::assertSame($theme, $cert->getTheme());
+        self::assertSame($lesson, $cert->getLesson());
+
+        self::assertSame($issuedAt, $cert->getIssuedAt());
+        self::assertSame('CERT-ABC-123', $cert->getCertificateCode());
+        self::assertSame('lesson', $cert->getType());
+    }
+
+    public function testIssuedAtCanBeOverridden(): void
+    {
+        $cert = new Certification();
+
+        $issuedAt = new \DateTimeImmutable('2026-02-24 14:00:00');
+        $cert->setIssuedAt($issuedAt);
+
+        self::assertSame($issuedAt, $cert->getIssuedAt());
+        self::assertInstanceOf(\DateTimeInterface::class, $cert->getIssuedAt());
     }
 }

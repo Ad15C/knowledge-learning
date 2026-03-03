@@ -14,14 +14,18 @@ class PurchaseItemTest extends TestCase
     {
         $item = new PurchaseItem();
 
-        self::assertSame(1, $item->getQuantity());
+        self::assertNull($item->getId());
         self::assertNull($item->getPurchase());
         self::assertNull($item->getLesson());
         self::assertNull($item->getCursus());
 
-        // ⚠️ Ne PAS appeler getUnitPrice() / getTotal() ici
-        // car unitPrice n'a pas de valeur par défaut dans l'entité
-        // (sinon "Typed property ... must not be accessed before initialization").
+        self::assertSame(1, $item->getQuantity());
+
+        // Dans ton entité, unitPrice a un défaut '0.00' => OK
+        self::assertEqualsWithDelta(0.00, $item->getUnitPrice(), 0.0001);
+
+        // Total = unitPrice * quantity
+        self::assertEqualsWithDelta(0.00, $item->getTotal(), 0.0001);
     }
 
     public function testSetAsLessonItem(): void
@@ -31,16 +35,18 @@ class PurchaseItemTest extends TestCase
         $purchase = $this->createMock(Purchase::class);
         $lesson = $this->createMock(Lesson::class);
 
-        $item->setPurchase($purchase)
-            ->setLesson($lesson)
-            ->setQuantity(3)
-            ->setUnitPrice(19.99);
+        self::assertSame($item, $item->setPurchase($purchase));
+        self::assertSame($item, $item->setLesson($lesson));
+        self::assertSame($item, $item->setQuantity(3));
+        self::assertSame($item, $item->setUnitPrice(19.99));
 
         self::assertSame($purchase, $item->getPurchase());
         self::assertSame($lesson, $item->getLesson());
         self::assertNull($item->getCursus());
+
         self::assertSame(3, $item->getQuantity());
         self::assertEqualsWithDelta(19.99, $item->getUnitPrice(), 0.0001);
+        self::assertEqualsWithDelta(59.97, $item->getTotal(), 0.0001);
     }
 
     public function testSetAsCursusItem(): void
@@ -58,8 +64,24 @@ class PurchaseItemTest extends TestCase
         self::assertSame($purchase, $item->getPurchase());
         self::assertSame($cursus, $item->getCursus());
         self::assertNull($item->getLesson());
+
         self::assertSame(1, $item->getQuantity());
         self::assertEqualsWithDelta(50.00, $item->getUnitPrice(), 0.0001);
+        self::assertEqualsWithDelta(50.00, $item->getTotal(), 0.0001);
+    }
+
+    public function testQuantityIsClampedToMinimumOne(): void
+    {
+        $item = new PurchaseItem();
+
+        $item->setQuantity(0);
+        self::assertSame(1, $item->getQuantity());
+
+        $item->setQuantity(-10);
+        self::assertSame(1, $item->getQuantity());
+
+        $item->setQuantity(2);
+        self::assertSame(2, $item->getQuantity());
     }
 
     public function testUnitPriceIsFormattedToTwoDecimals(): void

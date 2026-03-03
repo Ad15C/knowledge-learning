@@ -22,30 +22,55 @@ class LessonValidatedRepositoryTest extends KernelTestCase
 
     protected function setUp(): void
     {
+        parent::setUp();
         self::bootKernel();
 
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-        $this->repo = $this->em->getRepository(LessonValidated::class);
+        $container = static::getContainer();
 
-        $databaseTool = static::getContainer()->get(DatabaseToolCollection::class)->get();
-        $executor = $databaseTool->loadFixtures([
+        $executor = $container->get(DatabaseToolCollection::class)->get()->loadFixtures([
             ThemeFixtures::class,
             TestUserFixtures::class,
         ]);
 
         $this->refRepo = $executor->getReferenceRepository();
+        $this->em = $container->get(EntityManagerInterface::class);
+
+        // IMPORTANT: récupérer le repository custom
+        $repo = $this->em->getRepository(LessonValidated::class);
+        self::assertInstanceOf(LessonValidatedRepository::class, $repo);
+        $this->repo = $repo;
+
+        $this->em->clear();
     }
 
     private function getUser(): User
     {
-        $user = $this->refRepo->getReference(TestUserFixtures::USER_REF, User::class);
-        return $this->em->getRepository(User::class)->find($user->getId());
+        /** @var User $userRef */
+        $userRef = $this->refRepo->getReference(TestUserFixtures::USER_REF, User::class);
+        $user = $this->em->getRepository(User::class)->find($userRef->getId());
+
+        self::assertNotNull($user);
+        return $user;
     }
 
     private function getThemeMusique(): Theme
     {
-        $theme = $this->refRepo->getReference(ThemeFixtures::THEME_MUSIQUE_REF, Theme::class);
-        return $this->em->getRepository(Theme::class)->find($theme->getId());
+        /** @var Theme $themeRef */
+        $themeRef = $this->refRepo->getReference(ThemeFixtures::THEME_MUSIQUE_REF, Theme::class);
+        $theme = $this->em->getRepository(Theme::class)->find($themeRef->getId());
+
+        self::assertNotNull($theme);
+        return $theme;
+    }
+
+    private function getLessonByRef(string $ref): Lesson
+    {
+        /** @var Lesson $lessonRef */
+        $lessonRef = $this->refRepo->getReference($ref, Lesson::class);
+        $lesson = $this->em->getRepository(Lesson::class)->find($lessonRef->getId());
+
+        self::assertNotNull($lesson);
+        return $lesson;
     }
 
     private function validateLesson(User $user, Lesson $lesson): void
@@ -53,10 +78,10 @@ class LessonValidatedRepositoryTest extends KernelTestCase
         $lv = new LessonValidated();
         $lv->setUser($user)
             ->setLesson($lesson)
+            ->setPurchaseItem(null)
             ->markCompleted();
 
         $this->em->persist($lv);
-        $this->em->flush();
     }
 
     public function testHasCompletedThemeFalseWhenNoLessonValidated(): void
@@ -72,13 +97,11 @@ class LessonValidatedRepositoryTest extends KernelTestCase
         $user = $this->getUser();
         $theme = $this->getThemeMusique();
 
-        $lesson = $this->refRepo->getReference(
-            ThemeFixtures::LESSON_GUITAR_1_REF,
-            Lesson::class
-        );
-        $lesson = $this->em->getRepository(Lesson::class)->find($lesson->getId());
+        $lesson = $this->getLessonByRef(ThemeFixtures::LESSON_GUITAR_1_REF);
 
         $this->validateLesson($user, $lesson);
+        $this->em->flush();
+        $this->em->clear();
 
         self::assertFalse($this->repo->hasCompletedTheme($user, $theme));
     }
@@ -97,11 +120,15 @@ class LessonValidatedRepositoryTest extends KernelTestCase
             ->getQuery()
             ->getResult();
 
-        self::assertNotEmpty($lessons);
+        self::assertNotEmpty($lessons, 'Le thème Musique doit contenir des leçons via fixtures.');
 
         foreach ($lessons as $lesson) {
+            self::assertInstanceOf(Lesson::class, $lesson);
             $this->validateLesson($user, $lesson);
         }
+
+        $this->em->flush();
+        $this->em->clear();
 
         self::assertTrue($this->repo->hasCompletedTheme($user, $theme));
     }
@@ -115,7 +142,63 @@ class LessonValidatedRepositoryTest extends KernelTestCase
 
         $this->em->persist($emptyTheme);
         $this->em->flush();
+        $this->em->clear();
 
-        self::assertFalse($this->repo->hasCompletedTheme($user, $emptyTheme));
+        $emptyThemeReloaded = $this->em->getRepository(Theme::class)->find($emptyTheme->getId());
+        self::assertNotNull($emptyThemeReloaded);
+
+        self::assertFalse($this->repo->hasCompletedTheme($user, $emptyThemeReloaded));
+    }
+
+    public function testFindValidatedLessonsForUserOrdersByValidatedAtDescAndJoins(): void
+    {
+        $user = $this->getUser();
+
+        $l1 = $this->getLessonByRef(ThemeFixtures::LESSON_GUITAR_1_REF);
+        $l2 = $this->getLessonByRef(ThemeFixtures::LESSON_GUITAR_2_REF);
+
+        // Crée 2 validations, puis on force des dates (ordre déterministe)
+        $lv1 = new LessonValidated();
+        $lv1->setUser($user)->setLesson($l1)->setPurchaseItem(null)->markCompleted();
+
+        $lv2 = new LessonValidated();
+        $lv2->setUser($user)->setLesson($l2)->setPurchaseItem(null)->markCompleted();
+
+        // Forcer validatedAt sans usleep (pour vérifier le tri)
+        $ref1 = new \ReflectionClass($lv1);
+        $p1 = $ref1->getProperty('validatedAt');
+        $p1->setAccessible(true);
+        $p1->setValue($lv1, new \DateTimeImmutable('2026-01-01 10:00:00'));
+
+        $ref2 = new \ReflectionClass($lv2);
+        $p2 = $ref2->getProperty('validatedAt');
+        $p2->setAccessible(true);
+        $p2->setValue($lv2, new \DateTimeImmutable('2026-02-01 10:00:00'));
+
+        $this->em->persist($lv1);
+        $this->em->persist($lv2);
+        $this->em->flush();
+        $this->em->clear();
+
+        $rows = $this->repo->findValidatedLessonsForUser($user);
+
+        self::assertCount(2, $rows);
+        self::assertSame($l2->getId(), $rows[0]->getLesson()->getId()); // 2026-02-01 d'abord
+        self::assertSame($l1->getId(), $rows[1]->getLesson()->getId());
+
+        // joins: lesson -> cursus -> theme
+        self::assertNotNull($rows[0]->getLesson());
+        self::assertNotNull($rows[0]->getLesson()->getCursus());
+        self::assertNotNull($rows[0]->getLesson()->getCursus()->getTheme());
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        if (isset($this->em)) {
+            $this->em->close();
+        }
+        unset($this->em, $this->repo, $this->refRepo);
+        self::ensureKernelShutdown();
     }
 }

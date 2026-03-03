@@ -5,37 +5,61 @@ namespace App\Tests\Security;
 use App\Entity\User;
 use App\Security\UserChecker;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAccountStatusException;
 
 class UserCheckerTest extends TestCase
 {
-    public function testBlocksUnverifiedUser(): void
+    private function createBaseUser(): User
+    {
+        $user = new User();
+        $user->setEmail('test@example.com');
+        $user->setFirstName('Test');
+        $user->setLastName('User');
+        $user->setPassword('hashed');
+
+        return $user;
+    }
+
+    public function testBlocksArchivedUser(): void
     {
         $checker = new UserChecker();
-        $user = new User();
-        $user->setEmail('u@example.com');
-        $user->setFirstName('U');
-        $user->setLastName('X');
-        $user->setPassword('hashed');
-        $user->setIsVerified(false);
+        $user = $this->createBaseUser();
+
+        $user->setIsVerified(true);
+        $user->setArchivedAt(new \DateTimeImmutable());
 
         $this->expectException(CustomUserMessageAccountStatusException::class);
-        $this->expectExceptionMessage("Votre compte n’est pas encore vérifié.");
+        $this->expectExceptionMessage('Votre compte est archivé. Contactez un administrateur.');
+
         $checker->checkPreAuth($user);
     }
 
-    public function testAllowsVerifiedUser(): void
+    public function testBlocksUnverifiedUser(): void
     {
         $checker = new UserChecker();
-        $user = new User();
-        $user->setEmail('v@example.com');
-        $user->setFirstName('V');
-        $user->setLastName('X');
-        $user->setPassword('hashed');
-        $user->setIsVerified(true);
+        $user = $this->createBaseUser();
+
+        $user->setIsVerified(false);
+        // pas archivé
+        $user->setArchivedAt(null);
+
+        $this->expectException(CustomUserMessageAccountStatusException::class);
+        $this->expectExceptionMessage('Votre compte n’est pas encore vérifié.');
 
         $checker->checkPreAuth($user);
-        $this->assertTrue(true);
+    }
+
+    public function testAllowsVerifiedAndActiveUser(): void
+    {
+        $checker = new UserChecker();
+        $user = $this->createBaseUser();
+
+        $user->setIsVerified(true);
+        $user->setArchivedAt(null);
+
+        // Ne doit PAS lever d’exception
+        $checker->checkPreAuth($user);
+
+        $this->assertTrue(true); // si on arrive ici, c'est OK
     }
 }
