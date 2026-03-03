@@ -10,9 +10,13 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 class TestUserFixtures extends Fixture
 {
     public const USER_REF = 'user_test';
+    public const ADMIN_REF = 'admin_test';
 
     public const USER_EMAIL = 'testuser@example.com';
+    public const ADMIN_EMAIL = 'testadmin@example.com';
+
     public const USER_PASSWORD = 'TestPassword123!';
+    public const ADMIN_PASSWORD = 'TestPassword123!';
 
     public function __construct(private UserPasswordHasherInterface $passwordHasher)
     {
@@ -20,24 +24,27 @@ class TestUserFixtures extends Fixture
 
     public function load(ObjectManager $manager): void
     {
-        // Avec Liip/TestFixturesBundle, la DB est reset => pas besoin de supprimer un user existant.
-        // Si tu exécutes aussi ces fixtures en dev, tu peux laisser ce bloc,
-        // mais pour les tests c'est généralement inutile.
+        // USER
+        $user = (new User())
+            ->setEmail(self::USER_EMAIL)
+            ->setFirstName('Test')
+            ->setLastName('User')
+            ->setRoles(['ROLE_USER']); // OK même si stocké []
 
-        $user = new User();
-        $user->setEmail(self::USER_EMAIL)
-            ->setFirstName('Addie')
-            ->setLastName('C')
-            ->setRoles(['ROLE_USER']);
-
-        $user->setPassword(
-            $this->passwordHasher->hashPassword($user, self::USER_PASSWORD)
-        );
-
+        $user->setPassword($this->passwordHasher->hashPassword($user, self::USER_PASSWORD));
         $manager->persist($user);
-
-        // Référence AVANT flush (bonne pratique)
         $this->addReference(self::USER_REF, $user);
+
+        // ADMIN
+        $admin = (new User())
+            ->setEmail(self::ADMIN_EMAIL)
+            ->setFirstName('Test')
+            ->setLastName('Admin')
+            ->setRoles(['ROLE_ADMIN']);
+
+        $admin->setPassword($this->passwordHasher->hashPassword($admin, self::ADMIN_PASSWORD));
+        $manager->persist($admin);
+        $this->addReference(self::ADMIN_REF, $admin);
 
         $manager->flush();
     }
