@@ -20,6 +20,7 @@ class LessonType extends AbstractType
         $builder
             ->add('title', TextType::class, [
                 'label' => 'Titre',
+                'empty_data' => '',
             ])
             ->add('cursus', EntityType::class, [
                 'class' => Cursus::class,
