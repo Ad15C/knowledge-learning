@@ -20,6 +20,7 @@ class CursusType extends AbstractType
         $builder
             ->add('name', TextType::class, [
                 'label' => 'Nom',
+                'empty_data' => '',
             ])
             ->add('theme', EntityType::class, [
                 'class' => Theme::class,
