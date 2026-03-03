@@ -12,6 +12,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class LessonType extends AbstractType
 {
@@ -34,7 +35,13 @@ class LessonType extends AbstractType
             ->add('price', MoneyType::class, [
                 'label' => 'Prix',
                 'currency' => 'EUR',
-                'required' => false,
+                'required' => true,
+
+                // IMPORTANT : pas de empty_data ici
+                // sinon '' peut finir converti en 0.00 → form valide → redirect
+                'constraints' => [
+                    new Assert\NotBlank(message: 'Le prix est obligatoire.'),
+                ],
             ])
             ->add('fiche', TextareaType::class, [
                 'label' => 'Fiche',
