@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Security\UserChecker;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAccountStatusException;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 class UserCheckerTest extends TestCase
 {
@@ -16,6 +17,10 @@ class UserCheckerTest extends TestCase
         $user->setFirstName('Test');
         $user->setLastName('User');
         $user->setPassword('hashed');
+
+        // Par défaut : actif et non vérifié (on override dans chaque test)
+        $user->setArchivedAt(null);
+        $user->setIsVerified(false);
 
         return $user;
     }
@@ -40,7 +45,6 @@ class UserCheckerTest extends TestCase
         $user = $this->createBaseUser();
 
         $user->setIsVerified(false);
-        // pas archivé
         $user->setArchivedAt(null);
 
         $this->expectException(CustomUserMessageAccountStatusException::class);
@@ -49,17 +53,36 @@ class UserCheckerTest extends TestCase
         $checker->checkPreAuth($user);
     }
 
-    public function testAllowsVerifiedAndActiveUser(): void
+    public function testAllowsVerifiedActiveAdmin(): void
     {
         $checker = new UserChecker();
-        $user = $this->createBaseUser();
+        $admin = $this->createBaseUser();
 
-        $user->setIsVerified(true);
-        $user->setArchivedAt(null);
+        // Admin actif + vérifié
+        $admin->setRoles(['ROLE_ADMIN']);
+        $admin->setIsVerified(true);
+        $admin->setArchivedAt(null);
 
         // Ne doit PAS lever d’exception
-        $checker->checkPreAuth($user);
+        $checker->checkPreAuth($admin);
 
-        $this->assertTrue(true); // si on arrive ici, c'est OK
+        $this->assertTrue(true);
+    }
+
+    public function testIgnoresNonAppUserInstances(): void
+    {
+        $checker = new UserChecker();
+
+        // Un "faux user" qui implémente UserInterface, mais pas App\Entity\User
+        $fake = new class implements UserInterface {
+            public function getRoles(): array { return ['ROLE_USER']; }
+            public function eraseCredentials(): void {}
+            public function getUserIdentifier(): string { return 'fake'; }
+        };
+
+        // Ne doit pas lever d’exception
+        $checker->checkPreAuth($fake);
+
+        $this->assertTrue(true);
     }
 }

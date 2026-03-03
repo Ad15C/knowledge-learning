@@ -1,11 +1,11 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Erreur serveur{% endblock %}
+{% block title %}Accès refusé{% endblock %}
 
 {% block body %}
 <main class="container py-5 text-center">
-  <h1>500</h1>
-  <p>Une erreur est survenue. Réessaie plus tard.</p>
+  <h1>403</h1>
+  <p>Accès refusé.</p>
   <a class="btn btn-primary" href="{{ path('homepage') }}">Retour à l’accueil</a>
 </main>
 {% endblock %}
