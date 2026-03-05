@@ -84,7 +84,7 @@ class LessonValidatedService
         $validatedIds = array_map(fn($lv) => $lv->getLesson()->getId(), $validatedLessons);
 
         foreach ($lessons as $lesson) {
-            if (!in_array($lesson->getId(), $validatedIds)) {
+            if (!in_array($lesson->getId(), $validatedIds, true)) {
                 return false;
             }
         }
@@ -119,7 +119,7 @@ class LessonValidatedService
              ->setLesson($lesson)
              ->setType('lesson')
              ->setCertificateCode(uniqid('KL-'))
-             ->setIssuedAt(new \DateTime());
+             ->setIssuedAt(new \DateTimeImmutable()); 
 
         $this->em->persist($cert);
         $this->em->flush();
@@ -145,7 +145,7 @@ class LessonValidatedService
              ->setCursus($cursus)
              ->setType('cursus')
              ->setCertificateCode(uniqid('KL-'))
-             ->setIssuedAt(new \DateTime());
+             ->setIssuedAt(new \DateTimeImmutable()); 
 
         $this->em->persist($cert);
         $this->em->flush();
@@ -172,7 +172,7 @@ class LessonValidatedService
              ->setCursus($cursus)
              ->setType('theme')
              ->setCertificateCode(uniqid('KL-'))
-             ->setIssuedAt(new \DateTime());
+             ->setIssuedAt(new \DateTimeImmutable());
 
         $this->em->persist($cert);
         $this->em->flush();

@@ -17,7 +17,9 @@ class CertificationTest extends TestCase
 
         self::assertNull($cert->getId(), 'ID should be null before persistence.');
 
-        self::assertInstanceOf(\DateTimeInterface::class, $cert->getIssuedAt());
+        // Maintenant issuedAt est DateTimeImmutable
+        self::assertInstanceOf(\DateTimeImmutable::class, $cert->getIssuedAt());
+
         self::assertNull($cert->getUser());
         self::assertNull($cert->getCursus());
         self::assertNull($cert->getTheme());
@@ -35,7 +37,8 @@ class CertificationTest extends TestCase
         $theme = new Theme();
         $lesson = new Lesson();
 
-        $issuedAt = new \DateTime('2026-02-24 14:00:00');
+        // DateTimeImmutable (pas DateTime)
+        $issuedAt = new \DateTimeImmutable('2026-02-24 14:00:00');
 
         $cert->setUser($user)
             ->setCursus($cursus)
@@ -63,6 +66,6 @@ class CertificationTest extends TestCase
         $cert->setIssuedAt($issuedAt);
 
         self::assertSame($issuedAt, $cert->getIssuedAt());
-        self::assertInstanceOf(\DateTimeInterface::class, $cert->getIssuedAt());
+        self::assertInstanceOf(\DateTimeImmutable::class, $cert->getIssuedAt());
     }
 }

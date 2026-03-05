@@ -25,7 +25,6 @@ class CertificationRepositoryTest extends KernelTestCase
 
         $container = self::getContainer();
 
-        // ✅ reset DB + load fixtures (simple, fiable)
         $container->get(DatabaseToolCollection::class)->get()->loadFixtures([
             ThemeFixtures::class,
             TestUserFixtures::class,
@@ -34,7 +33,6 @@ class CertificationRepositoryTest extends KernelTestCase
         $this->em = $container->get(EntityManagerInterface::class);
         $this->repo = $this->em->getRepository(Certification::class);
 
-        // EM clean
         $this->em->clear();
     }
 
@@ -86,10 +84,15 @@ class CertificationRepositoryTest extends KernelTestCase
         string $code,
         string $type = 'cursus'
     ): Certification {
+        //  Conversion systématique en DateTimeImmutable (ton entité l’exige)
+        $issuedAtImmutable = $issuedAt instanceof \DateTimeImmutable
+            ? $issuedAt
+            : \DateTimeImmutable::createFromInterface($issuedAt);
+
         $cert = new Certification();
         $cert->setUser($user)
             ->setCursus($cursus)
-            ->setIssuedAt($issuedAt)
+            ->setIssuedAt($issuedAtImmutable)
             ->setCertificateCode($code)
             ->setType($type);
 
@@ -103,26 +106,23 @@ class CertificationRepositoryTest extends KernelTestCase
         $user = $this->getFixtureUser();
         $cursus = $this->getAnyCursus();
 
-        $cert = $this->makeCertification($user, $cursus, new \DateTime('2026-01-15'), 'CERT-001');
+        $cert = $this->makeCertification($user, $cursus, new \DateTimeImmutable('2026-01-15'), 'CERT-001');
         $this->em->flush();
 
         $id = $cert->getId();
         self::assertNotNull($id);
 
-        // READ
         $found = $this->repo->find($id);
         self::assertInstanceOf(Certification::class, $found);
         self::assertSame('CERT-001', $found->getCertificateCode());
         self::assertSame($user->getId(), $found->getUser()->getId());
 
-        // UPDATE
         $found->setCertificateCode('CERT-001-UPDATED');
         $this->em->flush();
 
         $reloaded = $this->repo->find($id);
         self::assertSame('CERT-001-UPDATED', $reloaded->getCertificateCode());
 
-        // DELETE
         $this->em->remove($reloaded);
         $this->em->flush();
 
@@ -134,8 +134,8 @@ class CertificationRepositoryTest extends KernelTestCase
         $user = $this->getFixtureUser();
         $cursus = $this->getAnyCursus();
 
-        $this->makeCertification($user, $cursus, new \DateTime('2026-01-01'), 'CERT-OLD');
-        $this->makeCertification($user, $cursus, new \DateTime('2026-02-01'), 'CERT-NEW');
+        $this->makeCertification($user, $cursus, new \DateTimeImmutable('2026-01-01'), 'CERT-OLD');
+        $this->makeCertification($user, $cursus, new \DateTimeImmutable('2026-02-01'), 'CERT-NEW');
         $this->em->flush();
 
         $results = $this->repo->findByUser($user);
@@ -150,8 +150,8 @@ class CertificationRepositoryTest extends KernelTestCase
         $user = $this->getFixtureUser();
         [$cursusA, $cursusB] = $this->getTwoCursus();
 
-        $this->makeCertification($user, $cursusA, new \DateTime('2026-01-10'), 'A-1');
-        $this->makeCertification($user, $cursusB, new \DateTime('2026-01-11'), 'B-1');
+        $this->makeCertification($user, $cursusA, new \DateTimeImmutable('2026-01-10'), 'A-1');
+        $this->makeCertification($user, $cursusB, new \DateTimeImmutable('2026-01-11'), 'B-1');
         $this->em->flush();
 
         $results = $this->repo->findByUserAndCursus($user, $cursusA);
@@ -165,12 +165,12 @@ class CertificationRepositoryTest extends KernelTestCase
         $user = $this->getFixtureUser();
         $cursus = $this->getAnyCursus();
 
-        $this->makeCertification($user, $cursus, new \DateTime('2026-01-05'), 'IN');
-        $this->makeCertification($user, $cursus, new \DateTime('2025-12-20'), 'OUT');
+        $this->makeCertification($user, $cursus, new \DateTimeImmutable('2026-01-05'), 'IN');
+        $this->makeCertification($user, $cursus, new \DateTimeImmutable('2025-12-20'), 'OUT');
         $this->em->flush();
 
-        $from = new \DateTime('2026-01-01 00:00:00');
-        $to   = new \DateTime('2026-01-31 23:59:59');
+        $from = new \DateTimeImmutable('2026-01-01 00:00:00');
+        $to   = new \DateTimeImmutable('2026-01-31 23:59:59');
 
         $results = $this->repo->findByUserAndPeriod($user, $from, $to);
 
@@ -183,9 +183,9 @@ class CertificationRepositoryTest extends KernelTestCase
         $user = $this->getFixtureUser();
         [$cursusA, $cursusB] = $this->getTwoCursus();
 
-        $this->makeCertification($user, $cursusA, new \DateTime('2026-01-01'), 'A-1');
-        $this->makeCertification($user, $cursusA, new \DateTime('2026-01-02'), 'A-2');
-        $this->makeCertification($user, $cursusB, new \DateTime('2026-01-03'), 'B-1');
+        $this->makeCertification($user, $cursusA, new \DateTimeImmutable('2026-01-01'), 'A-1');
+        $this->makeCertification($user, $cursusA, new \DateTimeImmutable('2026-01-02'), 'A-2');
+        $this->makeCertification($user, $cursusB, new \DateTimeImmutable('2026-01-03'), 'B-1');
         $this->em->flush();
 
         self::assertSame(3, $this->repo->countByUser($user));
@@ -198,7 +198,7 @@ class CertificationRepositoryTest extends KernelTestCase
         $user = $this->getFixtureUser();
         $cursus = $this->getAnyCursus();
 
-        $this->makeCertification($user, $cursus, new \DateTime('2026-02-01'), 'CERT-REL', 'cursus');
+        $this->makeCertification($user, $cursus, new \DateTimeImmutable('2026-02-01'), 'CERT-REL', 'cursus');
         $this->em->flush();
 
         $results = $this->repo->findByUserWithTargets($user);
@@ -206,9 +206,7 @@ class CertificationRepositoryTest extends KernelTestCase
         self::assertNotEmpty($results);
         self::assertSame('CERT-REL', $results[0]->getCertificateCode());
 
-        // la méthode fait des leftJoin + addSelect: les relations doivent être disponibles
         self::assertSame($user->getId(), $results[0]->getUser()->getId());
-        // cursus est nullable, mais ici on l’a mis
         self::assertNotNull($results[0]->getCursus());
     }
 
@@ -219,7 +217,8 @@ class CertificationRepositoryTest extends KernelTestCase
         $cert = new Certification();
         $cert->setCertificateCode('X')
             ->setType('cursus')
-            ->setIssuedAt(new \DateTime('2026-01-01'));
+            // DateTimeImmutable (sinon tu as un TypeError avant d’atteindre la contrainte DB)
+            ->setIssuedAt(new \DateTimeImmutable('2026-01-01'));
 
         $this->em->persist($cert);
         $this->em->flush();
