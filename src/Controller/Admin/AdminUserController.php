@@ -48,10 +48,8 @@ class AdminUserController extends AbstractController
         $page = max(1, (int) $request->query->get('page', 1));
         $perPage = 15;
 
-        // On inclut les archivés si status != active
         $includeArchived = $status !== 'active';
 
-        // Si tu as un Doctrine Filter qui cache les archivés, on le désactive quand on veut les voir
         if ($includeArchived) {
             $filters = $em->getFilters();
             if ($filters->isEnabled('archived_user')) {
@@ -139,7 +137,7 @@ class AdminUserController extends AbstractController
 
         $form->handleRequest($request);
 
-        // Récupère le status courant pour revenir au bon onglet après save
+        // Pour revenir sur le bon onglet après save
         $status = (string) $request->query->get('status', 'active');
         if (!in_array($status, ['active', 'archived', 'all'], true)) {
             $status = 'active';
@@ -201,20 +199,29 @@ class AdminUserController extends AbstractController
         $current = $this->getUser();
         if ($current instanceof User && $current->getId() === $user->getId()) {
             $this->addFlash('danger', 'Tu ne peux pas archiver ton propre compte.');
-            return $this->redirectToRoute('admin_users_index', ['action' => 'delete', 'status' => 'active']);
+            return $this->redirectToRoute('admin_users_index', [
+                'action' => 'delete',
+                'status' => 'active',
+            ]);
         }
 
         // Déjà archivé ?
         if ($user->isArchived()) {
             $this->addFlash('info', 'Utilisateur déjà archivé.');
-            return $this->redirectToRoute('admin_users_index', ['action' => 'delete', 'status' => 'archived']);
+            return $this->redirectToRoute('admin_users_index', [
+                'action' => 'delete',
+                'status' => 'archived',
+            ]);
         }
 
         // Empêcher d'archiver le dernier admin actif
         if (in_array('ROLE_ADMIN', $user->getStoredRoles(), true)) {
             if ($repo->countActiveAdmins() <= 1) {
                 $this->addFlash('danger', "Action refusée : il doit rester au moins un administrateur actif.");
-                return $this->redirectToRoute('admin_users_index', ['action' => 'delete', 'status' => 'active']);
+                return $this->redirectToRoute('admin_users_index', [
+                    'action' => 'delete',
+                    'status' => 'active',
+                ]);
             }
         }
 
@@ -223,6 +230,7 @@ class AdminUserController extends AbstractController
 
         $this->addFlash('success', 'Utilisateur archivé.');
 
+        // checklist: redirect onglet archived
         return $this->redirectToRoute('admin_users_index', [
             'action' => 'delete',
             'status' => 'archived',
@@ -244,7 +252,10 @@ class AdminUserController extends AbstractController
 
         if (!$user->isArchived()) {
             $this->addFlash('info', 'Utilisateur déjà actif.');
-            return $this->redirectToRoute('admin_users_index', ['action' => 'delete', 'status' => 'active']);
+            return $this->redirectToRoute('admin_users_index', [
+                'action' => 'restore',
+                'status' => 'active',
+            ]);
         }
 
         $user->setArchivedAt(null);
@@ -252,8 +263,9 @@ class AdminUserController extends AbstractController
 
         $this->addFlash('success', 'Utilisateur restauré.');
 
+        // checklist: redirect onglet active
         return $this->redirectToRoute('admin_users_index', [
-            'action' => 'delete',
+            'action' => 'restore',
             'status' => 'active',
         ]);
     }

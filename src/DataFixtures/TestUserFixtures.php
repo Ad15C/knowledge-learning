@@ -29,7 +29,8 @@ class TestUserFixtures extends Fixture
             ->setEmail(self::USER_EMAIL)
             ->setFirstName('Test')
             ->setLastName('User')
-            ->setRoles(['ROLE_USER']); // OK même si stocké []
+            ->setIsVerified(true)
+            ->setRoles(['ROLE_USER']);
 
         $user->setPassword($this->passwordHasher->hashPassword($user, self::USER_PASSWORD));
         $manager->persist($user);
@@ -40,6 +41,7 @@ class TestUserFixtures extends Fixture
             ->setEmail(self::ADMIN_EMAIL)
             ->setFirstName('Test')
             ->setLastName('Admin')
+            ->setIsVerified(true)
             ->setRoles(['ROLE_ADMIN']);
 
         $admin->setPassword($this->passwordHasher->hashPassword($admin, self::ADMIN_PASSWORD));
