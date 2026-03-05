@@ -29,8 +29,8 @@ class Certification
     #[ORM\JoinColumn(nullable: true)]
     private ?Lesson $lesson = null;
 
-    #[ORM\Column(type: 'datetime')]
-    private ?\DateTimeInterface $issuedAt = null;
+    #[ORM\Column(type: 'datetime_immutable')]
+    private ?\DateTimeImmutable $issuedAt = null;
 
     #[ORM\Column(length: 255)]
     private ?string $certificateCode = null;
@@ -40,7 +40,7 @@ class Certification
 
     public function __construct()
     {
-        $this->issuedAt = new \DateTime();
+        $this->issuedAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int { return $this->id; }
@@ -56,8 +56,8 @@ class Certification
     public function getLesson(): ?Lesson { return $this->lesson; }
     public function setLesson(?Lesson $lesson): static { $this->lesson = $lesson; return $this; }
 
-    public function getIssuedAt(): ?\DateTimeInterface { return $this->issuedAt; }
-    public function setIssuedAt(\DateTimeInterface $issuedAt): static { $this->issuedAt = $issuedAt; return $this; }
+    public function getIssuedAt(): ?\DateTimeImmutable { return $this->issuedAt; }
+    public function setIssuedAt(\DateTimeImmutable $issuedAt): static { $this->issuedAt = $issuedAt; return $this; }
 
     public function getCertificateCode(): ?string { return $this->certificateCode; }
     public function setCertificateCode(string $certificateCode): static { $this->certificateCode = $certificateCode; return $this; }
