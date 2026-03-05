@@ -202,7 +202,7 @@ class AdminThemeIndexTest extends WebTestCase
         self::assertLessThan($posB, $posA);
     }
 
-    public function testStatusActiveRequiresAtLeastOneActiveCursus_CurrentBehavior(): void
+    public function testStatusActiveShowsAllActiveThemes_CurrentBehavior(): void
     {
         $this->loginAsAdmin();
 
@@ -236,9 +236,10 @@ class AdminThemeIndexTest extends WebTestCase
 
         $names = $this->extractThemeNames((string) $this->client->getResponse()->getContent());
 
+        //  "active" = theme.isActive=true (même sans cursus actif)
         self::assertContains('Actif Cursus Actif', $names);
-        self::assertNotContains('Actif Sans Cursus', $names);
-        self::assertNotContains('Actif Cursus Inactif', $names);
+        self::assertContains('Actif Sans Cursus', $names);
+        self::assertContains('Actif Cursus Inactif', $names);
     }
 
     private function assertSelectedOption(string $html, string $selectName, string $expectedValue): void

@@ -10,12 +10,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\DomCrawler\Crawler;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpFoundation\Session\SessionFactoryInterface;
-use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 class AdminThemeControllerTest extends WebTestCase
 {
@@ -27,7 +22,7 @@ class AdminThemeControllerTest extends WebTestCase
     {
         self::ensureKernelShutdown();
 
-        // ✅ Force HTTPS pour satisfaire requires_channel: https sur /admin
+        // ✅ Force HTTPS (security.yaml: requires_channel: https sur ^/admin)
         $this->client = static::createClient([], [
             'HTTPS' => 'on',
             'HTTP_HOST' => 'localhost',
@@ -85,7 +80,7 @@ class AdminThemeControllerTest extends WebTestCase
 
     public function testAdminAreaRequiresAdminRole(): void
     {
-        // Non loggé => redirection vers login (souvent 302) ou 403 selon config
+        // Non loggé => redirect login ou 403 (selon config)
         $this->client->request('GET', '/admin/themes');
         self::assertTrue(
             $this->client->getResponse()->isRedirection() ||
@@ -184,24 +179,22 @@ class AdminThemeControllerTest extends WebTestCase
         $theme->setIsActive(true);
         $this->em->flush();
 
-        // 1) Aller sur la page de confirmation (doit contenir le form POST /disable)
+        // La page /delete doit contenir le form POST vers /disable avec le token CSRF
         $crawler = $this->client->request('GET', '/admin/themes/'.$theme->getId().'/delete');
         self::assertResponseIsSuccessful();
 
         $action = '/admin/themes/'.$theme->getId().'/disable';
 
-        // 2) Vérifie que le formulaire disable existe sur la page
         $formNode = $crawler->filter(sprintf('form[action="%s"]', $action));
         self::assertGreaterThan(0, $formNode->count(), 'Disable form not found on delete confirmation page.');
 
-        // 3) Test CSRF invalide => 403 (on prend le même form et on remplace le token)
+        // CSRF invalide => 403
         $badForm = $formNode->first()->form();
         $badForm->setValues(['_token' => 'bad']);
-
         $this->client->submit($badForm);
         self::assertResponseStatusCodeSame(403);
 
-        // 4) Soumission avec le vrai token présent dans le HTML => redirect
+        // CSRF valide => redirect + isActive=false
         $crawler = $this->client->request('GET', '/admin/themes/'.$theme->getId().'/delete');
         self::assertResponseIsSuccessful();
 
@@ -229,7 +222,7 @@ class AdminThemeControllerTest extends WebTestCase
         ]);
         self::assertResponseStatusCodeSame(403);
 
-        // Token présent sur la liste archived (si ton twig affiche le bouton)
+        // Token présent sur l'index status=archived (ton Twig affiche le form "Restaurer")
         $crawler = $this->client->request('GET', '/admin/themes?status=archived');
         self::assertResponseIsSuccessful();
 

@@ -34,4 +34,10 @@
     <extensions>
         <extension class="DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension" />
     </extensions>
+
+    <groups>
+        <exclude>
+            <group>snapshot_dump</group>
+        </exclude>
+    </groups>
 </phpunit>
