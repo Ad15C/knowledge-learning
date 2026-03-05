@@ -136,7 +136,10 @@
                   </td>
                 </tr>
               {% else %}
-                {% for p in purchases %}
+                {# purchases = array de rows: { purchase: Purchase, itemsCount: int } #}
+                {% for row in purchases %}
+                  {% set p = row.purchase %}
+
                   {% set badgeClass =
                     p.isPaid ? 'bg-success' :
                     (p.isPending ? 'bg-warning text-dark' :
@@ -181,7 +184,7 @@
                     </td>
 
                     <td class="text-center">
-                      {{ p.items ? p.items|length : 0 }}
+                      {{ row.itemsCount }}
                     </td>
 
                     <td class="text-end">

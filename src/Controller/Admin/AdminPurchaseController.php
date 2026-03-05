@@ -7,6 +7,7 @@ use App\Repository\PurchaseRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -16,6 +17,32 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/admin/purchases', name: 'admin_purchase_')]
 class AdminPurchaseController extends AbstractController
 {
+    private function parseDateOnlyStrict(string $raw): ?\DateTimeImmutable
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        // Format strict YYYY-MM-DD (évite "2026-2-1", etc.)
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw)) {
+            return null;
+        }
+
+        // "!" => reset heure à 00:00:00
+        $dt = \DateTimeImmutable::createFromFormat('!Y-m-d', $raw);
+        if (!$dt) {
+            return null;
+        }
+
+        $errors = \DateTimeImmutable::getLastErrors();
+        if (($errors['warning_count'] ?? 0) > 0 || ($errors['error_count'] ?? 0) > 0) {
+            return null;
+        }
+
+        return $dt;
+    }
+
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(
         Request $request,
@@ -23,10 +50,10 @@ class AdminPurchaseController extends AbstractController
         UserRepository $userRepo,
         EntityManagerInterface $em
     ): Response {
-        // Vu qu'il y a le filtre doctrine "archived_user" comme dans AdminUserController :
+        // Permet d'afficher aussi les commandes d'utilisateurs archivés
         $filters = $em->getFilters();
         if ($filters->isEnabled('archived_user')) {
-            $filters->disable('archived_user'); // on veut pouvoir voir les commandes d’archivés
+            $filters->disable('archived_user');
         }
 
         $q = trim((string) $request->query->get('q', ''));
@@ -45,17 +72,9 @@ class AdminPurchaseController extends AbstractController
         $dateFromRaw = (string) $request->query->get('dateFrom', '');
         $dateToRaw   = (string) $request->query->get('dateTo', '');
 
-        $dateFrom = null;
-        if ($dateFromRaw !== '') {
-            $dt = \DateTimeImmutable::createFromFormat('Y-m-d', $dateFromRaw);
-            $dateFrom = $dt ?: null;
-        }
-
-        $dateTo = null;
-        if ($dateToRaw !== '') {
-            $dt = \DateTimeImmutable::createFromFormat('Y-m-d', $dateToRaw);
-            $dateTo = $dt ?: null;
-        }
+        // parsing strict : invalide => null (donc filtre ignoré)
+        $dateFrom = $this->parseDateOnlyStrict($dateFromRaw);
+        $dateTo   = $this->parseDateOnlyStrict($dateToRaw);
 
         $sort = (string) $request->query->get('sort', 'createdAt'); // createdAt|status|total|paidAt|user
         if (!in_array($sort, ['createdAt', 'status', 'total', 'paidAt', 'user'], true)) {
@@ -80,8 +99,8 @@ class AdminPurchaseController extends AbstractController
             $perPage
         );
 
-        // Optionnel : alimenter un select user (si tu veux)
-        $users = $userRepo->findActiveUsers(); // tu as déjà cette méthode
+        // Liste des users pour le select
+        $users = $userRepo->findActiveUsers();
 
         return $this->render('admin/purchases/index.html.twig', [
             'purchases' => $result['items'],
@@ -97,8 +116,9 @@ class AdminPurchaseController extends AbstractController
             'userId' => $userId,
             'users' => $users,
 
-            'dateFrom' => $dateFromRaw,
-            'dateTo' => $dateToRaw,
+            //  valeur HTML propre (si invalide => '')
+            'dateFrom' => $dateFrom ? $dateFrom->format('Y-m-d') : '',
+            'dateTo'   => $dateTo ? $dateTo->format('Y-m-d') : '',
 
             'sort' => $sort,
             'dir' => $dir,
