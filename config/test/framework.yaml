@@ -1,5 +1,7 @@
 framework:
-    test: true
-    test_service_container: true
-    session:
-        storage_factory_id: session.storage.factory.mock_file
+  test: true
+  test_service_container: true
+
+  session:
+    enabled: true
+    storage_factory_id: session.storage.factory.mock_file
