@@ -60,7 +60,7 @@
 
     {% if isSelf %}
       <div class="admin-alert">
-        ⚠️ Pour des raisons de sécurité, tu ne peux pas modifier ton propre rôle.
+        Pour des raisons de sécurité, tu ne peux pas modifier ton propre rôle.
       </div>
     {% endif %}
 
@@ -80,7 +80,7 @@
           {{ form_row(form.email) }}
         </div>
 
-        {% if form.roles is defined %}
+        {% if not isSelf and form.roles is defined %}
           <div class="admin-form-field admin-form-field--full">
             {{ form_row(form.roles) }}
           </div>

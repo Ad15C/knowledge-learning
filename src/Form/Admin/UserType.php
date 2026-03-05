@@ -30,19 +30,20 @@ class UserType extends AbstractType
                 'required' => true,
             ]);
 
+        // ✅ On n'ajoute roles que si autorisé
         if ($options['allow_roles_edit']) {
             $builder->add('roles', ChoiceType::class, [
                 'label' => 'Rôle',
                 'choices' => [
                     'Administrateur' => 'ROLE_ADMIN',
                 ],
-                'expanded' => true,   // checkbox
-                'multiple' => true,   // roles = array en base
+                'expanded' => true,
+                'multiple' => true,
                 'required' => false,
                 'help' => 'ROLE_USER est automatique. Coche "Administrateur" pour donner ROLE_ADMIN.',
             ]);
 
-            // Nettoyage AVANT hydratation dans l'entité
+            // Normalisation (uniquement si le champ roles existe)
             $builder->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $event) {
                 $data = $event->getData();
                 if (!is_array($data)) {
@@ -50,8 +51,6 @@ class UserType extends AbstractType
                 }
 
                 $roles = (array) ($data['roles'] ?? []);
-
-                // On garde uniquement ROLE_ADMIN si coché, sinon []
                 $data['roles'] = in_array('ROLE_ADMIN', $roles, true) ? ['ROLE_ADMIN'] : [];
 
                 $event->setData($data);
