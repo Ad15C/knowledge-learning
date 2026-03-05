@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Cursus;
+use App\Entity\Theme;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\ORM\QueryBuilder;
@@ -14,6 +15,9 @@ class CursusRepository extends ServiceEntityRepository
         parent::__construct($registry, Cursus::class);
     }
 
+    /**
+     * ADMIN (inchangé)
+     */
     public function findWithLessons(int $id): ?Cursus
     {
         return $this->createQueryBuilder('c')
@@ -24,6 +28,50 @@ class CursusRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * FRONT : cursus visibles d'un thème
+     * - cursus actif
+     * - thème actif
+     * - au moins 1 leçon active
+     *
+     * @return Cursus[]
+     */
+    public function findVisibleByTheme(Theme $theme): array
+    {
+        return $this->createQueryBuilder('c')
+            ->distinct()
+            ->innerJoin('c.theme', 't')
+            ->innerJoin('c.lessons', 'l', 'WITH', 'l.isActive = true')
+            ->addSelect('t', 'l')
+            ->andWhere('c.isActive = true')
+            ->andWhere('t.isActive = true')
+            ->andWhere('t = :theme')
+            ->setParameter('theme', $theme)
+            ->orderBy('c.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * FRONT : un cursus visible + charge ses leçons visibles (page show)
+     */
+    public function findVisibleWithVisibleLessons(int $id): ?Cursus
+    {
+        return $this->createQueryBuilder('c')
+            ->distinct()
+            ->innerJoin('c.theme', 't')
+            ->innerJoin('c.lessons', 'l', 'WITH', 'l.isActive = true')
+            ->addSelect('t', 'l')
+            ->andWhere('c.id = :id')
+            ->andWhere('c.isActive = true')
+            ->andWhere('t.isActive = true')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    // -------------------- ADMIN FILTER (inchangé chez toi) --------------------
 
     public function createAdminFilterQueryBuilder(
         ?string $q = null,
@@ -55,23 +103,17 @@ class CursusRepository extends ServiceEntityRepository
             case 'name_asc':
                 $qb->orderBy('c.name', 'ASC');
                 break;
-
             case 'name_desc':
                 $qb->orderBy('c.name', 'DESC');
                 break;
-
             case 'price_asc':
-                // NULL en dernier, puis prix croissant
                 $qb->orderBy('CASE WHEN c.price IS NULL THEN 1 ELSE 0 END', 'ASC')
                    ->addOrderBy('c.price', 'ASC');
                 break;
-
             case 'price_desc':
-                // NULL en dernier, puis prix décroissant
                 $qb->orderBy('CASE WHEN c.price IS NULL THEN 1 ELSE 0 END', 'ASC')
                    ->addOrderBy('c.price', 'DESC');
                 break;
-
             default:
                 $qb->orderBy('c.id', 'DESC');
         }

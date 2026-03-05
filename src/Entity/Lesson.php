@@ -18,8 +18,10 @@ class Lesson
     #[Assert\NotBlank(message: 'Le titre est obligatoire.')]
     private ?string $title = null;
 
-    #[ORM\Column(type: 'decimal', precision: 6, scale: 2, nullable: true)]
-    private ?string $price = null;
+    #[ORM\Column(type: 'decimal', precision: 6, scale: 2, nullable: false)]
+    #[Assert\NotBlank(message: 'Le prix est obligatoire.')]
+    #[Assert\PositiveOrZero(message: 'Le prix doit être positif.')]
+    private string $price = '0.00';
 
     #[ORM\ManyToOne(targetEntity: Cursus::class, inversedBy: 'lessons')]
     #[ORM\JoinColumn(nullable: false)]
@@ -42,14 +44,17 @@ class Lesson
     public function getTitle(): ?string { return $this->title; }
     public function setTitle(string $title): static { $this->title = $title; return $this; }
 
-    public function getPrice(): ?float { return $this->price !== null ? (float)$this->price : null; }
+    public function getPrice(): float
+    {
+        return (float) $this->price;
+    }
+
     public function setPrice(float|string|null $price): static
     {
         if ($price === null || $price === '') {
-            $this->price = null;
+            $this->price = '0.00'; 
             return $this;
         }
-
         $this->price = number_format((float) $price, 2, '.', '');
         return $this;
     }

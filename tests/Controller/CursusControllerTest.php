@@ -25,8 +25,8 @@ class CursusControllerTest extends WebTestCase
         self::ensureKernelShutdown();
 
         $this->client = static::createClient();
-
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
+
         $this->databaseTool = static::getContainer()
             ->get(DatabaseToolCollection::class)
             ->get();
@@ -43,6 +43,19 @@ class CursusControllerTest extends WebTestCase
         );
     }
 
+    private function createPaidPurchase(User $user): Purchase
+    {
+        $purchase = (new Purchase())
+            ->setUser($user)
+            // IMPORTANT: doit matcher le contrôleur qui filtre sur 'paid'
+            ->setStatus('paid')
+            ->setPaidAt(new \DateTimeImmutable());
+
+        $this->forceOrderNumber($purchase);
+
+        return $purchase;
+    }
+
     public function test_show_not_logged_in_only_add_to_cart(): void
     {
         $fixtures = $this->databaseTool->loadFixtures([
@@ -55,13 +68,11 @@ class CursusControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/cursus/' . $cursus->getId());
         self::assertResponseIsSuccessful();
 
-        // Pas connecté => 0 bouton "Accéder & valider"
         self::assertSame(
             0,
             $crawler->filter('a.btn.btn-success:contains("Accéder")')->count()
         );
 
-        // 2 leçons => 2 boutons "Ajouter au panier" (dans ton twig c'est un <button>)
         self::assertSame(
             2,
             $crawler->filter('button.btn.btn-outline:contains("Ajouter au panier")')->count()
@@ -87,13 +98,7 @@ class CursusControllerTest extends WebTestCase
         $user = $fixtures->getReferenceRepository()
             ->getReference(TestUserFixtures::USER_REF, User::class);
 
-        // Achat paid de 1 leçon
-        $purchase = (new Purchase())
-            ->setUser($user)
-            ->setStatus(Purchase::STATUS_PAID)
-            ->setPaidAt(new \DateTimeImmutable());
-
-        $this->forceOrderNumber($purchase);
+        $purchase = $this->createPaidPurchase($user);
 
         $item = (new PurchaseItem())
             ->setPurchase($purchase)
@@ -113,13 +118,11 @@ class CursusControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/cursus/' . $cursus->getId());
         self::assertResponseIsSuccessful();
 
-        // Dans ton twig: si accès => lien "Accéder & valider" (pas un button)
         self::assertSame(
             1,
             $crawler->filter('a.btn.btn-success:contains("Accéder")')->count()
         );
 
-        // l’autre non achetée => 1 bouton "Ajouter au panier"
         self::assertSame(
             1,
             $crawler->filter('button.btn.btn-outline:contains("Ajouter au panier")')->count()
@@ -139,13 +142,7 @@ class CursusControllerTest extends WebTestCase
         $user = $fixtures->getReferenceRepository()
             ->getReference(TestUserFixtures::USER_REF, User::class);
 
-        // Achat paid du cursus
-        $purchase = (new Purchase())
-            ->setUser($user)
-            ->setStatus(Purchase::STATUS_PAID)
-            ->setPaidAt(new \DateTimeImmutable());
-
-        $this->forceOrderNumber($purchase);
+        $purchase = $this->createPaidPurchase($user);
 
         $item = (new PurchaseItem())
             ->setPurchase($purchase)
@@ -165,13 +162,11 @@ class CursusControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/cursus/' . $cursus->getId());
         self::assertResponseIsSuccessful();
 
-        // cursus acheté => accès aux 2 leçons => 2 liens "Accéder & valider"
         self::assertSame(
             2,
             $crawler->filter('a.btn.btn-success:contains("Accéder")')->count()
         );
 
-        // 0 bouton "Ajouter au panier"
         self::assertSame(
             0,
             $crawler->filter('button.btn.btn-outline:contains("Ajouter au panier")')->count()
@@ -191,11 +186,10 @@ class CursusControllerTest extends WebTestCase
         $cursus = $fixtures->getReferenceRepository()
             ->getReference(ThemeFixtures::CURSUS_GUITARE_REF, Cursus::class);
 
-        // IMPORTANT: route en POST (pas GET)
         $this->client->request('POST', '/cart/add/cursus/' . $cursus->getId(), [
-            '_token' => 'dummy', // pas besoin d'un vrai token: l'accès est refusé avant
+            '_token' => 'dummy',
         ]);
 
-        self::assertResponseRedirects(); // vers app_login
+        self::assertResponseRedirects(); // généralement vers /login
     }
 }

@@ -21,6 +21,16 @@ class LessonTest extends TestCase
         $lesson->setPrice(12.3456);
         self::assertEquals(12.35, $lesson->getPrice());
 
+        // nouveaux cas utiles avec la nouvelle logique
+        $lesson->setPrice(null);
+        self::assertEquals(0.00, $lesson->getPrice());
+
+        $lesson->setPrice('');
+        self::assertEquals(0.00, $lesson->getPrice());
+
+        $lesson->setPrice('19.9');
+        self::assertEquals(19.90, $lesson->getPrice());
+
         $lesson->setFiche("Ligne 1<br><br>Ligne 2");
         self::assertSame("Ligne 1<br><br>Ligne 2", $lesson->getFiche());
 
@@ -36,7 +46,7 @@ class LessonTest extends TestCase
         $lesson = new Lesson();
 
         self::assertNull($lesson->getId());
-        self::assertNull($lesson->getPrice());
+        self::assertEquals(0.00, $lesson->getPrice()); // plus null, car '0.00' par défaut
         self::assertTrue($lesson->isActive());
         self::assertFalse($lesson->isPubliclyAccessible(), 'Without cursus, lesson cannot be publicly accessible.');
     }

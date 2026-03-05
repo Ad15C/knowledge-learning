@@ -20,7 +20,7 @@ class ThemeController extends AbstractController
         $min = ($filterMinPrice === null || $filterMinPrice === '') ? null : (float) $filterMinPrice;
         $max = ($filterMaxPrice === null || $filterMaxPrice === '') ? null : (float) $filterMaxPrice;
 
-        $themes = $themeRepository->findThemesWithFilters($filterName, $min, $max);
+        $themes = $themeRepository->findVisibleThemesWithFilters($filterName, $min, $max);
 
         if ($request->isXmlHttpRequest()) {
             return $this->render('themes/_themes_list.html.twig', [
@@ -28,7 +28,6 @@ class ThemeController extends AbstractController
             ]);
         }
 
-         // Page complète
         return $this->render('themes/index.html.twig', [
             'themes' => $themes,
             'filter_name' => $filterName,
@@ -40,9 +39,9 @@ class ThemeController extends AbstractController
     #[Route('/themes/{id}', name: 'theme_show', methods: ['GET'])]
     public function show(int $id, ThemeRepository $themeRepository): Response
     {
-        $theme = $themeRepository->find($id);
+        $theme = $themeRepository->findVisibleTheme($id);
 
-        if (!$theme || !$theme->isActive()) {
+        if (!$theme) {
             throw $this->createNotFoundException('Thème introuvable.');
         }
 

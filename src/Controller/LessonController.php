@@ -3,10 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\Certification;
-use App\Entity\Lesson;
 use App\Entity\LessonValidated;
 use App\Entity\Purchase;
 use App\Entity\PurchaseItem;
+use App\Repository\LessonRepository;
 use App\Service\LessonValidatedService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -30,12 +30,11 @@ class LessonController extends AbstractController
         $userHasAccess = [];
         $userHasCompleted = [];
 
-        // Important : éviter d'exécuter des requêtes avec user = null
         if (!$user) {
             return [$userHasAccess, $userHasCompleted];
         }
 
-        // 1) Accès : items payés (leçon OU cursus)
+        // Accès : items payés (leçon OU cursus)
         $paidItems = $this->em->getRepository(PurchaseItem::class)
             ->createQueryBuilder('pi')
             ->join('pi.purchase', 'p')
@@ -58,7 +57,7 @@ class LessonController extends AbstractController
             }
         }
 
-        // 2) Complété : leçons validées
+        // Complété : leçons validées
         $validatedLessons = $this->em->getRepository(LessonValidated::class)
             ->findBy(['user' => $user]);
 
@@ -73,9 +72,10 @@ class LessonController extends AbstractController
     }
 
     #[Route('/lesson/{id}', name: 'lesson_show', methods: ['GET'])]
-    public function show(Lesson $lesson): Response
+    public function show(int $id, LessonRepository $lessonRepository): Response
     {
-        if (!$lesson->isPubliclyAccessible()) {
+        $lesson = $lessonRepository->findVisibleLesson($id);
+        if (!$lesson) {
             throw $this->createNotFoundException('Leçon introuvable.');
         }
 
@@ -100,18 +100,17 @@ class LessonController extends AbstractController
     }
 
     #[Route('/lesson/{id}/complete', name: 'lesson_complete', methods: ['POST'])]
-    public function complete(Request $request, Lesson $lesson, LessonValidatedService $lessonService): Response
-    {
-        if (!$lesson->isPubliclyAccessible()) {
+    public function complete(
+        Request $request,
+        int $id,
+        LessonRepository $lessonRepository,
+        LessonValidatedService $lessonService
+    ): Response {
+        $lesson = $lessonRepository->findVisibleLesson($id);
+        if (!$lesson) {
             throw $this->createNotFoundException('Leçon introuvable.');
         }
 
-        $user = $this->getUser();
-        if (!$user) {
-            return $this->redirectToRoute('app_login');
-        }
-
-        // CSRF
         $tokenId = 'lesson_complete_' . $lesson->getId();
         $token = (string) $request->request->get('_token');
 
@@ -119,18 +118,19 @@ class LessonController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        // Sécurité serveur : vérifier l’accès (ne pas dépendre du Twig)
+        // Sécurité serveur : vérifier l’accès
         [$userHasAccess] = $this->getUserAccessAndCompleted();
         if (!isset($userHasAccess[$lesson->getId()])) {
             $this->addFlash('danger', "Tu n'as pas accès à cette leçon.");
             return $this->redirectToRoute('lesson_show', ['id' => $lesson->getId()]);
         }
 
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
         $lessonService->validateLesson($user, $lesson);
 
         $this->addFlash('success', 'Leçon marquée comme complétée et certification générée !');
 
         return $this->redirectToRoute('lesson_show', ['id' => $lesson->getId()]);
     }
-
 }

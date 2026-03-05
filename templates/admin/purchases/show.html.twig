@@ -19,7 +19,38 @@
         </div>
       </div>
 
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-2 align-items-start">
+        {# transitions UI alignées sur le controller #}
+        {% set transitions = {
+          'cart': ['pending','paid','canceled'],
+          'pending': ['paid','canceled'],
+          'paid': ['canceled'],
+          'canceled': []
+        } %}
+        {% set current = purchase.status %}
+        {% set allowed = transitions[current] ?? [] %}
+
+        <form method="post"
+              action="{{ path('admin_purchase_update_status', {id: purchase.id}) }}"
+              class="d-flex gap-2 align-items-end">
+          <input type="hidden" name="_token" value="{{ csrf_token('purchase_status_' ~ purchase.id) }}">
+
+          <div>
+            <label class="form-label mb-1" for="status">Statut</label>
+            <select id="status" name="status" class="form-select">
+              <option value="{{ current }}" selected>{{ current }}</option>
+              {% for s in allowed %}
+                <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary"
+                  {{ allowed is empty ? 'disabled' : '' }}>
+            Mettre à jour
+          </button>
+        </form>
+
         <a class="btn btn-outline-secondary" href="{{ path('admin_purchase_index') }}">← Retour à la liste</a>
       </div>
     </div>

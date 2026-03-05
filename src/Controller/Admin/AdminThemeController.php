@@ -16,7 +16,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/admin/themes', name: 'admin_theme_')]
 class AdminThemeController extends AbstractController
 {
-    // 1) Liste
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request, ThemeRepository $repo): Response
     {
@@ -24,16 +23,12 @@ class AdminThemeController extends AbstractController
         $status = $request->query->get('status', 'all'); // all|active|archived
         $sort = $request->query->get('sort', 'created_desc');
 
-        // On exige un cursus actif uniquement quand on affiche les thèmes "actifs"
-        $requireCursus = ($status === 'active');
-
-        $themes = $repo
-            ->createAdminFilterQueryBuilder($q, $status, $sort, true, $requireCursus)
-            ->getQuery()
-            ->getResult();
+        // ✅ Choix A : "actif" = isActive seulement
+        // ✅ + badge "Visible sur le site" calculé en 1 requête
+        $themesWithVisibility = $repo->findAdminThemesWithVisibility($q, $status, $sort, true);
 
         return $this->render('admin/theme/index.html.twig', [
-            'themes' => $themes,
+            'themesWithVisibility' => $themesWithVisibility,
             'filters' => [
                 'q' => $q,
                 'status' => $status,
@@ -42,7 +37,6 @@ class AdminThemeController extends AbstractController
         ]);
     }
 
-    // 2) Créer
     #[Route('/new', name: 'new', methods: ['GET', 'POST'])]
     public function new(Request $request, EntityManagerInterface $em): Response
     {
@@ -65,7 +59,6 @@ class AdminThemeController extends AbstractController
         ]);
     }
 
-    // 3) Modifier
     #[Route('/{id}/edit', name: 'edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function edit(Theme $theme, Request $request, EntityManagerInterface $em): Response
     {
@@ -74,7 +67,6 @@ class AdminThemeController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $em->flush();
-
             $this->addFlash('success', 'Thème modifié.');
             return $this->redirectToRoute('admin_theme_index');
         }
@@ -85,7 +77,6 @@ class AdminThemeController extends AbstractController
         ]);
     }
 
-    // 4) Page de confirmation "supprimer" (= désactiver)
     #[Route('/{id}/delete', name: 'delete', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function deleteConfirm(Theme $theme): Response
     {
@@ -94,7 +85,6 @@ class AdminThemeController extends AbstractController
         ]);
     }
 
-    // 5) Action POST de désactivation (depuis la page delete)
     #[Route('/{id}/disable', name: 'disable', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function disable(Theme $theme, Request $request, EntityManagerInterface $em): Response
     {
@@ -109,11 +99,9 @@ class AdminThemeController extends AbstractController
         return $this->redirectToRoute('admin_theme_index');
     }
 
-    // 6) Réactiver depuis la liste
     #[Route('/{id}/activate', name: 'activate', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function activate(Theme $theme, Request $request, EntityManagerInterface $em): Response
     {
-        // IMPORTANT: on harmonise sans underscore pour matcher le Twig : csrf_token('theme_activate' ~ id)
         if (!$this->isCsrfTokenValid('theme_activate'.$theme->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF invalide.');
         }

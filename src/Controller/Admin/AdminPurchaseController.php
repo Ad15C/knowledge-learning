@@ -7,7 +7,6 @@ use App\Repository\PurchaseRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -116,7 +115,7 @@ class AdminPurchaseController extends AbstractController
             'userId' => $userId,
             'users' => $users,
 
-            //  valeur HTML propre (si invalide => '')
+            // valeur HTML propre (si invalide => '')
             'dateFrom' => $dateFrom ? $dateFrom->format('Y-m-d') : '',
             'dateTo'   => $dateTo ? $dateTo->format('Y-m-d') : '',
 
@@ -142,5 +141,88 @@ class AdminPurchaseController extends AbstractController
             'purchase' => $purchase,
             'items' => $purchase->getItems(),
         ]);
+    }
+
+    #[Route('/{id<\d+>}/status', name: 'update_status', methods: ['POST'])]
+    public function updateStatus(
+        int $id,
+        Request $request,
+        PurchaseRepository $repo,
+        EntityManagerInterface $em
+    ): Response {
+        // Afficher aussi les commandes d'utilisateurs archivés
+        $filters = $em->getFilters();
+        if ($filters->isEnabled('archived_user')) {
+            $filters->disable('archived_user');
+        }
+
+        $purchase = $repo->findOneForAdminShow($id);
+        if (!$purchase) {
+            throw $this->createNotFoundException('Commande introuvable.');
+        }
+
+        // CSRF
+        $token = (string) $request->request->get('_token');
+        if (!$this->isCsrfTokenValid('purchase_status_' . $purchase->getId(), $token)) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $newStatus = (string) $request->request->get('status', '');
+        if (!in_array($newStatus, Purchase::STATUSES, true)) {
+            $this->addFlash('danger', 'Statut invalide.');
+            return $this->redirectToRoute('admin_purchase_show', ['id' => $purchase->getId()]);
+        }
+
+        $oldStatus = $purchase->getStatus();
+
+        // Transitions autorisées (règle métier minimale)
+        $allowedTransitions = [
+            Purchase::STATUS_CART => [Purchase::STATUS_PENDING, Purchase::STATUS_PAID, Purchase::STATUS_CANCELED],
+            Purchase::STATUS_PENDING => [Purchase::STATUS_PAID, Purchase::STATUS_CANCELED],
+            Purchase::STATUS_PAID => [Purchase::STATUS_CANCELED],
+            Purchase::STATUS_CANCELED => [],
+        ];
+
+        if ($newStatus === $oldStatus) {
+            $this->addFlash('info', 'Aucun changement : statut identique.');
+            return $this->redirectToRoute('admin_purchase_show', ['id' => $purchase->getId()]);
+        }
+
+        $allowed = $allowedTransitions[$oldStatus] ?? [];
+        if (!in_array($newStatus, $allowed, true)) {
+            $this->addFlash('danger', sprintf('Transition interdite (%s → %s).', $oldStatus, $newStatus));
+            return $this->redirectToRoute('admin_purchase_show', ['id' => $purchase->getId()]);
+        }
+
+        // Application via méthodes métier
+        switch ($newStatus) {
+            case Purchase::STATUS_PAID:
+                // set paidAt si absent
+                $purchase->markPaid($purchase->getPaidAt() ?? new \DateTimeImmutable());
+                break;
+
+            case Purchase::STATUS_PENDING:
+                $purchase->markPending();
+                // pending => pas payée
+                $purchase->setPaidAt(null);
+                break;
+
+            case Purchase::STATUS_CANCELED:
+                $purchase->markCanceled();
+                // si on annule après paid, on retire paidAt (règle choisie)
+                if ($oldStatus === Purchase::STATUS_PAID) {
+                    $purchase->setPaidAt(null);
+                }
+                break;
+
+            default:
+                // ne devrait pas arriver car transitions + validation
+                $purchase->setStatus($newStatus);
+        }
+
+        $em->flush();
+        $this->addFlash('success', sprintf('Statut mis à jour (%s → %s).', $oldStatus, $newStatus));
+
+        return $this->redirectToRoute('admin_purchase_show', ['id' => $purchase->getId()]);
     }
 }
