@@ -4,7 +4,10 @@ namespace App\Tests\Repository;
 
 use App\DataFixtures\ThemeFixtures;
 use App\Entity\Cursus;
+use App\Entity\Lesson;
+use App\Entity\Theme;
 use App\Repository\CursusRepository;
+use Doctrine\Common\DataFixtures\ReferenceRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -13,6 +16,9 @@ class CursusRepositoryTest extends KernelTestCase
 {
     private EntityManagerInterface $em;
     private CursusRepository $repo;
+
+    /** @var ReferenceRepository */
+    private $refRepo;
 
     protected function setUp(): void
     {
@@ -31,12 +37,8 @@ class CursusRepositoryTest extends KernelTestCase
         // Important: on veut un EM clean
         $this->em->clear();
 
-        // Stocke la ref repo dans un static si tu veux, mais ici on refetch via EM ensuite
         $this->refRepo = $fixtureExecutor->getReferenceRepository();
     }
-
-    /** @var \Doctrine\Common\DataFixtures\ReferenceRepository */
-    private $refRepo;
 
     private function getCursusGuitareManaged(): Cursus
     {
@@ -44,11 +46,26 @@ class CursusRepositoryTest extends KernelTestCase
         $cursusRef = $this->refRepo->getReference(ThemeFixtures::CURSUS_GUITARE_REF, Cursus::class);
         self::assertInstanceOf(Cursus::class, $cursusRef);
 
+        /** @var Cursus|null $cursus */
         $cursus = $this->em->getRepository(Cursus::class)->find($cursusRef->getId());
         self::assertNotNull($cursus);
 
         return $cursus;
     }
+
+    private function getThemeOfCursusManaged(Cursus $cursus): Theme
+    {
+        $themeId = $cursus->getTheme()?->getId();
+        self::assertNotNull($themeId);
+
+        /** @var Theme|null $theme */
+        $theme = $this->em->getRepository(Theme::class)->find($themeId);
+        self::assertNotNull($theme);
+
+        return $theme;
+    }
+
+    // -------------------- ADMIN --------------------
 
     public function testFindWithLessons(): void
     {
@@ -139,7 +156,7 @@ class CursusRepositoryTest extends KernelTestCase
 
     public function testCreateAdminFilterQueryBuilderSortPriceAscAndDesc(): void
     {
-        // tes fixtures ont des prix non-null => on teste juste l'ordre
+        // Tes fixtures ont des prix non-null => on teste juste l'ordre
         $asc = $this->repo->createAdminFilterQueryBuilder(null, 'all', null, 'price_asc')->getQuery()->getResult();
         self::assertGreaterThanOrEqual(2, count($asc));
 
@@ -155,6 +172,127 @@ class CursusRepositoryTest extends KernelTestCase
         $sortedDesc = $pricesDesc;
         rsort($sortedDesc);
         self::assertSame($sortedDesc, $pricesDesc);
+    }
+
+    // -------------------- FRONT (nouveaux tests) --------------------
+
+    public function testFindVisibleByThemeReturnsOnlyVisibleCursus(): void
+    {
+        $cursus = $this->getCursusGuitareManaged();
+        $theme = $this->getThemeOfCursusManaged($cursus);
+
+        // Cas "OK" : thème actif, cursus actif, au moins 1 leçon active
+        $results = $this->repo->findVisibleByTheme($theme);
+
+        self::assertNotEmpty($results);
+
+        foreach ($results as $c) {
+            self::assertTrue($c->isActive(), 'Le cursus doit être actif');
+            self::assertNotNull($c->getTheme());
+            self::assertTrue($c->getTheme()->isActive(), 'Le thème doit être actif');
+            self::assertSame($theme->getId(), $c->getTheme()->getId(), 'Doit appartenir au thème demandé');
+
+            // grâce au innerJoin sur lessons actives => au moins 1 leçon active
+            $hasAtLeastOneActiveLesson = false;
+            foreach ($c->getLessons() as $lesson) {
+                if ($lesson instanceof Lesson && $lesson->isActive()) {
+                    $hasAtLeastOneActiveLesson = true;
+                    break;
+                }
+            }
+            self::assertTrue($hasAtLeastOneActiveLesson, 'Doit avoir au moins une leçon active');
+        }
+    }
+
+    public function testFindVisibleByThemeExcludesCursusIfThemeIsArchived(): void
+    {
+        $cursus = $this->getCursusGuitareManaged();
+        $theme = $this->getThemeOfCursusManaged($cursus);
+
+        // Archive le thème
+        $theme->setIsActive(false);
+        $this->em->flush();
+        $this->em->clear();
+
+        /** @var Theme $themeReload */
+        $themeReload = $this->em->getRepository(Theme::class)->find($theme->getId());
+        self::assertNotNull($themeReload);
+
+        $results = $this->repo->findVisibleByTheme($themeReload);
+
+        // Doit être vide car t.isActive = true est requis
+        self::assertSame([], $results);
+    }
+
+    public function testFindVisibleWithVisibleLessonsReturnsCursusAndOnlyActiveLessons(): void
+    {
+        $cursus = $this->getCursusGuitareManaged();
+
+        // Met 1 leçon inactive (sur les 2)
+        $lessons = $cursus->getLessons();
+        self::assertGreaterThanOrEqual(2, $lessons->count());
+
+        /** @var Lesson $firstLesson */
+        $firstLesson = $lessons->first();
+        self::assertInstanceOf(Lesson::class, $firstLesson);
+
+        $firstLesson->setIsActive(false);
+        $this->em->flush();
+        $this->em->clear();
+
+        $loaded = $this->repo->findVisibleWithVisibleLessons($cursus->getId());
+
+        self::assertNotNull($loaded);
+        self::assertSame($cursus->getId(), $loaded->getId());
+
+        // La requête INNER JOIN sur l.isActive=true ne doit ramener que les leçons actives
+        foreach ($loaded->getLessons() as $lesson) {
+            self::assertInstanceOf(Lesson::class, $lesson);
+            self::assertTrue($lesson->isActive(), 'Seules les leçons actives doivent être hydratées');
+        }
+
+        // On avait 2 leçons et on en a désactivé 1 => il ne doit en rester qu'1 visible ici
+        self::assertCount(1, $loaded->getLessons());
+    }
+
+    public function testFindVisibleWithVisibleLessonsReturnsNullIfCursusArchived(): void
+    {
+        $cursus = $this->getCursusGuitareManaged();
+
+        $cursus->setIsActive(false);
+        $this->em->flush();
+        $this->em->clear();
+
+        self::assertNull($this->repo->findVisibleWithVisibleLessons($cursus->getId()));
+    }
+
+    public function testFindVisibleWithVisibleLessonsReturnsNullIfThemeArchived(): void
+    {
+        $cursus = $this->getCursusGuitareManaged();
+        $theme = $this->getThemeOfCursusManaged($cursus);
+
+        $theme->setIsActive(false);
+        $this->em->flush();
+        $this->em->clear();
+
+        self::assertNull($this->repo->findVisibleWithVisibleLessons($cursus->getId()));
+    }
+
+    public function testFindVisibleWithVisibleLessonsReturnsNullIfNoActiveLessons(): void
+    {
+        $cursus = $this->getCursusGuitareManaged();
+
+        foreach ($cursus->getLessons() as $lesson) {
+            if ($lesson instanceof Lesson) {
+                $lesson->setIsActive(false);
+            }
+        }
+
+        $this->em->flush();
+        $this->em->clear();
+
+        // INNER JOIN l.isActive=true => aucun match => pas de cursus retourné
+        self::assertNull($this->repo->findVisibleWithVisibleLessons($cursus->getId()));
     }
 
     protected function tearDown(): void

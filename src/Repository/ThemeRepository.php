@@ -15,42 +15,60 @@ class ThemeRepository extends ServiceEntityRepository
     }
 
     /**
+     * FRONT : Thèmes visibles
+     * - Theme actif
+     * - au moins 1 cursus actif
+     * - au moins 1 leçon active (dans un cursus actif)
+     *
      * @return Theme[]
      */
-    public function findThemesWithFilters(?string $name = null, ?float $minPrice = null, ?float $maxPrice = null): array
+    public function findVisibleThemesWithFilters(?string $name = null, ?float $minPrice = null, ?float $maxPrice = null): array
     {
         $qb = $this->createQueryBuilder('t')
             ->distinct()
-            ->leftJoin('t.cursus', 'c', 'WITH', 'c.isActive = true')
-            ->addSelect('c')
-            ->leftJoin('c.lessons', 'l', 'WITH', 'l.isActive = true')
-            ->addSelect('l')
-            ->andWhere('t.isActive = true');
+            ->andWhere('t.isActive = true')
+            ->innerJoin('t.cursus', 'c', 'WITH', 'c.isActive = true')
+            ->innerJoin('c.lessons', 'l', 'WITH', 'l.isActive = true')
+            ->addSelect('c', 'l');
 
         if ($name) {
             $qb->andWhere('LOWER(t.name) LIKE :name')
-            ->setParameter('name', '%'.mb_strtolower(trim($name)).'%');
+               ->setParameter('name', '%'.mb_strtolower(trim($name)).'%');
         }
 
-        if ($minPrice !== null && $maxPrice !== null) {
-            $qb->andWhere('((c.price BETWEEN :minPrice AND :maxPrice) OR c.id IS NULL)')
-               ->setParameter('minPrice', $minPrice)
+        if ($minPrice !== null) {
+            $qb->andWhere('c.price >= :minPrice')
+               ->setParameter('minPrice', $minPrice);
+        }
+
+        if ($maxPrice !== null) {
+            $qb->andWhere('c.price <= :maxPrice')
                ->setParameter('maxPrice', $maxPrice);
-        } else {
-            if ($minPrice !== null) {
-                $qb->andWhere('(c.price >= :minPrice OR c.id IS NULL)')
-                   ->setParameter('minPrice', $minPrice);
-            }
-            if ($maxPrice !== null) {
-                $qb->andWhere('(c.price <= :maxPrice OR c.id IS NULL)')
-                   ->setParameter('maxPrice', $maxPrice);
-            }
         }
 
         return $qb->orderBy('t.name', 'ASC')
                   ->getQuery()
                   ->getResult();
     }
+
+    /**
+     * FRONT : un thème visible + charge cursus/lessons visibles (utile page show)
+     */
+    public function findVisibleTheme(int $themeId): ?Theme
+    {
+        return $this->createQueryBuilder('t')
+            ->distinct()
+            ->andWhere('t.id = :id')
+            ->andWhere('t.isActive = true')
+            ->setParameter('id', $themeId)
+            ->innerJoin('t.cursus', 'c', 'WITH', 'c.isActive = true')
+            ->innerJoin('c.lessons', 'l', 'WITH', 'l.isActive = true')
+            ->addSelect('c', 'l')
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    // -------------------- ADMIN --------------------
 
     public function createActiveThemesQueryBuilder(): QueryBuilder
     {
@@ -59,6 +77,9 @@ class ThemeRepository extends ServiceEntityRepository
             ->orderBy('t.name', 'ASC');
     }
 
+    /**
+     * ADMIN : filtre classique (ne pas confondre "actif" et "visible")
+     */
     public function createAdminFilterQueryBuilder(
         ?string $q = null,
         string $status = 'all',
@@ -75,14 +96,13 @@ class ThemeRepository extends ServiceEntityRepository
         }
         $qb->addSelect('c');
 
-        // Si on veut exclure les thèmes sans cursus (dans le JOIN courant)
         if ($requireCursus) {
             $qb->andWhere('c.id IS NOT NULL');
         }
 
         if ($q) {
             $qb->andWhere('LOWER(t.name) LIKE :q')
-            ->setParameter('q', '%'.mb_strtolower(trim($q)).'%');
+               ->setParameter('q', '%'.mb_strtolower(trim($q)).'%');
         }
 
         if ($status === 'active') {
@@ -108,5 +128,80 @@ class ThemeRepository extends ServiceEntityRepository
         $qb->addOrderBy('c.name', 'ASC');
 
         return $qb;
+    }
+
+    /**
+     * ADMIN : liste des thèmes + flag "visible sur le site" en 1 requête (sans N+1)
+     *
+     * @return array<int, array{theme: Theme, is_visible: bool}>
+     */
+    public function findAdminThemesWithVisibility(
+        ?string $q = null,
+        string $status = 'all',
+        string $sort = 'created_desc',
+        bool $onlyActiveCursus = true
+    ): array {
+        $qb = $this->createQueryBuilder('t')->distinct();
+
+        // Join cursus (optionnel : pour afficher la liste des cursus sous le thème)
+        if ($onlyActiveCursus) {
+            $qb->leftJoin('t.cursus', 'c', 'WITH', 'c.isActive = true');
+        } else {
+            $qb->leftJoin('t.cursus', 'c');
+        }
+        $qb->addSelect('c');
+
+        // Flag visibilité front : theme actif + EXISTS(cursus actif avec leçon active)
+        $qb->addSelect(
+            "CASE WHEN (t.isActive = true AND EXISTS (
+                SELECT 1
+                FROM App\Entity\Cursus c2
+                JOIN c2.lessons l2 WITH l2.isActive = true
+                WHERE c2.theme = t AND c2.isActive = true
+            )) THEN 1 ELSE 0 END AS is_visible"
+        );
+
+        if ($q) {
+            $qb->andWhere('LOWER(t.name) LIKE :q')
+               ->setParameter('q', '%'.mb_strtolower(trim($q)).'%');
+        }
+
+        if ($status === 'active') {
+            $qb->andWhere('t.isActive = true');
+        } elseif ($status === 'archived') {
+            $qb->andWhere('t.isActive = false');
+        }
+
+        switch ($sort) {
+            case 'name_asc':
+                $qb->orderBy('t.name', 'ASC');
+                break;
+            case 'name_desc':
+                $qb->orderBy('t.name', 'DESC');
+                break;
+            case 'created_asc':
+                $qb->orderBy('t.createdAt', 'ASC');
+                break;
+            default:
+                $qb->orderBy('t.createdAt', 'DESC');
+        }
+
+        $qb->addOrderBy('c.name', 'ASC');
+
+        $rows = $qb->getQuery()->getResult();
+
+        $out = [];
+        foreach ($rows as $row) {
+            /** @var Theme $theme */
+            $theme = $row[0];
+            $isVisible = (bool) $row['is_visible'];
+
+            $out[] = [
+                'theme' => $theme,
+                'is_visible' => $isVisible,
+            ];
+        }
+
+        return $out;
     }
 }

@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Cursus;
 use App\Entity\PurchaseItem;
 use App\Entity\User;
+use App\Repository\CursusRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,16 +13,16 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class CursusController extends AbstractController
 {
-    #[Route('/cursus/{id}', name: 'cursus_show')]
-    public function show(int $id, EntityManagerInterface $em): Response
+    #[Route('/cursus/{id}', name: 'cursus_show', methods: ['GET'])]
+    public function show(int $id, CursusRepository $cursusRepository, EntityManagerInterface $em): Response
     {
         /** @var User|null $user */
         $user = $this->getUser();
 
         /** @var Cursus|null $cursus */
-        $cursus = $em->getRepository(Cursus::class)->find($id);
+        $cursus = $cursusRepository->findVisibleWithVisibleLessons($id);
 
-        if (!$cursus || !$cursus->isPubliclyAccessible()) {
+        if (!$cursus) {
             throw $this->createNotFoundException('Cursus introuvable.');
         }
 
@@ -30,10 +31,11 @@ class CursusController extends AbstractController
         if ($user !== null) {
             $paidItems = $em->getRepository(PurchaseItem::class)
                 ->createQueryBuilder('pi')
+                ->distinct()
                 ->join('pi.purchase', 'p')
                 ->leftJoin('pi.lesson', 'l')
-                ->leftJoin('l.cursus', 'lc')      // cursus de la leçon achetée
-                ->leftJoin('pi.cursus', 'c')      // cursus acheté
+                ->leftJoin('l.cursus', 'lc')
+                ->leftJoin('pi.cursus', 'c')
                 ->addSelect('l', 'lc', 'c')
                 ->andWhere('p.user = :user')
                 ->andWhere('p.status = :status')

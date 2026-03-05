@@ -35,7 +35,10 @@
 </form>
 
 <div class="themes-grid">
-  {% for theme in themes %}
+  {% for row in themesWithVisibility %}
+    {% set theme = row.theme %}
+    {% set isVisible = row.is_visible %}
+
     <div class="theme-card">
 
       {% if theme.image %}
@@ -45,10 +48,17 @@
 
       <h2>
         <span>{{ theme.name }}</span>
+
         {% if theme.isActive %}
           <span class="badge badge-active">Actif</span>
         {% else %}
           <span class="badge badge-archived">Inactif</span>
+        {% endif %}
+
+        {% if isVisible %}
+          <span class="badge bg-success">Visible</span>
+        {% else %}
+          <span class="badge bg-secondary">Non visible</span>
         {% endif %}
       </h2>
 
