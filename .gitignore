@@ -45,3 +45,7 @@
 # Mac / Linux / Windows
 .DS_Store
 Thumbs.db
+
+###> liip/imagine-bundle ###
+/public/media/cache/
+###< liip/imagine-bundle ###
