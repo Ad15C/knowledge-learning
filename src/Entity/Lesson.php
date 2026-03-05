@@ -74,10 +74,13 @@ class Lesson
     public function isActive(): bool { return $this->isActive; }
     public function setIsActive(bool $isActive): static { $this->isActive = $isActive; return $this; }
 
-    // Centralisation de la règle d'accès public
-    public function isPubliclyAccessible(): bool
+    /**
+     * Visible dans le catalogue (actif + thème/cursus actifs).
+     * ATTENTION : ne signifie PAS “accès gratuit”, le paywall est géré par LessonAccessService.
+     */
+    public function isVisibleInCatalog(): bool
     {
         return $this->isActive === true
-            && $this->cursus?->isPubliclyAccessible() === true;
+            && $this->cursus?->isVisibleInCatalog() === true;
     }
 }

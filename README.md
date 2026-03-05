@@ -8,58 +8,56 @@
 
 ## Description
 
-**Knowledge Learning** est une application web développée avec **Symfony 6.4** permettant de gérer une plateforme d'apprentissage en ligne.
+**Knowledge Learning** est une plateforme d’apprentissage en ligne développée avec **Symfony 6.4**.
 
-Les utilisateurs peuvent :
+L’application permet aux utilisateurs de suivre des contenus pédagogiques structurés en **thèmes, cursus et leçons**, de suivre leur progression, d’acheter du contenu et d’obtenir des **certifications PDF**.
 
-* explorer des **thèmes et cursus**
-* suivre des **leçons**
-* valider leur progression
-* acheter du contenu pédagogique
-* obtenir des **certifications**
-* **contacter les administrateurs via un formulaire de message**
+Une interface d’administration permet de gérer :
 
-Les administrateurs disposent d’un **dashboard d’administration** permettant de gérer le contenu pédagogique, les utilisateurs, les achats et les messages.
+* les contenus pédagogiques
+* les utilisateurs
+* les achats
+* les messages envoyés via le formulaire de contact
 
 ---
 
 # Fonctionnalités
 
-## Utilisateurs
+## Gestion des utilisateurs
 
 * inscription
 * connexion sécurisée
 * vérification email
 * modification du profil
 * changement de mot de passe
-* archivage des comptes
+* archivage de compte
 
-## Contenu pédagogique
+## Plateforme d'apprentissage
 
 * gestion des **thèmes**
 * gestion des **cursus**
 * gestion des **leçons**
-* progression utilisateur
+* suivi de progression utilisateur
 * validation des leçons
 
-## Achat de contenu
+## E-commerce
 
 * panier
-* validation d'achat
+* achat de leçons ou de cursus
 * historique des achats
-* gestion des éléments achetés (leçons ou cursus)
+* gestion des éléments achetés
 
 ## Certifications
 
-* validation de cursus
-* génération de **certificats PDF**
+* validation des cursus
+* génération automatique de **certificats PDF**
 
-## Messagerie / Contact
+## Support
 
-* les utilisateurs peuvent **envoyer un message aux administrateurs**
-* les administrateurs peuvent **consulter les messages**
-* les administrateurs peuvent **marquer les messages comme lus**
-* les administrateurs peuvent **traiter les demandes**
+* formulaire de **contact utilisateur**
+* consultation des messages côté administration
+* marquage des messages comme lus
+* suivi du traitement des demandes
 
 ---
 
@@ -97,92 +95,30 @@ Les administrateurs disposent d’un **dashboard d’administration** permettant
 
 # Architecture de l'application
 
-L'application est structurée en **trois domaines principaux** :
+L'application est organisée autour de **trois domaines fonctionnels** :
 
-* Learning (contenu pédagogique)
-* E-commerce (achats)
-* Support (messagerie)
+* **Learning** — gestion du contenu pédagogique
+* **E-commerce** — gestion des achats
+* **Support** — gestion des messages utilisateurs
 
----
+La documentation détaillée est disponible dans le dossier :
 
-# Domaine Learning
-
-```mermaid
-erDiagram
-  THEME ||--o{ CURSUS : contains
-  CURSUS }|--|| THEME : belongs_to
-
-  CURSUS ||--o{ LESSON : contains
-  LESSON }|--|| CURSUS : belongs_to
-
-  USER ||--o{ LESSON_VALIDATED : validates
-  LESSON_VALIDATED }|--|| USER : user
-
-  LESSON_VALIDATED }|--|| LESSON : lesson
-  LESSON_VALIDATED }o--|| PURCHASE_ITEM : purchase_item
-
-  USER }o--o{ LESSON : completed_lessons
-
-  USER ||--o{ CERTIFICATION : earns
-  CERTIFICATION }|--|| USER : user
-  CERTIFICATION }o--|| CURSUS : cursus
-  CERTIFICATION }o--|| THEME : theme
-  CERTIFICATION }o--|| LESSON : lesson
-```
-
----
-
-# Domaine E-commerce
-
-```mermaid
-erDiagram
-  USER ||--o{ PURCHASE : places
-  PURCHASE }|--|| USER : user
-
-  PURCHASE ||--o{ PURCHASE_ITEM : contains
-  PURCHASE_ITEM }|--|| PURCHASE : purchase
-
-  PURCHASE_ITEM }o--|| LESSON : lesson
-  PURCHASE_ITEM }o--|| CURSUS : cursus
-```
-
----
-
-# Domaine Support (Contact)
-
-```mermaid
-erDiagram
-  CONTACT {
-    int id
-    string fullname
-    string email
-    string subject
-    text message
-    datetime sentAt
-    datetime readAt
-    bool handled
-    datetime handledAt
-  }
-```
+docs/
 
 ---
 
 # Installation
 
-## 1. Cloner le projet
+## Cloner le projet
 
-```bash
 git clone <repository-url>
 cd knowledge-learning
-```
 
 ---
 
 # Installer les dépendances
 
-```bash
 composer install
-```
 
 ---
 
@@ -190,12 +126,10 @@ composer install
 
 Créer un fichier `.env.local` :
 
-```env
 APP_ENV=dev
 APP_SECRET=change_this_secret
 
 DATABASE_URL="mysql://user:password@127.0.0.1:3306/knowledge_learning?serverVersion=8.0&charset=utf8mb4"
-```
 
 ---
 
@@ -203,23 +137,17 @@ DATABASE_URL="mysql://user:password@127.0.0.1:3306/knowledge_learning?serverVers
 
 Créer la base :
 
-```bash
 php bin/console doctrine:database:create
-```
 
 Exécuter les migrations :
 
-```bash
 php bin/console doctrine:migrations:migrate
-```
 
 ---
 
 # Charger les données de test
 
-```bash
 php bin/console doctrine:fixtures:load
-```
 
 ---
 
@@ -227,37 +155,15 @@ php bin/console doctrine:fixtures:load
 
 Avec **Symfony CLI**
 
-```bash
 symfony serve
-```
 
 Ou avec **PHP built-in server**
 
-```bash
 php -S 127.0.0.1:8000 -t public
-```
 
 Application disponible sur :
 
-```
 http://127.0.0.1:8000
-```
-
----
-
-# Assets frontend
-
-Installer l'importmap :
-
-```bash
-php bin/console importmap:install
-```
-
-Nettoyer le cache :
-
-```bash
-php bin/console cache:clear
-```
 
 ---
 
@@ -265,15 +171,13 @@ php bin/console cache:clear
 
 Lancer les tests :
 
-```bash
 php bin/phpunit
-```
 
 Le projet inclut :
 
 * tests unitaires
 * tests fonctionnels
-* tests d'intégration
+* tests d’intégration
 * tests de workflow utilisateur
 
 ---
@@ -282,37 +186,45 @@ Le projet inclut :
 
 Créer un administrateur
 
-```bash
 php bin/console app:create-admin
-```
 
 Réinitialiser les utilisateurs
 
-```bash
 php bin/console app:reset-users
-```
 
 Supprimer un utilisateur de test
 
-```bash
 php bin/console app:delete-test-user
-```
 
 ---
 
 # Structure du projet
 
-```
-assets/        # CSS et JS
-config/        # configuration Symfony
-migrations/    # migrations Doctrine
-public/        # point d'entrée de l'application
-src/           # code source
-templates/     # templates Twig
-tests/         # tests PHPUnit
-translations/  # fichiers de traduction
-var/           # cache et logs
-```
+assets/        CSS et JS
+config/        configuration Symfony
+migrations/    migrations Doctrine
+public/        point d'entrée de l'application
+src/           code source
+templates/     templates Twig
+tests/         tests PHPUnit
+translations/  traductions
+var/           cache et logs
+
+---
+
+# Documentation
+
+Une documentation plus détaillée est disponible dans le dossier :
+
+docs/
+
+Elle couvre :
+
+* architecture détaillée
+* workflows métier
+* sécurité
+* déploiement
+* décisions d’architecture
 
 ---
 

@@ -50,21 +50,8 @@ class PurchaseItemRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function findByUserAndPeriod(User $user, \DateTimeInterface $from, \DateTimeInterface $to): array
-    {
-        return $this->createQueryBuilder('pi')
-            ->join('pi.purchase', 'p')
-            ->andWhere('p.user = :user')
-            ->andWhere('p.createdAt BETWEEN :from AND :to')
-            ->setParameter('user', $user)
-            ->setParameter('from', $from)
-            ->setParameter('to', $to)
-            ->getQuery()
-            ->getResult();
-    }
-
     /**
-     * Leçons achetées (hors panier)
+     * Leçons achetées et PAYÉES uniquement
      */
     public function findLessonsPurchasedByUser(User $user): array
     {
@@ -78,10 +65,10 @@ class PurchaseItemRepository extends ServiceEntityRepository
             ->leftJoin('l.cursus', 'c')
             ->leftJoin('c.theme', 't')
             ->andWhere('p.user = :user')
-            ->andWhere('p.status != :cart')
+            ->andWhere('p.status = :paid')
             ->andWhere('pi.lesson IS NOT NULL')
             ->setParameter('user', $user)
-            ->setParameter('cart', Purchase::STATUS_CART)
+            ->setParameter('paid', Purchase::STATUS_PAID)
             ->getQuery()
             ->getResult();
     }

@@ -98,8 +98,12 @@ class Cursus
         $this->lessons->removeElement($lesson);
         return $this;
     }
-
-    public function isPubliclyAccessible(): bool
+    
+    /**
+     * Visible dans le catalogue (actif + thème/cursus actifs).
+     * ATTENTION : ne signifie PAS “accès gratuit”, le paywall est géré par LessonAccessService.
+     */
+    public function isVisibleInCatalog(): bool
     {
         return $this->isActive === true && $this->theme?->isActive() === true;
     }

@@ -14,41 +14,50 @@ class AdminAccessTest extends WebTestCase
 {
     /**
      * Snapshot attendu (route name, methods, path).
-     * Si tu ajoutes/modifies une route /admin, mets à jour ce tableau.
+     * Si tu ajoutes/modifies une route /admin, mets à jour ce tableau
+     * OU utilise le test dump (groupe snapshot_dump) pour le regénérer.
      */
     private const EXPECTED_ADMIN_ROUTES = [
-        ['certification_download', 'GET', '/admin/certifications/{id}/download'],
         ['admin_contact_index', 'GET', '/admin/contact/'],
-        ['admin_contact_show', 'GET', '/admin/contact/{id}'],
+        ['admin_contact_mark_handled', 'POST', '/admin/contact/{id}/handled'],
         ['admin_contact_mark_read', 'POST', '/admin/contact/{id}/read'],
         ['admin_contact_mark_unread', 'POST', '/admin/contact/{id}/unread'],
-        ['admin_contact_mark_handled', 'POST', '/admin/contact/{id}/handled'],
-        ['admin_dashboard', 'ANY', '/admin'],
-        ['admin_cursus_index', 'GET', '/admin/cursus'],
-        ['admin_cursus_new', 'GET|POST', '/admin/cursus/new'],
-        ['admin_cursus_edit', 'GET|POST', '/admin/cursus/{id}/edit'],
+        ['admin_contact_show', 'GET', '/admin/contact/{id}'],
+
+        ['admin_cursus_activate', 'POST', '/admin/cursus/{id}/activate'],
         ['admin_cursus_delete', 'GET', '/admin/cursus/{id}/delete'],
         ['admin_cursus_disable', 'POST', '/admin/cursus/{id}/disable'],
-        ['admin_cursus_activate', 'POST', '/admin/cursus/{id}/activate'],
-        ['admin_lesson_index', 'GET', '/admin/lesson'],
-        ['admin_lesson_new', 'GET|POST', '/admin/lesson/new'],
-        ['admin_lesson_edit', 'GET|POST', '/admin/lesson/{id}/edit'],
+        ['admin_cursus_edit', 'GET|POST', '/admin/cursus/{id}/edit'],
+        ['admin_cursus_index', 'GET', '/admin/cursus'],
+        ['admin_cursus_new', 'GET|POST', '/admin/cursus/new'],
+
+        ['admin_dashboard', 'ANY', '/admin'],
+
+        ['admin_lesson_activate', 'POST', '/admin/lesson/{id}/activate'],
         ['admin_lesson_delete', 'GET', '/admin/lesson/{id}/delete'],
         ['admin_lesson_disable', 'POST', '/admin/lesson/{id}/disable'],
-        ['admin_lesson_activate', 'POST', '/admin/lesson/{id}/activate'],
+        ['admin_lesson_edit', 'GET|POST', '/admin/lesson/{id}/edit'],
+        ['admin_lesson_index', 'GET', '/admin/lesson'],
+        ['admin_lesson_new', 'GET|POST', '/admin/lesson/new'],
+
         ['admin_purchase_index', 'GET', '/admin/purchases'],
         ['admin_purchase_show', 'GET', '/admin/purchases/{id}'],
-        ['admin_theme_index', 'GET', '/admin/themes'],
-        ['admin_theme_new', 'GET|POST', '/admin/themes/new'],
-        ['admin_theme_edit', 'GET|POST', '/admin/themes/{id}/edit'],
+        ['admin_purchase_update_status', 'POST', '/admin/purchases/{id}/status'],
+
+        ['admin_theme_activate', 'POST', '/admin/themes/{id}/activate'],
         ['admin_theme_delete', 'GET', '/admin/themes/{id}/delete'],
         ['admin_theme_disable', 'POST', '/admin/themes/{id}/disable'],
-        ['admin_theme_activate', 'POST', '/admin/themes/{id}/activate'],
-        ['admin_users_index', 'GET', '/admin/users'],
-        ['admin_users_show', 'GET', '/admin/users/{id}'],
-        ['admin_users_edit', 'GET|POST', '/admin/users/{id}/edit'],
+        ['admin_theme_edit', 'GET|POST', '/admin/themes/{id}/edit'],
+        ['admin_theme_index', 'GET', '/admin/themes'],
+        ['admin_theme_new', 'GET|POST', '/admin/themes/new'],
+
         ['admin_users_delete', 'POST', '/admin/users/{id}/delete'],
+        ['admin_users_edit', 'GET|POST', '/admin/users/{id}/edit'],
+        ['admin_users_index', 'GET', '/admin/users'],
         ['admin_users_restore', 'POST', '/admin/users/{id}/restore'],
+        ['admin_users_show', 'GET', '/admin/users/{id}'],
+
+        ['certification_download', 'GET', '/admin/certifications/{id}/download'],
     ];
 
     private function bootAndLoadFixtures(): array
@@ -80,7 +89,7 @@ class AdminAccessTest extends WebTestCase
         $routes = $this->getAdminRoutes($router);
         $this->assertNotEmpty($routes, 'Aucune route /admin trouvée.');
 
-        // 1) VISITEUR => doit finir sur /login (en suivant redirects http->https, slash, etc.)
+        // 1) VISITEUR => doit finir sur /login
         foreach ($routes as [$name, $path, $methods]) {
             $url = $this->fillPlaceholders($path);
             $method = $this->pickMethod($methods);
@@ -113,8 +122,6 @@ class AdminAccessTest extends WebTestCase
         }
 
         // 3) ROLE_ADMIN
-        // - GET : jamais 403 ; jamais /login ; status final 200/302/404
-        // - POST-only : CSRF possible => on valide seulement "pas /login" et status dans une whitelist (incluant 403)
         $client->loginUser($admin);
 
         foreach ($routes as [$name, $path, $methods]) {
@@ -126,14 +133,12 @@ class AdminAccessTest extends WebTestCase
                 $client->request('POST', $url);
                 $this->followRedirects($client);
 
-                // Un admin ne doit jamais être renvoyé au login
                 $this->assertStringNotContainsString(
                     '/login',
                     $client->getRequest()->getPathInfo(),
                     sprintf('[ADMIN][POST] %s (%s) ne doit pas finir sur /login (got %s).', $url, $name, $client->getRequest()->getPathInfo())
                 );
 
-                // On tolère 403 (CSRF), 400, 404, 200, 302
                 $this->assertContains(
                     $client->getResponse()->getStatusCode(),
                     [200, 302, 400, 403, 404],
@@ -177,21 +182,50 @@ class AdminAccessTest extends WebTestCase
     {
         [, , $router] = $this->bootAndLoadFixtures();
 
-        $actual = [];
-        foreach ($this->getAdminRoutes($router) as [$name, $path, $methods]) {
-            $methodsLabel = empty($methods) ? 'ANY' : implode('|', $methods);
-            $actual[] = [$name, $methodsLabel, $path];
-        }
+        $actual = $this->buildAdminRoutesSnapshot($router);
+        $expected = self::EXPECTED_ADMIN_ROUTES;
 
         usort($actual, fn($a, $b) => strcmp($a[0], $b[0]));
-        $expected = self::EXPECTED_ADMIN_ROUTES;
         usort($expected, fn($a, $b) => strcmp($a[0], $b[0]));
 
         $this->assertSame(
             $expected,
             $actual,
-            "Snapshot des routes /admin différent.\nSi tu as ajouté/modifié une route admin, mets à jour EXPECTED_ADMIN_ROUTES."
+            "Snapshot des routes /admin différent.\n" .
+            "➡ Pour regénérer automatiquement, lance :\n" .
+            "   php bin/phpunit --group snapshot_dump\n" .
+            "Puis copie-colle le bloc dans EXPECTED_ADMIN_ROUTES.\n"
         );
+    }
+
+    /**
+     * ✅ Snapshot auto-généré (utilitaire) : ce test échoue volontairement
+     * pour afficher le tableau à copier/coller.
+     *
+     * Run normal (le CI / toi) :
+     *   php bin/phpunit --exclude-group snapshot_dump
+     *
+     * Dump snapshot :
+     *   php bin/phpunit --group snapshot_dump
+     *
+     * @group snapshot_dump
+     */
+    public function test_dump_admin_routes_snapshot_for_copy_paste(): void
+    {
+        [, , $router] = $this->bootAndLoadFixtures();
+
+        $actual = $this->buildAdminRoutesSnapshot($router);
+        usort($actual, fn($a, $b) => strcmp($a[0], $b[0]));
+
+        $lines = [];
+        $lines[] = "Copie-colle ceci dans EXPECTED_ADMIN_ROUTES :\n";
+        $lines[] = "private const EXPECTED_ADMIN_ROUTES = [";
+        foreach ($actual as [$name, $methodsLabel, $path]) {
+            $lines[] = sprintf("    ['%s', '%s', '%s'],", $name, $methodsLabel, $path);
+        }
+        $lines[] = "];";
+
+        $this->fail("\n" . implode("\n", $lines) . "\n");
     }
 
     public function test_each_admin_route_controller_is_isgranted_admin(): void
@@ -207,7 +241,12 @@ class AdminAccessTest extends WebTestCase
             $controller = (string) $route->getDefault('_controller');
 
             if (!str_contains($controller, '::')) {
-                $this->fail(sprintf('Route %s (%s) controller non standard: "%s". Ajoute un contrôle IsGranted explicite.', $name, $path, $controller));
+                $this->fail(sprintf(
+                    'Route %s (%s) controller non standard: "%s". Ajoute un contrôle IsGranted explicite.',
+                    $name,
+                    $path,
+                    $controller
+                ));
             }
 
             [$class, $method] = explode('::', $controller, 2);
@@ -325,6 +364,21 @@ class AdminAccessTest extends WebTestCase
         return $out;
     }
 
+    /**
+     * Génère le snapshot au format attendu: [name, methodsLabel, path]
+     *
+     * @return array<int, array{0:string,1:string,2:string}>
+     */
+    private function buildAdminRoutesSnapshot(RouterInterface $router): array
+    {
+        $actual = [];
+        foreach ($this->getAdminRoutes($router) as [$name, $path, $methods]) {
+            $methodsLabel = empty($methods) ? 'ANY' : implode('|', $methods);
+            $actual[] = [$name, $methodsLabel, $path];
+        }
+        return $actual;
+    }
+
     private function pickMethod(array $methods): string
     {
         if (empty($methods)) return 'GET';
@@ -422,12 +476,9 @@ class AdminAccessTest extends WebTestCase
                 continue;
             }
 
-            // si la route a un requirement id (recommandé), on peut être strict
             $requirements = $route->getRequirements();
             $hasNumericRequirement = isset($requirements['id']);
 
-            // On ne teste que les routes où l'ID est censé être numérique
-            // (si tu veux, enlève ce if et teste tout)
             if (!$hasNumericRequirement) {
                 continue;
             }
@@ -435,7 +486,6 @@ class AdminAccessTest extends WebTestCase
             $methods = $route->getMethods();
             $method = empty($methods) ? 'GET' : (in_array('GET', $methods, true) ? 'GET' : $methods[0]);
 
-            // Pour POST-only, ça serait 405 en GET, donc on évite
             if ($method !== 'GET') {
                 continue;
             }

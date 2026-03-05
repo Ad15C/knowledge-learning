@@ -19,9 +19,9 @@ class PurchaseExtension extends AbstractExtension
     {
         return match ($status) {
             'cart' => 'Panier',
+            'pending' => 'En attente',
             'paid' => 'Payée',
-            'cancelled' => 'Annulée',
-            'refunded' => 'Remboursée',
+            'canceled' => 'Annulée',
             default => 'Inconnu',
         };
     }
@@ -30,9 +30,9 @@ class PurchaseExtension extends AbstractExtension
     {
         return match ($status) {
             'cart' => 'badge badge-cart',
+            'pending' => 'badge badge-pending',
             'paid' => 'badge badge-paid',
-            'cancelled' => 'badge badge-cancelled',
-            'refunded' => 'badge badge-refunded',
+            'canceled' => 'badge badge-canceled',
             default => 'badge badge-unknown',
         };
     }

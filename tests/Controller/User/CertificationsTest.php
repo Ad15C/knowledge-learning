@@ -16,7 +16,8 @@ class CertificationsTest extends AbstractUserWebTestCase
         $cert->setCursus($cursus);
         $cert->setCertificateCode($code);
         $cert->setType('cursus');
-        $cert->setIssuedAt(new \DateTime($issuedAt));
+
+        $cert->setIssuedAt(new \DateTimeImmutable($issuedAt));
 
         $this->em->persist($cert);
         $this->em->flush();

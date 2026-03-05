@@ -1,63 +1,62 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ lesson.title }}{% endblock %}
-
-{% block stylesheets %}
-  {{ parent() }}
-  <link rel="stylesheet" href="{{ asset('styles/lesson.css') }}">
-{% endblock %}
+{% block title %}{{ cursus.name }}{% endblock %}
 
 {% block body %}
-<div class="lesson-page">
-  <h1>{{ lesson.title }}</h1>
+<div class="cursus-page">
+  <h1>{{ cursus.name }}</h1>
 
-  {% if lesson.image %}
-    <img src="{{ asset(lesson.image) }}" alt="{{ lesson.title }}" class="lesson-image">
+  {% if cursus.description %}
+    <p>{{ cursus.description }}</p>
   {% endif %}
 
-  {% if lesson.fiche %}
-    {% for paragraph in lesson.fiche|split('<br><br>') %}
-      <p>{{ paragraph|raw }}</p>
+  <h2>Leçons</h2>
+
+  <ul class="lesson-list">
+    {% for lesson in cursus.lessons %}
+      {% set canAccess = userHasAccess[lesson.id]|default(false) %}
+
+      <li class="lesson-row">
+        <div>
+          <strong>{{ lesson.title }}</strong>
+          {% if not canAccess %}
+            <span class="badge badge-locked">Verrouillée</span>
+          {% else %}
+            <span class="badge badge-unlocked">Accessible</span>
+          {% endif %}
+        </div>
+
+        <div class="lesson-actions">
+          {% if canAccess %}
+            <a class="btn btn-outline" href="{{ path('lesson_show', {id: lesson.id}) }}">
+              Ouvrir
+            </a>
+
+          {% else %}
+            {% if app.user %}
+              {# connecté mais pas payé : CTA achat #}
+              <form method="post" action="{{ path('cart_add_lesson', {id: lesson.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('cart_add_lesson_' ~ lesson.id) }}">
+                <button type="submit" class="btn btn-primary">
+                  Acheter la leçon ({{ lesson.price }} €)
+                </button>
+              </form>
+            {% else %}
+              {# non connecté #}
+              <a class="btn btn-primary" href="{{ path('app_login') }}">
+                Se connecter pour acheter
+              </a>
+            {% endif %}
+          {% endif %}
+        </div>
+      </li>
+    {% else %}
+      <li>Aucune leçon disponible pour ce cursus.</li>
     {% endfor %}
-  {% else %}
-    <p>Pas encore de contenu disponible pour cette leçon.</p>
-  {% endif %}
-
-  {% set hasAccess = userHasAccess[lesson.id]|default(false) %}
-  {% set hasCompleted = userHasCompleted[lesson.id]|default(false) %}
-
-  {% if hasAccess and not hasCompleted %}
-    <form method="post"
-          action="{{ path('lesson_complete', {id: lesson.id}) }}"
-          onsubmit="return confirm('Confirmer que vous avez bien terminé la leçon ?');">
-      <input type="hidden" name="_token" value="{{ csrf_token('lesson_complete_' ~ lesson.id) }}">
-      <button type="submit" class="btn btn-outline">Marquer comme complétée</button>
-    </form>
-
-  {% elseif hasCompleted %}
-    <p class="text-success fw-bold">Vous avez déjà complété cette leçon.</p>
-
-    {% if certification %}
-      <p class="text-success fw-bold">
-        Certificat : <strong>{{ certification.certificateCode }}</strong>
-      </p>
-      <p>Date : {{ certification.issuedAt|date('d/m/Y') }}</p>
-
-      <a class="btn btn-secondary"
-         href="{{ path('app_certification_pdf', {id: certification.id}) }}"
-         target="_blank" rel="noopener">
-        Télécharger PDF
-      </a>
-    {% endif %}
-
-  {% else %}
-    <p class="text-danger">Vous n'avez pas encore accès à cette leçon.</p>
-  {% endif %}
+  </ul>
 
   <div class="mt-3">
-    <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">
-      ← Retour au tableau de bord
-    </a>
+    <a href="{{ path('themes_index') }}" class="btn btn-secondary">← Retour aux thèmes</a>
   </div>
 </div>
 {% endblock %}
