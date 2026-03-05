@@ -36,6 +36,7 @@ class AdminUsersIndexTest extends WebTestCase
         self::assertNotNull($admin, 'Admin fixture introuvable.');
 
         $this->client->loginUser($admin);
+
         return $admin;
     }
 
@@ -60,6 +61,7 @@ class AdminUsersIndexTest extends WebTestCase
         $u->setArchivedAt($archivedAt);
 
         $this->em->persist($u);
+
         return $u;
     }
 
@@ -82,8 +84,10 @@ class AdminUsersIndexTest extends WebTestCase
 
         $html = (string) $this->client->getResponse()->getContent();
 
+        // Par défaut: "active" => archived non affichés
         self::assertStringNotContainsString('Archived', $html);
 
+        // Tri alphabétique sur (lastName, firstName) attendu dans la vue: "Alpha Alice" avant "Beta Bob"
         $posAlpha = mb_strpos($html, 'Alpha Alice');
         $posBeta  = mb_strpos($html, 'Beta Bob');
         self::assertNotFalse($posAlpha);
@@ -173,6 +177,7 @@ class AdminUsersIndexTest extends WebTestCase
         self::assertTrue($posOld < $posSame1);
         self::assertTrue($posSame1 < $posNew);
 
+        // Tie-breaker "id" attendu quand createdAt identiques
         self::assertTrue($same1->getId() < $same2->getId());
         self::assertTrue($posSame1 < $posSame2);
     }
@@ -240,5 +245,60 @@ class AdminUsersIndexTest extends WebTestCase
         self::assertResponseIsSuccessful();
 
         self::assertSame('', $crawler->filter('input[name="action"]')->attr('value'));
+    }
+
+    public function testIndexHasFicheLinkAndItOpensUserShowPage(): void
+    {
+        $this->loginAsAdminFromFixtures();
+
+        $u = $this->createUser('fiche@test.io', 'Fiche', 'User');
+        $this->em->flush();
+
+        $crawler = $this->client->request('GET', '/admin/users?status=active');
+        self::assertResponseIsSuccessful();
+
+        // Lien "Fiche" vers /admin/users/{id}
+        $href = '/admin/users/'.$u->getId();
+        self::assertGreaterThan(
+            0,
+            $crawler->filter('a.btn.btn-secondary[href="'.$href.'"]')->count(),
+            'Le lien "Fiche" n’est pas présent ou ne pointe pas vers la route show.'
+        );
+
+        // Navigation vers la fiche
+        $this->client->request('GET', $href);
+        self::assertResponseIsSuccessful();
+
+        $html = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('Fiche client', $html);
+        self::assertStringContainsString('Fiche User', $html);
+        self::assertStringContainsString('fiche@test.io', $html);
+    }
+
+    public function testShowDisplaysStatsAndEmptyProgressAndCertsWhenNoData(): void
+    {
+        $this->loginAsAdminFromFixtures();
+
+        $u = $this->createUser('nodata@test.io', 'No', 'Data');
+        $this->em->flush();
+
+        $this->client->request('GET', '/admin/users/'.$u->getId());
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        // Header + sous-titre
+        self::assertStringContainsString('Fiche client', $html);
+        self::assertStringContainsString('No Data', $html);
+        self::assertStringContainsString('nodata@test.io', $html);
+
+        // Stats (le contrôleur passe toujours "stats")
+        self::assertStringContainsString('Leçons achetées', $html);
+        self::assertStringContainsString('Leçons validées', $html);
+        self::assertStringContainsString('Certifications', $html);
+
+        // États vides du partial _progress_and_certs.html.twig
+        self::assertStringContainsString('— Aucune leçon validée.', $html);
+        self::assertStringContainsString('— Aucune leçon en cours.', $html);
+        self::assertStringContainsString('— Aucune certification.', $html);
     }
 }
