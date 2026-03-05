@@ -4,6 +4,7 @@ namespace App\Tests\Repository;
 
 use App\DataFixtures\TestUserFixtures;
 use App\Entity\Purchase;
+use App\Entity\PurchaseItem;
 use App\Entity\User;
 use App\Repository\PurchaseRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -44,14 +45,6 @@ class PurchaseRepositoryTest extends KernelTestCase
         return $user;
     }
 
-    private function forceTotal(Purchase $purchase, string $total): void
-    {
-        $ref = new \ReflectionClass($purchase);
-        $prop = $ref->getProperty('total');
-        $prop->setAccessible(true);
-        $prop->setValue($purchase, $total);
-    }
-
     private function forceCreatedAt(Purchase $purchase, \DateTimeImmutable $dt): void
     {
         $ref = new \ReflectionClass($purchase);
@@ -60,6 +53,10 @@ class PurchaseRepositoryTest extends KernelTestCase
         $prop->setValue($purchase, $dt);
     }
 
+    /**
+     * Crée une commande + 1 item (pour que itemsCount fonctionne dans la requête admin).
+     * Le total est calculé via calculateTotal().
+     */
     private function createPurchase(User $user, string $status, string $total = '0.00'): Purchase
     {
         $p = new Purchase();
@@ -72,10 +69,18 @@ class PurchaseRepositoryTest extends KernelTestCase
         // En prod c’est PrePersist, mais en test on le déclenche
         $p->generateOrderNumber();
 
-        // total est une string (decimal), on force si on veut des valeurs propres
-        $this->forceTotal($p, $total);
+        // Ajoute 1 item pour que COUNT(pi.id) soit cohérent
+        $item = new PurchaseItem();
+        $item->setQuantity(1);
+        $item->setUnitPrice((float) $total);
+        $p->addItem($item);
+
+        // Total en base = somme des items
+        $p->calculateTotal();
 
         $this->em->persist($p);
+        // cascade persist sur items => pas besoin de persist($item)
+
         return $p;
     }
 
@@ -186,8 +191,8 @@ class PurchaseRepositoryTest extends KernelTestCase
             q: '',
             status: Purchase::STATUS_PAID,
             userId: $user->getId(),
-            dateFrom: new \DateTimeImmutable('2026-02-01 00:00:00'),
-            dateTo: new \DateTimeImmutable('2026-02-28 00:00:00'),
+            dateFrom: new \DateTimeImmutable('2026-02-01'),
+            dateTo: new \DateTimeImmutable('2026-02-28'),
             sort: 'createdAt',
             dir: 'DESC',
             page: 1,
@@ -197,10 +202,20 @@ class PurchaseRepositoryTest extends KernelTestCase
         self::assertArrayHasKey('items', $result);
         self::assertArrayHasKey('total', $result);
 
+        // 2 commandes paid
         self::assertSame(2, $result['total']);
         self::assertCount(2, $result['items']);
-        self::assertSame(Purchase::STATUS_PAID, $result['items'][0]->getStatus());
-        self::assertSame(Purchase::STATUS_PAID, $result['items'][1]->getStatus());
+
+        // items = rows [{purchase, itemsCount}]
+        self::assertArrayHasKey('purchase', $result['items'][0]);
+        self::assertArrayHasKey('itemsCount', $result['items'][0]);
+
+        self::assertSame(Purchase::STATUS_PAID, $result['items'][0]['purchase']->getStatus());
+        self::assertSame(Purchase::STATUS_PAID, $result['items'][1]['purchase']->getStatus());
+
+        // On a créé 1 item par purchase => itemsCount = 1
+        self::assertSame(1, $result['items'][0]['itemsCount']);
+        self::assertSame(1, $result['items'][1]['itemsCount']);
     }
 
     public function testFindOneForAdminShowLoadsUserAndItemsJoins(): void
@@ -217,8 +232,9 @@ class PurchaseRepositoryTest extends KernelTestCase
         self::assertNotNull($loaded->getUser());
         self::assertSame($user->getId(), $loaded->getUser()->getId());
 
-        // items peuvent être vides ici, mais la jointure doit fonctionner
+        // ici on a créé 1 item => on peut le tester
         self::assertNotNull($loaded->getItems());
+        self::assertCount(1, $loaded->getItems());
     }
 
     protected function tearDown(): void
