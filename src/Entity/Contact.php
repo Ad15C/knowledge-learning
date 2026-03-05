@@ -83,6 +83,12 @@ class Contact
         return $this->readAt !== null;
     }
 
+    public function setReadAt(?\DateTimeImmutable $readAt): static
+    {
+        $this->readAt = $readAt;
+        return $this;
+    }
+
     public function getHandledAt(): ?\DateTimeImmutable { return $this->handledAt; }
 
     public function isHandled(): bool
