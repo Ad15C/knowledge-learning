@@ -10,59 +10,89 @@ Knowledge Learning est une application Symfony 6.4 organisée en 3 domaines :
 
 ## Organisation du code
 
-- `src/Controller/` : controllers front (parcours utilisateur)
-- `src/Controller/Admin/` : controllers admin (dashboard + gestion)
-- `src/Entity/` : entités Doctrine (User, Theme, Cursus, Lesson, Purchase…)
-- `src/Repository/` : lecture DB et requêtes custom
+- `src/Controller/` : contrôleurs front
+- `src/Controller/Admin/` : contrôleurs admin
+- `src/Entity/` : entités Doctrine
+- `src/Repository/` : requêtes personnalisées
 - `src/Service/` : logique métier
-- `src/Form/` : FormTypes (front + admin)
-- `src/Security/` : règles sécurité (UserChecker)
-- `src/Twig/` : extensions Twig (helpers d’affichage)
+- `src/Form/` : formulaires Symfony
+- `src/Security/` : sécurité applicative
+- `src/Twig/` : extensions Twig
 - `src/Command/` : commandes CLI
-- `src/DataFixtures/` : fixtures
+- `src/DataFixtures/` : fixtures de test/démo
 
 ## Routing
 
-Les routes sont déclarées via **attributs PHP**.  
-`config/routes` pointe sur `src/Controller/` en `type: attribute`.
-
-Cela permet :
-
-- routes proches du code (controllers)
-- refactoring plus simple
+Les routes sont déclarées via attributs PHP.  
+`config/routes` pointe vers `src/Controller/` avec `type: attribute`.
 
 ---
 
-## Domaine E-commerce : panier et achats
+## Domaine Learning
 
-### CartService
+### Entités principales
 
-Fichier : `src/Service/CartService.php`
+- `Theme`
+- `Cursus`
+- `Lesson`
+- `LessonValidated`
+- `Certification`
+
+### Visibilité catalogue
+
+La visibilité du catalogue repose sur deux niveaux :
+
+#### 1. Helpers sur les entités
+
+Ils servent à exprimer la lisibilité métier simple :
+
+- `Theme::isActive()`
+- `Cursus::isVisibleInCatalog()`
+- `Lesson::isVisibleInCatalog()`
+
+Ces helpers vérifient l’état actif de l’objet et de ses parents.
+
+#### 2. Règles complètes en repository
+
+Les règles plus riches sont gérées au niveau Doctrine :
+
+- `ThemeRepository::findVisibleThemesWithFilters()`
+- `ThemeRepository::findVisibleTheme()`
+- `CursusRepository::findVisibleByTheme()`
+- `CursusRepository::findVisibleWithVisibleLessons()`
+- `LessonRepository::findVisibleLesson()`
+- `LessonRepository::findVisibleByCursus()`
+
+Cela permet notamment de garantir qu’un cursus visible possède au moins une leçon active.
+
+---
+
+## Domaine Learning : accès payant
+
+### LessonAccessService
+
+Fichier : `src/Service/LessonAccessService.php`
 
 Responsabilité :
 
-- calculer le nombre d’items dans le panier de l’utilisateur connecté
+- déterminer si un utilisateur a le droit d’ouvrir une leçon
+- construire la map des leçons accessibles dans un cursus
 
-Implémentation :
+Règles :
 
-- récupère l’utilisateur via `Security`
-- récupère le `Purchase` en statut `Purchase::STATUS_CART`
-- retourne `purchase->getItems()->count()`
+- `ROLE_ADMIN` : accès total
+- achat d’une leçon payé : accès à cette leçon
+- achat d’un cursus payé : accès à toutes les leçons du cursus
 
-Implications :
+Méthodes principales :
 
-- le panier est stocké **en base** via une entité `Purchase` en statut `cart`
-- on distingue panier vs achats “finalisés” via `Purchase.status`
+- `userCanAccessLesson(User $user, Lesson $lesson): bool`
+- `getAccessibleLessonMapForCursus(User $user, Cursus $cursus): array<int,bool>`
 
-### PurchaseItemRepository (requêtes utiles)
+Important :
 
-Fichier : `src/Repository/PurchaseItemRepository.php`
-
-Méthodes utiles :
-
-- `findByUserAndStatus(User $user, string $status)` : retrouver les items par statut de `Purchase` (`cart`, `paid`…)
-- `findByUserAndCursus(User $user, Cursus $cursus)` : vérifier si un cursus a été acheté
-- `findLessonsPurchasedByUser(User $user)` : retourne les leçons achetées **et payées**
+- l’accès est accordé uniquement si `Purchase.status = paid`
+- la visibilité catalogue n’accorde jamais l’accès au contenu
 
 ---
 
@@ -74,57 +104,74 @@ Fichier : `src/Service/LessonValidatedService.php`
 
 Responsabilité :
 
-- valider une leçon pour un utilisateur
-- créer automatiquement des certifications quand les conditions sont remplies
+- marquer une leçon comme complétée
+- créer les certifications nécessaires
 
-#### `validateLesson(User $user, Lesson $lesson, ?PurchaseItem $purchaseItem = null)`
+Comportement :
 
-Étapes :
+- si une validation existe déjà, elle est réutilisée
+- si elle existe mais n’est pas complétée, elle est marquée complétée
+- si elle n’existe pas, elle est créée
+- une certification de type `lesson` est créée si besoin
+- une certification de type `cursus` est créée si toutes les leçons du cursus sont validées
+- une certification de type `theme` est créée si toutes les leçons du thème sont validées
 
-1. Cherche une validation existante (`LessonValidatedRepository::findOneBy(user, lesson)`).
-2. Si elle existe :
-   - si elle n’est pas `completed`, la marque comme complétée et flush
-   - retourne l’existante
-3. Sinon :
-   - crée un nouvel objet `LessonValidated`
-   - associe `user`, `lesson` et (optionnel) `purchaseItem`
-   - marque completed
-   - persist + flush
-4. Crée une certification de type **lesson** (si pas déjà existante)
-5. Si toutes les leçons d’un **thème** sont validées :
-   - crée une certification type **theme**
-6. Si toutes les leçons d’un **cursus** sont validées :
-   - crée une certification type **cursus**
+Le service a été simplifié et nettoyé pour réduire les flush inutiles tout en conservant la logique métier.
 
-#### Certification (types)
+---
 
-Types utilisés :
+## Contrôleurs front
 
-- `lesson`
-- `theme`
-- `cursus`
+### CursusController
 
-Code certificat :
+Responsabilité :
 
-- `uniqid('KL-')`
+- afficher la page catalogue d’un cursus visible
+- exposer au template :
+  - `userHasAccess`
+  - `userHasCompleted`
 
-Date :
+Cas d’usage :
 
-- `issuedAt: DateTimeImmutable`
+- visiteur : voit le catalogue
+- connecté : voit aussi quelles leçons sont accessibles
+- connecté + progression : voit quelles leçons sont déjà validées
 
-### LessonValidatedRepository
+### LessonController
 
-Fichier : `src/Repository/LessonValidatedRepository.php`
+Responsabilité :
 
-Méthode clé :
+- afficher une leçon visible si l’utilisateur a payé
+- permettre de marquer la leçon comme complétée
 
-- `hasCompletedTheme(User $user, Theme $theme): bool`
-  - compare le nombre de validations dans le thème vs le nombre total de leçons dans ce thème
+Protection :
 
-Autre méthode utile :
+- contrôleur protégé par `#[IsGranted('ROLE_USER')]`
+- accès réel vérifié via `LessonAccessService`
+- POST de validation protégé par CSRF
 
-- `findValidatedLessonsForUser(User $user)`
-  - renvoie l’historique des validations (avec joins cursus + thème)
+---
+
+## Domaine E-commerce
+
+### CartService
+
+Responsabilité :
+
+- calculer le nombre d’items dans le panier de l’utilisateur connecté
+
+Implémentation :
+
+- récupération du `Purchase` en statut `cart`
+- retour du nombre d’items du panier
+
+### PurchaseItemRepository
+
+Méthodes utiles :
+
+- `findByUserAndStatus(User $user, string $status)`
+- `findByUserAndCursus(User $user, Cursus $cursus)`
+- `findLessonsPurchasedByUser(User $user)`
 
 ---
 
@@ -132,23 +179,33 @@ Autre méthode utile :
 
 ### PurchaseExtension
 
-- `purchase_status_label(status)` : libellé humain (cart/pending/paid/canceled)
-- `purchase_status_class(status)` : classes CSS `badge ...`
+- `purchase_status_label(status)` : label métier
+- `purchase_status_class(status)` : classes CSS des badges
 
 ### PurchaseItemsExtension
 
-- `purchase_items_count(purchase)` : nombre d’items
-- `purchase_items_quantity(purchase)` : somme des quantités
+- `purchase_items_count(purchase)`
+- `purchase_items_quantity(purchase)`
 
 ---
 
 ## Templates
 
-Dossier `templates/` structuré par feature :
+Dossier `templates/` structuré par domaine :
 
-- `themes/`, `cursus/`, `lesson/` : learning
-- `cart/` : e-commerce
-- `contact/` : support
-- `registration/`, `security/`, `user/` : compte
-- `admin/`, `dashboard/` : back-office
-- `base.html.twig`, `macros.html.twig` : layout + helpers
+- `themes/`
+- `cursus/`
+- `lesson/`
+- `cart/`
+- `contact/`
+- `registration/`
+- `security/`
+- `user/`
+- `admin/`
+- `dashboard/`
+
+Templates Learning finaux :
+
+- `templates/cursus/show.html.twig` : catalogue d’un cursus
+- `templates/lesson/show.html.twig` : contenu d’une leçon
+- `templates/lesson/validated.html.twig` : page optionnelle de confirmation, si utilisée par une route dédiée

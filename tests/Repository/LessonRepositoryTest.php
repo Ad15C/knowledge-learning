@@ -25,19 +25,19 @@ class LessonRepositoryTest extends KernelTestCase
         $container = static::getContainer();
 
         $db = $container->get(DatabaseToolCollection::class)->get();
-        $executor = $db->loadFixtures([ThemeFixtures::class]);
+        $executor = $db->loadFixtures([
+            ThemeFixtures::class,
+        ]);
 
         $this->em = $container->get(EntityManagerInterface::class);
         $this->repo = $container->get(LessonRepository::class);
         $this->refRepo = $executor->getReferenceRepository();
 
-        // EM clean = tests + fiables
         $this->em->clear();
     }
 
     private function getGuitarCursusManaged(): Cursus
     {
-        /** @var Cursus $cursusRef */
         $cursusRef = $this->refRepo->getReference(ThemeFixtures::CURSUS_GUITARE_REF, Cursus::class);
         self::assertInstanceOf(Cursus::class, $cursusRef);
 
@@ -49,7 +49,6 @@ class LessonRepositoryTest extends KernelTestCase
 
     private function getGuitarLesson1Managed(): Lesson
     {
-        /** @var Lesson $lessonRef */
         $lessonRef = $this->refRepo->getReference(ThemeFixtures::LESSON_GUITAR_1_REF, Lesson::class);
         self::assertInstanceOf(Lesson::class, $lessonRef);
 
@@ -72,10 +71,9 @@ class LessonRepositoryTest extends KernelTestCase
     {
         $cursus = $this->getGuitarCursusManaged();
 
-        // --- CREATE
         $lesson = (new Lesson())
             ->setTitle('Leçon CRUD Test')
-            ->setPrice(12.3456) // => 12.35 (selon mapping/scale)
+            ->setPrice(12.3456)
             ->setCursus($cursus)
             ->setFiche('Fiche initiale')
             ->setVideoUrl('https://example.com/initial')
@@ -87,10 +85,8 @@ class LessonRepositoryTest extends KernelTestCase
         self::assertNotNull($lesson->getId());
         $lessonId = $lesson->getId();
 
-        // --- READ
         $this->em->clear();
 
-        /** @var Lesson|null $found */
         $found = $this->em->getRepository(Lesson::class)->find($lessonId);
         self::assertNotNull($found);
 
@@ -101,9 +97,8 @@ class LessonRepositoryTest extends KernelTestCase
         self::assertSame('initial.jpg', $found->getImage());
         self::assertSame($cursus->getId(), $found->getCursus()?->getId());
 
-        // --- UPDATE
         $found->setTitle('Leçon CRUD Test (Updated)')
-            ->setPrice(99.999) // => 100.00
+            ->setPrice(99.999)
             ->setFiche('Fiche modifiée')
             ->setVideoUrl('https://example.com/updated')
             ->setImage('updated.jpg');
@@ -111,7 +106,6 @@ class LessonRepositoryTest extends KernelTestCase
         $this->em->flush();
         $this->em->clear();
 
-        /** @var Lesson|null $updated */
         $updated = $this->em->getRepository(Lesson::class)->find($lessonId);
         self::assertNotNull($updated);
 
@@ -121,7 +115,6 @@ class LessonRepositoryTest extends KernelTestCase
         self::assertSame('https://example.com/updated', $updated->getVideoUrl());
         self::assertSame('updated.jpg', $updated->getImage());
 
-        // --- DELETE
         $this->em->remove($updated);
         $this->em->flush();
         $this->em->clear();
@@ -131,10 +124,13 @@ class LessonRepositoryTest extends KernelTestCase
 
     public function testCreateAdminFilterQueryBuilderFiltersByQuery(): void
     {
-        // doit matcher "Découverte de l’instrument"
-        $results = $this->repo->createAdminFilterQueryBuilder('instrument')->getQuery()->getResult();
+        $results = $this->repo
+            ->createAdminFilterQueryBuilder('instrument')
+            ->getQuery()
+            ->getResult();
 
         self::assertNotEmpty($results);
+
         foreach ($results as $lesson) {
             self::assertInstanceOf(Lesson::class, $lesson);
             self::assertStringContainsStringIgnoringCase('instrument', (string) $lesson->getTitle());
@@ -143,20 +139,26 @@ class LessonRepositoryTest extends KernelTestCase
 
     public function testCreateAdminFilterQueryBuilderFiltersByStatusActiveAndArchived(): void
     {
-        // actifs (fixtures = actifs)
-        $active = $this->repo->createAdminFilterQueryBuilder(null, 'active')->getQuery()->getResult();
+        $active = $this->repo
+            ->createAdminFilterQueryBuilder(null, 'active')
+            ->getQuery()
+            ->getResult();
+
         self::assertNotEmpty($active);
         foreach ($active as $lesson) {
             self::assertTrue($lesson->isActive());
         }
 
-        // archive une leçon et reteste
         $lesson = $this->getGuitarLesson1Managed();
         $lesson->setIsActive(false);
         $this->em->flush();
         $this->em->clear();
 
-        $archived = $this->repo->createAdminFilterQueryBuilder(null, 'archived')->getQuery()->getResult();
+        $archived = $this->repo
+            ->createAdminFilterQueryBuilder(null, 'archived')
+            ->getQuery()
+            ->getResult();
+
         self::assertNotEmpty($archived);
         foreach ($archived as $l) {
             self::assertFalse($l->isActive());
@@ -167,7 +169,11 @@ class LessonRepositoryTest extends KernelTestCase
     {
         $cursus = $this->getGuitarCursusManaged();
 
-        $results = $this->repo->createAdminFilterQueryBuilder(null, 'all', $cursus->getId())->getQuery()->getResult();
+        $results = $this->repo
+            ->createAdminFilterQueryBuilder(null, 'all', $cursus->getId())
+            ->getQuery()
+            ->getResult();
+
         self::assertNotEmpty($results);
 
         foreach ($results as $lesson) {
@@ -179,13 +185,18 @@ class LessonRepositoryTest extends KernelTestCase
     {
         $lesson = $this->getGuitarLesson1Managed();
         $themeId = $lesson->getCursus()?->getTheme()?->getId();
+
         self::assertNotNull($themeId);
 
-        $results = $this->repo->createAdminFilterQueryBuilder(null, 'all', null, $themeId)->getQuery()->getResult();
+        $results = $this->repo
+            ->createAdminFilterQueryBuilder(null, 'all', null, $themeId)
+            ->getQuery()
+            ->getResult();
+
         self::assertNotEmpty($results);
 
         foreach ($results as $l) {
-            self::assertSame($themeId, $l->getCursus()->getTheme()->getId());
+            self::assertSame($themeId, $l->getCursus()?->getTheme()?->getId());
         }
     }
 
@@ -193,27 +204,36 @@ class LessonRepositoryTest extends KernelTestCase
     {
         $asc = $this->repo
             ->createAdminFilterQueryBuilder(null, 'all', null, null, 'title_asc')
-            ->getQuery()->getResult();
+            ->getQuery()
+            ->getResult();
 
         self::assertGreaterThanOrEqual(2, count($asc));
 
-        // Vérifie que c’est bien monotone (évite les problèmes de collation/accents entre PHP et DB)
         for ($i = 1; $i < count($asc); $i++) {
             $prev = (string) $asc[$i - 1]->getTitle();
             $curr = (string) $asc[$i]->getTitle();
-            self::assertTrue(strcasecmp($prev, $curr) <= 0, sprintf('"%s" should be <= "%s"', $prev, $curr));
+
+            self::assertTrue(
+                strcasecmp($prev, $curr) <= 0,
+                sprintf('"%s" should be <= "%s"', $prev, $curr)
+            );
         }
 
         $desc = $this->repo
             ->createAdminFilterQueryBuilder(null, 'all', null, null, 'title_desc')
-            ->getQuery()->getResult();
+            ->getQuery()
+            ->getResult();
 
         self::assertGreaterThanOrEqual(2, count($desc));
 
         for ($i = 1; $i < count($desc); $i++) {
             $prev = (string) $desc[$i - 1]->getTitle();
             $curr = (string) $desc[$i]->getTitle();
-            self::assertTrue(strcasecmp($prev, $curr) >= 0, sprintf('"%s" should be >= "%s"', $prev, $curr));
+
+            self::assertTrue(
+                strcasecmp($prev, $curr) >= 0,
+                sprintf('"%s" should be >= "%s"', $prev, $curr)
+            );
         }
     }
 
@@ -221,60 +241,36 @@ class LessonRepositoryTest extends KernelTestCase
     {
         $asc = $this->repo
             ->createAdminFilterQueryBuilder(null, 'all', null, null, 'price_asc')
-            ->getQuery()->getResult();
+            ->getQuery()
+            ->getResult();
 
         self::assertGreaterThanOrEqual(2, count($asc));
 
-        // Reproduit: CASE WHEN price IS NULL THEN 1 ELSE 0 END ASC, price ASC
         for ($i = 1; $i < count($asc); $i++) {
-            $prev = $asc[$i - 1]->getPrice();
-            $curr = $asc[$i]->getPrice();
+            $prev = (float) $asc[$i - 1]->getPrice();
+            $curr = (float) $asc[$i]->getPrice();
 
-            $prevIsNull = ($prev === null);
-            $currIsNull = ($curr === null);
-
-            // non-null doit venir avant null
-            if (!$prevIsNull && $currIsNull) {
-                self::assertTrue(true);
-                continue;
-            }
-            if ($prevIsNull && !$currIsNull) {
-                self::fail('NULL price should be after non-NULL prices for price_asc.');
-            }
-
-            // si les 2 non-null -> asc numérique
-            if (!$prevIsNull && !$currIsNull) {
-                self::assertTrue((float) $prev <= (float) $curr);
-            }
-
-            // si les 2 null -> OK
+            self::assertTrue(
+                $prev <= $curr,
+                sprintf('Price %s should be <= %s', $prev, $curr)
+            );
         }
 
         $desc = $this->repo
             ->createAdminFilterQueryBuilder(null, 'all', null, null, 'price_desc')
-            ->getQuery()->getResult();
+            ->getQuery()
+            ->getResult();
 
         self::assertGreaterThanOrEqual(2, count($desc));
 
-        // Reproduit: CASE WHEN price IS NULL THEN 1 ELSE 0 END ASC, price DESC
         for ($i = 1; $i < count($desc); $i++) {
-            $prev = $desc[$i - 1]->getPrice();
-            $curr = $desc[$i]->getPrice();
+            $prev = (float) $desc[$i - 1]->getPrice();
+            $curr = (float) $desc[$i]->getPrice();
 
-            $prevIsNull = ($prev === null);
-            $currIsNull = ($curr === null);
-
-            if (!$prevIsNull && $currIsNull) {
-                self::assertTrue(true);
-                continue;
-            }
-            if ($prevIsNull && !$currIsNull) {
-                self::fail('NULL price should be after non-NULL prices for price_desc.');
-            }
-
-            if (!$prevIsNull && !$currIsNull) {
-                self::assertTrue((float) $prev >= (float) $curr);
-            }
+            self::assertTrue(
+                $prev >= $curr,
+                sprintf('Price %s should be >= %s', $prev, $curr)
+            );
         }
     }
 
@@ -287,13 +283,11 @@ class LessonRepositoryTest extends KernelTestCase
 
         foreach ($lessons as $lesson) {
             self::assertInstanceOf(Lesson::class, $lesson);
-
             self::assertTrue($lesson->isActive());
             self::assertNotNull($lesson->getCursus());
             self::assertTrue($lesson->getCursus()->isActive());
             self::assertNotNull($lesson->getCursus()->getTheme());
             self::assertTrue($lesson->getCursus()->getTheme()->isActive());
-
             self::assertSame($cursus->getId(), $lesson->getCursus()->getId());
         }
     }
@@ -303,6 +297,7 @@ class LessonRepositoryTest extends KernelTestCase
         $lesson = $this->getGuitarLesson1Managed();
 
         $found = $this->repo->findVisibleLesson($lesson->getId());
+
         self::assertNotNull($found);
         self::assertSame($lesson->getId(), $found->getId());
     }
@@ -315,6 +310,7 @@ class LessonRepositoryTest extends KernelTestCase
         $this->em->clear();
 
         $found = $this->repo->findVisibleLesson($lesson->getId());
+
         self::assertNull($found);
     }
 
@@ -322,6 +318,7 @@ class LessonRepositoryTest extends KernelTestCase
     {
         $lesson = $this->getGuitarLesson1Managed();
         $cursus = $lesson->getCursus();
+
         self::assertNotNull($cursus);
 
         $cursus->setIsActive(false);
@@ -329,6 +326,7 @@ class LessonRepositoryTest extends KernelTestCase
         $this->em->clear();
 
         $found = $this->repo->findVisibleLesson($lesson->getId());
+
         self::assertNull($found);
     }
 
@@ -336,6 +334,7 @@ class LessonRepositoryTest extends KernelTestCase
     {
         $lesson = $this->getGuitarLesson1Managed();
         $theme = $lesson->getCursus()?->getTheme();
+
         self::assertNotNull($theme);
 
         $theme->setIsActive(false);
@@ -343,6 +342,7 @@ class LessonRepositoryTest extends KernelTestCase
         $this->em->clear();
 
         $found = $this->repo->findVisibleLesson($lesson->getId());
+
         self::assertNull($found);
     }
 
@@ -355,6 +355,7 @@ class LessonRepositoryTest extends KernelTestCase
         }
 
         unset($this->em, $this->repo, $this->refRepo);
+
         self::ensureKernelShutdown();
     }
 }

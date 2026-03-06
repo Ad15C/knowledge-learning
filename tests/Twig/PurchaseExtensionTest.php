@@ -10,14 +10,14 @@ class PurchaseExtensionTest extends TestCase
 {
     public function testGetFunctionsRegistersStatusHelpers(): void
     {
-        $ext = new PurchaseExtension();
-        $functions = $ext->getFunctions();
+        $extension = new PurchaseExtension();
+        $functions = $extension->getFunctions();
 
         self::assertNotEmpty($functions);
 
         $byName = [];
-        foreach ($functions as $fn) {
-            $byName[$fn->getName()] = $fn;
+        foreach ($functions as $function) {
+            $byName[$function->getName()] = $function;
         }
 
         self::assertArrayHasKey('purchase_status_label', $byName);
@@ -26,8 +26,8 @@ class PurchaseExtensionTest extends TestCase
         self::assertInstanceOf(TwigFunction::class, $byName['purchase_status_label']);
         self::assertInstanceOf(TwigFunction::class, $byName['purchase_status_class']);
 
-        self::assertSame([$ext, 'statusLabel'], $byName['purchase_status_label']->getCallable());
-        self::assertSame([$ext, 'statusClass'], $byName['purchase_status_class']->getCallable());
+        self::assertSame([$extension, 'statusLabel'], $byName['purchase_status_label']->getCallable());
+        self::assertSame([$extension, 'statusClass'], $byName['purchase_status_class']->getCallable());
     }
 
     /**
@@ -35,18 +35,22 @@ class PurchaseExtensionTest extends TestCase
      */
     public function testStatusLabel(string $status, string $expected): void
     {
-        $ext = new PurchaseExtension();
-        self::assertSame($expected, $ext->statusLabel($status));
+        $extension = new PurchaseExtension();
+
+        self::assertSame($expected, $extension->statusLabel($status));
     }
 
+    /**
+     * @return array<string, array{0:string,1:string}>
+     */
     public static function statusLabelProvider(): array
     {
         return [
-            ['cart', 'Panier'],
-            ['pending', 'En attente'],
-            ['paid', 'Payée'],
-            ['canceled', 'Annulée'],
-            ['something_else', 'Inconnu'],
+            'cart' => ['cart', 'Panier'],
+            'pending' => ['pending', 'En attente'],
+            'paid' => ['paid', 'Payée'],
+            'canceled' => ['canceled', 'Annulée'],
+            'unknown' => ['something_else', 'Inconnu'],
         ];
     }
 
@@ -55,32 +59,39 @@ class PurchaseExtensionTest extends TestCase
      */
     public function testStatusClass(string $status, string $expected): void
     {
-        $ext = new PurchaseExtension();
-        self::assertSame($expected, $ext->statusClass($status));
+        $extension = new PurchaseExtension();
+
+        self::assertSame($expected, $extension->statusClass($status));
     }
 
+    /**
+     * @return array<string, array{0:string,1:string}>
+     */
     public static function statusClassProvider(): array
     {
         return [
-            ['cart', 'badge badge-cart'],
-            ['pending', 'badge badge-pending'],
-            ['paid', 'badge badge-paid'],
-            ['canceled', 'badge badge-canceled'],
-            ['something_else', 'badge badge-unknown'],
+            'cart' => ['cart', 'badge badge-cart'],
+            'pending' => ['pending', 'badge badge-pending'],
+            'paid' => ['paid', 'badge badge-paid'],
+            'canceled' => ['canceled', 'badge badge-canceled'],
+            'unknown' => ['something_else', 'badge badge-unknown'],
         ];
     }
 
     public function testTwigFunctionCallablesExecute(): void
     {
-        $ext = new PurchaseExtension();
+        $extension = new PurchaseExtension();
 
         $byName = [];
-        foreach ($ext->getFunctions() as $fn) {
-            $byName[$fn->getName()] = $fn;
+        foreach ($extension->getFunctions() as $function) {
+            $byName[$function->getName()] = $function;
         }
 
         $labelCallable = $byName['purchase_status_label']->getCallable();
         $classCallable = $byName['purchase_status_class']->getCallable();
+
+        self::assertIsCallable($labelCallable);
+        self::assertIsCallable($classCallable);
 
         self::assertSame('Panier', $labelCallable('cart'));
         self::assertSame('badge badge-paid', $classCallable('paid'));

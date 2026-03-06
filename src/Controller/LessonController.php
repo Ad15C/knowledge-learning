@@ -21,21 +21,25 @@ class LessonController extends AbstractController
     public function __construct(
         private EntityManagerInterface $em,
         private LessonAccessService $access
-    ) {}
+    ) {
+    }
 
     /**
-     * @return array<int,bool> map [lessonId => true]
+     * @return array<int,bool>
      */
     private function getUserCompletedLessonMap(User $user): array
     {
         $out = [];
 
         $validated = $this->em->getRepository(LessonValidated::class)
-            ->findBy(['user' => $user, 'completed' => true]);
+            ->findBy([
+                'user' => $user,
+                'completed' => true,
+            ]);
 
         foreach ($validated as $validation) {
             $id = $validation->getLesson()?->getId();
-            if ($id) {
+            if ($id !== null) {
                 $out[$id] = true;
             }
         }
@@ -47,6 +51,7 @@ class LessonController extends AbstractController
     public function show(int $id, LessonRepository $lessonRepository): Response
     {
         $lesson = $lessonRepository->findVisibleLesson($id);
+
         if (!$lesson) {
             throw $this->createNotFoundException('Leçon introuvable.');
         }
@@ -56,10 +61,11 @@ class LessonController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        // Paywall: page inaccessible si non payé
         if (!$this->access->userCanAccessLesson($user, $lesson)) {
             $this->addFlash('danger', "Tu n'as pas accès à cette leçon.");
-            return $this->redirectToRoute('cursus_show', ['id' => $lesson->getCursus()->getId()]);
+            return $this->redirectToRoute('cursus_show', [
+                'id' => $lesson->getCursus()?->getId(),
+            ]);
         }
 
         $userHasCompleted = $this->getUserCompletedLessonMap($user);
@@ -86,6 +92,7 @@ class LessonController extends AbstractController
         LessonValidatedService $lessonService
     ): Response {
         $lesson = $lessonRepository->findVisibleLesson($id);
+
         if (!$lesson) {
             throw $this->createNotFoundException('Leçon introuvable.');
         }
@@ -102,16 +109,19 @@ class LessonController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        // Paywall: impossible de valider si non payé
         if (!$this->access->userCanAccessLesson($user, $lesson)) {
             $this->addFlash('danger', "Tu n'as pas accès à cette leçon.");
-            return $this->redirectToRoute('cursus_show', ['id' => $lesson->getCursus()->getId()]);
+            return $this->redirectToRoute('cursus_show', [
+                'id' => $lesson->getCursus()?->getId(),
+            ]);
         }
 
         $lessonService->validateLesson($user, $lesson);
 
         $this->addFlash('success', 'Leçon marquée comme complétée et certification générée !');
 
-        return $this->redirectToRoute('lesson_show', ['id' => $lesson->getId()]);
+        return $this->redirectToRoute('lesson_show', [
+            'id' => $lesson->getId(),
+        ]);
     }
 }

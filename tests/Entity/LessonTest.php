@@ -2,8 +2,8 @@
 
 namespace App\Tests\Entity;
 
-use App\Entity\Lesson;
 use App\Entity\Cursus;
+use App\Entity\Lesson;
 use PHPUnit\Framework\TestCase;
 
 class LessonTest extends TestCase
@@ -16,20 +16,19 @@ class LessonTest extends TestCase
         self::assertSame('Ma leçon', $lesson->getTitle());
 
         $lesson->setPrice(12);
-        self::assertEquals(12.00, $lesson->getPrice());
+        self::assertSame('12.00', $lesson->getPrice());
 
         $lesson->setPrice(12.3456);
-        self::assertEquals(12.35, $lesson->getPrice());
-
-        // nouveaux cas utiles avec la nouvelle logique
-        $lesson->setPrice(null);
-        self::assertEquals(0.00, $lesson->getPrice());
-
-        $lesson->setPrice('');
-        self::assertEquals(0.00, $lesson->getPrice());
+        self::assertSame('12.35', $lesson->getPrice());
 
         $lesson->setPrice('19.9');
-        self::assertEquals(19.90, $lesson->getPrice());
+        self::assertSame('19.90', $lesson->getPrice());
+
+        $lesson->setPrice(null);
+        self::assertNull($lesson->getPrice());
+
+        $lesson->setPrice('');
+        self::assertNull($lesson->getPrice());
 
         $lesson->setFiche("Ligne 1<br><br>Ligne 2");
         self::assertSame("Ligne 1<br><br>Ligne 2", $lesson->getFiche());
@@ -46,9 +45,23 @@ class LessonTest extends TestCase
         $lesson = new Lesson();
 
         self::assertNull($lesson->getId());
-        self::assertEquals(0.00, $lesson->getPrice()); // plus null, car '0.00' par défaut
+        self::assertNull($lesson->getTitle());
+        self::assertNull($lesson->getPrice());
+        self::assertNull($lesson->getCursus());
+        self::assertNull($lesson->getFiche());
+        self::assertNull($lesson->getVideoUrl());
+        self::assertNull($lesson->getImage());
         self::assertTrue($lesson->isActive());
-        self::assertFalse($lesson->isPubliclyAccessible(), 'Without cursus, lesson cannot be publicly accessible.');
+        self::assertFalse($lesson->isVisibleInCatalog());
+    }
+
+    public function testTitleIsTrimmed(): void
+    {
+        $lesson = new Lesson();
+
+        $lesson->setTitle('   Ma leçon trimée   ');
+
+        self::assertSame('Ma leçon trimée', $lesson->getTitle());
     }
 
     public function testCursusRelation(): void
@@ -57,46 +70,86 @@ class LessonTest extends TestCase
         $cursus = $this->createMock(Cursus::class);
 
         $lesson->setCursus($cursus);
-
         self::assertSame($cursus, $lesson->getCursus());
+
+        $lesson->setCursus(null);
+        self::assertNull($lesson->getCursus());
     }
 
-    public function testIsPubliclyAccessibleWhenLessonInactive(): void
+    public function testNullableFieldsCanBeSetToNull(): void
+    {
+        $lesson = new Lesson();
+
+        $lesson->setFiche('Une fiche');
+        $lesson->setVideoUrl('https://example.com/video');
+        $lesson->setImage('image.png');
+
+        $lesson->setFiche(null);
+        $lesson->setVideoUrl(null);
+        $lesson->setImage(null);
+
+        self::assertNull($lesson->getFiche());
+        self::assertNull($lesson->getVideoUrl());
+        self::assertNull($lesson->getImage());
+    }
+
+    public function testSetIsActive(): void
+    {
+        $lesson = new Lesson();
+
+        self::assertTrue($lesson->isActive());
+
+        $lesson->setIsActive(false);
+        self::assertFalse($lesson->isActive());
+
+        $lesson->setIsActive(true);
+        self::assertTrue($lesson->isActive());
+    }
+
+    public function testIsVisibleInCatalogWhenNoCursus(): void
+    {
+        $lesson = new Lesson();
+        $lesson->setIsActive(true);
+
+        self::assertFalse($lesson->isVisibleInCatalog());
+    }
+
+    public function testIsVisibleInCatalogWhenLessonInactive(): void
     {
         $lesson = new Lesson();
 
         $cursus = $this->createMock(Cursus::class);
-        $cursus->method('isPubliclyAccessible')->willReturn(true);
+        $cursus->method('isVisibleInCatalog')->willReturn(true);
 
         $lesson->setCursus($cursus);
         $lesson->setIsActive(false);
 
-        self::assertFalse($lesson->isPubliclyAccessible());
+        self::assertFalse($lesson->isVisibleInCatalog());
     }
 
-    public function testIsPubliclyAccessibleWhenCursusNotAccessible(): void
+    public function testIsVisibleInCatalogWhenCursusNotVisible(): void
     {
         $lesson = new Lesson();
 
         $cursus = $this->createMock(Cursus::class);
-        $cursus->method('isPubliclyAccessible')->willReturn(false);
+        $cursus->method('isVisibleInCatalog')->willReturn(false);
 
         $lesson->setCursus($cursus);
         $lesson->setIsActive(true);
 
-        self::assertFalse($lesson->isPubliclyAccessible());
+        self::assertFalse($lesson->isVisibleInCatalog());
     }
 
-    public function testIsPubliclyAccessibleWhenLessonAndCursusAccessible(): void
+    public function testIsVisibleInCatalogWhenLessonAndCursusVisible(): void
     {
         $lesson = new Lesson();
 
         $cursus = $this->createMock(Cursus::class);
-        $cursus->method('isPubliclyAccessible')->willReturn(true);
+        $cursus->method('isVisibleInCatalog')->willReturn(true);
 
         $lesson->setCursus($cursus);
         $lesson->setIsActive(true);
 
-        self::assertTrue($lesson->isPubliclyAccessible());
+        self::assertTrue($lesson->isVisibleInCatalog());
     }
 }

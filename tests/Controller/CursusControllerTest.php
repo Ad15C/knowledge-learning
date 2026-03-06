@@ -6,6 +6,7 @@ use App\DataFixtures\TestUserFixtures;
 use App\DataFixtures\ThemeFixtures;
 use App\Entity\Cursus;
 use App\Entity\Lesson;
+use App\Entity\LessonValidated;
 use App\Entity\Purchase;
 use App\Entity\PurchaseItem;
 use App\Entity\User;
@@ -47,8 +48,7 @@ class CursusControllerTest extends WebTestCase
     {
         $purchase = (new Purchase())
             ->setUser($user)
-            // IMPORTANT: doit matcher le contrôleur qui filtre sur 'paid'
-            ->setStatus('paid')
+            ->setStatus(Purchase::STATUS_PAID)
             ->setPaidAt(new \DateTimeImmutable());
 
         $this->forceOrderNumber($purchase);
@@ -56,7 +56,57 @@ class CursusControllerTest extends WebTestCase
         return $purchase;
     }
 
-    public function test_show_not_logged_in_only_add_to_cart(): void
+    private function createPaidLessonPurchase(User $user, Lesson $lesson): void
+    {
+        $purchase = $this->createPaidPurchase($user);
+
+        $item = (new PurchaseItem())
+            ->setPurchase($purchase)
+            ->setLesson($lesson)
+            ->setQuantity(1)
+            ->setUnitPrice((float) $lesson->getPrice());
+
+        $purchase->addItem($item);
+        $purchase->calculateTotal();
+
+        $this->em->persist($purchase);
+        $this->em->persist($item);
+        $this->em->flush();
+        $this->em->clear();
+    }
+
+    private function createPaidCursusPurchase(User $user, Cursus $cursus): void
+    {
+        $purchase = $this->createPaidPurchase($user);
+
+        $item = (new PurchaseItem())
+            ->setPurchase($purchase)
+            ->setCursus($cursus)
+            ->setQuantity(1)
+            ->setUnitPrice((float) $cursus->getPrice());
+
+        $purchase->addItem($item);
+        $purchase->calculateTotal();
+
+        $this->em->persist($purchase);
+        $this->em->persist($item);
+        $this->em->flush();
+        $this->em->clear();
+    }
+
+    private function markLessonCompleted(User $user, Lesson $lesson): void
+    {
+        $validated = (new LessonValidated())
+            ->setUser($user)
+            ->setLesson($lesson)
+            ->markCompleted();
+
+        $this->em->persist($validated);
+        $this->em->flush();
+        $this->em->clear();
+    }
+
+    public function testShowNotLoggedInShowsLoginToBuyButtons(): void
     {
         $fixtures = $this->databaseTool->loadFixtures([
             ThemeFixtures::class,
@@ -68,21 +118,27 @@ class CursusControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/cursus/' . $cursus->getId());
         self::assertResponseIsSuccessful();
 
+        self::assertSelectorTextContains('h1', $cursus->getName());
+        self::assertCount(2, $crawler->filter('.lesson-card'));
+
         self::assertSame(
             0,
-            $crawler->filter('a.btn.btn-success:contains("Accéder")')->count()
+            $crawler->filter('a.btn.btn-success')->count(),
+            'A visitor should not see access buttons.'
         );
 
         self::assertSame(
             2,
-            $crawler->filter('button.btn.btn-outline:contains("Ajouter au panier")')->count()
+            $crawler->filter('a.btn.btn-primary:contains("Se connecter pour acheter")')->count()
         );
 
-        self::assertSelectorTextContains('h1', $cursus->getName());
-        self::assertCount(2, $crawler->filter('.lesson-card'));
+        self::assertSame(
+            0,
+            $crawler->filter('button.btn.btn-outline:contains("Ajouter au panier")')->count()
+        );
     }
 
-    public function test_show_logged_in_buys_one_lesson(): void
+    public function testShowLoggedInWithOneLessonPurchaseShowsOneAccessAndOneCartButton(): void
     {
         $fixtures = $this->databaseTool->loadFixtures([
             ThemeFixtures::class,
@@ -98,20 +154,13 @@ class CursusControllerTest extends WebTestCase
         $user = $fixtures->getReferenceRepository()
             ->getReference(TestUserFixtures::USER_REF, User::class);
 
-        $purchase = $this->createPaidPurchase($user);
+        $this->createPaidLessonPurchase($user, $lesson1);
 
-        $item = (new PurchaseItem())
-            ->setPurchase($purchase)
-            ->setLesson($lesson1)
-            ->setQuantity(1)
-            ->setUnitPrice($lesson1->getPrice() ?? 26);
+        $user = $this->em->getRepository(User::class)->find($user->getId());
+        $cursus = $this->em->getRepository(Cursus::class)->find($cursus->getId());
 
-        $purchase->addItem($item);
-        $purchase->calculateTotal();
-
-        $this->em->persist($purchase);
-        $this->em->persist($item);
-        $this->em->flush();
+        self::assertNotNull($user);
+        self::assertNotNull($cursus);
 
         $this->client->loginUser($user);
 
@@ -120,16 +169,21 @@ class CursusControllerTest extends WebTestCase
 
         self::assertSame(
             1,
-            $crawler->filter('a.btn.btn-success:contains("Accéder")')->count()
+            $crawler->filter('a.btn.btn-success:contains("Accéder à la leçon")')->count()
         );
 
         self::assertSame(
             1,
             $crawler->filter('button.btn.btn-outline:contains("Ajouter au panier")')->count()
         );
+
+        self::assertSame(
+            0,
+            $crawler->filter('a.btn.btn-primary:contains("Se connecter pour acheter")')->count()
+        );
     }
 
-    public function test_show_logged_in_buys_cursus(): void
+    public function testShowLoggedInWithWholeCursusPurchaseShowsAllLessonsAccessible(): void
     {
         $fixtures = $this->databaseTool->loadFixtures([
             ThemeFixtures::class,
@@ -142,20 +196,13 @@ class CursusControllerTest extends WebTestCase
         $user = $fixtures->getReferenceRepository()
             ->getReference(TestUserFixtures::USER_REF, User::class);
 
-        $purchase = $this->createPaidPurchase($user);
+        $this->createPaidCursusPurchase($user, $cursus);
 
-        $item = (new PurchaseItem())
-            ->setPurchase($purchase)
-            ->setCursus($cursus)
-            ->setQuantity(1)
-            ->setUnitPrice($cursus->getPrice() ?? 50);
+        $user = $this->em->getRepository(User::class)->find($user->getId());
+        $cursus = $this->em->getRepository(Cursus::class)->find($cursus->getId());
 
-        $purchase->addItem($item);
-        $purchase->calculateTotal();
-
-        $this->em->persist($purchase);
-        $this->em->persist($item);
-        $this->em->flush();
+        self::assertNotNull($user);
+        self::assertNotNull($cursus);
 
         $this->client->loginUser($user);
 
@@ -164,24 +211,79 @@ class CursusControllerTest extends WebTestCase
 
         self::assertSame(
             2,
-            $crawler->filter('a.btn.btn-success:contains("Accéder")')->count()
+            $crawler->filter('a.btn.btn-success:contains("Accéder à la leçon")')->count()
         );
 
         self::assertSame(
             0,
             $crawler->filter('button.btn.btn-outline:contains("Ajouter au panier")')->count()
         );
+
+        self::assertSame(
+            0,
+            $crawler->filter('a.btn.btn-primary:contains("Se connecter pour acheter")')->count()
+        );
     }
 
-    public function test_show_404_if_not_found(): void
+    public function testShowLoggedInWithCompletedLessonShowsRevoirLaLecon(): void
+    {
+        $fixtures = $this->databaseTool->loadFixtures([
+            ThemeFixtures::class,
+            TestUserFixtures::class,
+        ]);
+
+        $cursus = $fixtures->getReferenceRepository()
+            ->getReference(ThemeFixtures::CURSUS_GUITARE_REF, Cursus::class);
+
+        $lesson1 = $fixtures->getReferenceRepository()
+            ->getReference(ThemeFixtures::LESSON_GUITAR_1_REF, Lesson::class);
+
+        $user = $fixtures->getReferenceRepository()
+            ->getReference(TestUserFixtures::USER_REF, User::class);
+
+        $this->createPaidLessonPurchase($user, $lesson1);
+
+        $user = $this->em->getRepository(User::class)->find($user->getId());
+        $lesson1 = $this->em->getRepository(Lesson::class)->find($lesson1->getId());
+
+        self::assertNotNull($user);
+        self::assertNotNull($lesson1);
+
+        $this->markLessonCompleted($user, $lesson1);
+
+        $user = $this->em->getRepository(User::class)->find($user->getId());
+        $cursus = $this->em->getRepository(Cursus::class)->find($cursus->getId());
+
+        self::assertNotNull($user);
+        self::assertNotNull($cursus);
+
+        $this->client->loginUser($user);
+
+        $crawler = $this->client->request('GET', '/cursus/' . $cursus->getId());
+        self::assertResponseIsSuccessful();
+
+        self::assertSame(
+            1,
+            $crawler->filter('a.btn.btn-success:contains("Revoir la leçon")')->count()
+        );
+
+        self::assertSame(
+            1,
+            $crawler->filter('.badge.badge-success:contains("Validée")')->count()
+        );
+    }
+
+    public function testShowReturns404IfNotFound(): void
     {
         $this->client->request('GET', '/cursus/999999');
         self::assertResponseStatusCodeSame(404);
     }
 
-    public function test_add_cursus_to_cart_redirects_when_not_logged_in(): void
+    public function testAddCursusToCartRedirectsWhenNotLoggedIn(): void
     {
-        $fixtures = $this->databaseTool->loadFixtures([ThemeFixtures::class]);
+        $fixtures = $this->databaseTool->loadFixtures([
+            ThemeFixtures::class,
+        ]);
 
         $cursus = $fixtures->getReferenceRepository()
             ->getReference(ThemeFixtures::CURSUS_GUITARE_REF, Cursus::class);
@@ -190,6 +292,6 @@ class CursusControllerTest extends WebTestCase
             '_token' => 'dummy',
         ]);
 
-        self::assertResponseRedirects(); // généralement vers /login
+        self::assertResponseRedirects();
     }
 }

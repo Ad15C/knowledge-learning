@@ -1,176 +1,163 @@
 # Workflows métier
 
-## 1) Visibilité catalogue (Learning)
+## 1) Visibilité catalogue
 
 ### Objectif
 
-Définir ce qui est visible publiquement (côté catalogue) indépendamment de l’achat.
+Lister les thèmes, cursus et leçons visibles côté front sans confondre cela avec un accès gratuit.
 
-### Important : “visible dans le catalogue” ≠ “accessible gratuitement”
+### Principe clé
 
-- La visibilité catalogue sert à **lister/afficher** thèmes/cursus/leçons dans le site.
-- L’accès au contenu d’une leçon est protégé par un **paywall** (voir section 3).
+**Visible dans le catalogue** ≠ **accessible au contenu**
 
-### Helpers côté entités (lisibilité)
+Un objet peut être affiché dans le catalogue sans que son contenu soit consultable.
 
-Ces méthodes sont des helpers simples (actif + parent actif) :
+### Règles
 
-- `Theme::isActive()` : visibilité globale d’un thème.
-- `Cursus::isVisibleInCatalog()` :
-  - `cursus.isActive = true`
-  - ET `theme.isActive = true`
-- `Lesson::isVisibleInCatalog()` :
-  - `lesson.isActive = true`
-  - ET `lesson.cursus.isVisibleInCatalog() = true`
+#### Theme visible
 
-⚠️ Ces helpers ne garantissent pas la règle “au moins une leçon active”.
+- `Theme.isActive = true`
+- au moins un cursus actif
+- ce cursus possède au moins une leçon active
 
-### Règles complètes de visibilité catalogue (Repositories)
+#### Cursus visible
 
-Les règles “au moins un enfant actif” sont implémentées en requêtes (Doctrine) :
+- `Cursus.isActive = true`
+- `Theme.isActive = true`
+- au moins une `Lesson.isActive = true`
 
-- **Theme visible** si :
-  - `Theme.isActive = true`
-  - ET il existe au moins 1 `Cursus.isActive = true`
-  - ET ce cursus possède au moins 1 `Lesson.isActive = true`
-  - Implémenté dans :
-    - `ThemeRepository::findVisibleThemesWithFilters()`
-    - `ThemeRepository::findVisibleTheme()`
+#### Lesson visible
 
-- **Cursus visible** si :
-  - `Cursus.isActive = true`
-  - ET `Theme.isActive = true`
-  - ET il possède au moins 1 `Lesson.isActive = true`
-  - Implémenté dans :
-    - `CursusRepository::findVisibleByTheme()`
-    - `CursusRepository::findVisibleWithVisibleLessons()`
-
-- **Lesson visible/trouvable** si :
-  - `Lesson.isActive = true`
-  - ET `Cursus.isActive = true`
-  - ET `Theme.isActive = true`
-  - Implémenté dans :
-    - `LessonRepository::findVisibleLesson()`
+- `Lesson.isActive = true`
+- `Cursus.isActive = true`
+- `Theme.isActive = true`
 
 ---
 
-## 2) Authentification & statut de compte (Users)
+## 2) Accès à une leçon
 
-### Accès routes
+### Objectif
 
-- `/login` : public
-- `/register` : public
-- `/logout` : public
-- `/dashboard` : `ROLE_USER`
-- `/admin/*` : `ROLE_ADMIN`
+Autoriser l’accès au contenu d’une leçon uniquement après achat payé.
 
-### Connexion (form_login)
+### Règles
 
-1. L’utilisateur accède au formulaire login.
-2. Soumission des identifiants.
-3. Le provider charge `User` via `email`.
-4. Avant finalisation, `UserChecker::checkPreAuth()` applique :
-   - blocage si compte archivé
-   - blocage si email non vérifié
-5. Succès :
-   - redirection vers `user_dashboard`
-   - remember-me : 1 semaine
+#### Visiteur non connecté
 
----
+- peut voir le catalogue
+- ne peut pas ouvrir une leçon
 
-## 3) Learning : consulter une leçon + paywall
+#### Utilisateur connecté non payé
 
-### Routes
+- peut voir le catalogue
+- peut acheter une leçon ou un cursus
+- ne peut pas ouvrir le contenu
 
-- `GET /lesson/{id}` → `lesson_show`
-- `POST /lesson/{id}/complete` → `lesson_complete`
+#### Utilisateur connecté payé
 
-### Pré-requis
+- peut ouvrir la leçon
+- peut valider la leçon
 
-Le `LessonController` est protégé par :
+### Point central
 
-- `#[IsGranted('ROLE_USER')]`
+Le contrôle d’accès est centralisé dans :
 
-Donc :
+- `LessonAccessService::userCanAccessLesson()`
 
-- utilisateur non connecté → aucune page leçon accessible.
-
-### Paywall (règle serveur centrale)
-
-L’accès réel à une leçon (contenu + validation) est centralisé dans :
-
-- `LessonAccessService::userCanAccessLesson(User $user, Lesson $lesson): bool`
-
-Règle :
-
-- Admin : accès total
-- Sinon : accès UNIQUEMENT si achat **PAYÉ** :
-  - achat de la leçon (PurchaseItem.lesson)
-  - OU achat du cursus (PurchaseItem.cursus)
-  - et `Purchase.status = Purchase::STATUS_PAID`
-
-Conséquence :
-
-- user connecté mais non payé → redirection + message
-- user payé → accès au contenu + possibilité de valider
+Cette règle ne dépend pas du template.
 
 ---
 
-## 4) Learning : valider une leçon (completion + certifs)
+## 3) Page cursus
 
-### Route
+Route :
 
-- `POST /lesson/{id}/complete` → `lesson_complete`
+- `GET /cursus/{id}`
 
-### Sécurités
+Comportement :
 
-1. `ROLE_USER`
-2. CSRF token :
-   - id : `lesson_complete_{lessonId}`
-3. Paywall :
-   - vérification via `LessonAccessService::userCanAccessLesson()`
-   - si refus : flash danger + redirection (ex : `cart_show`)
+- charge un cursus visible
+- si utilisateur connecté :
+  - calcule les leçons accessibles
+  - calcule les leçons déjà validées
+- rend la page catalogue du cursus
 
-### Action
+Affichage côté template :
 
-- `LessonValidatedService::validateLesson($user, $lesson)`
+- leçon verrouillée
+- leçon accessible
+- leçon validée
+
+---
+
+## 4) Page leçon
+
+Route :
+
+- `GET /lesson/{id}`
+
+Comportement :
+
+1. recherche la leçon via `LessonRepository::findVisibleLesson()`
+2. vérifie que l’utilisateur est connecté
+3. vérifie l’accès payant via `LessonAccessService`
+4. charge l’état de validation de l’utilisateur
+5. charge la certification éventuelle
+6. affiche le contenu
+
+---
+
+## 5) Validation d’une leçon
+
+Route :
+
+- `POST /lesson/{id}/complete`
+
+Sécurités :
+
+- `ROLE_USER`
+- token CSRF `lesson_complete_{id}`
+- accès payant obligatoire
 
 Effets :
 
-- crée/met à jour `LessonValidated`
-- crée certifications `lesson`, `theme`, `cursus` selon conditions
+- création ou mise à jour de `LessonValidated`
+- génération de la certification de leçon si nécessaire
+- génération éventuelle de la certification de cursus
+- génération éventuelle de la certification de thème
 
 ---
 
-## 5) E-commerce : panier (Purchase en base)
+## 6) Panier et achat
 
 Routes principales :
 
-- `GET /cart` → `cart_show`
-- `POST /cart/add/lesson/{id}` → `cart_add_lesson`
-- `POST /cart/add/cursus/{id}` → `cart_add_cursus`
-- `POST /cart/remove/{type}/{id}` → `cart_remove`
-- `POST /cart/pay` → `cart_pay`
-- `GET /cart/success/{orderNumber}` → `cart_success`
+- `GET /cart`
+- `POST /cart/add/lesson/{id}`
+- `POST /cart/add/cursus/{id}`
+- `POST /cart/remove/{type}/{id}`
+- `POST /cart/pay`
+- `GET /cart/success/{orderNumber}`
 
-Paiement simulé :
+Statuts métier :
 
-- `purchase->calculateTotal()`
-- `purchase->markPaid()`
-- flush
-- redirect `cart_success`
-
----
-
-## 6) Support : contact utilisateur & traitement admin
-
-- côté user : création de `Contact`
-- côté admin : lecture / marquage lu / marquage traité
-- toutes les actions admin sensibles utilisent CSRF
+- `cart`
+- `pending`
+- `paid`
+- `canceled`
 
 ---
 
-## 7) PDF : téléchargement d’un certificat
+## 7) Certifications
 
-- admin : `GET /admin/certifications/{id}/download`
-- rendu Twig → Dompdf → PDF
+Types de certification :
+
+- `lesson`
+- `cursus`
+- `theme`
+
+Déclenchement :
+
+- leçon validée → certification lesson
+- toutes les leçons d’un cursus validées → certification cursus
+- toutes les leçons d’un thème validées → certification theme

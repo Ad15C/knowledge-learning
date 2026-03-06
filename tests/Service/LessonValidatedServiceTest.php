@@ -44,6 +44,7 @@ class LessonValidatedServiceTest extends KernelTestCase
     {
         $user = $this->refRepo->getReference(TestUserFixtures::USER_REF, User::class);
         $fresh = $this->em->getRepository(User::class)->find($user->getId());
+
         self::assertNotNull($fresh);
 
         return $fresh;
@@ -53,6 +54,7 @@ class LessonValidatedServiceTest extends KernelTestCase
     {
         $lesson = $this->refRepo->getReference($ref, Lesson::class);
         $fresh = $this->em->getRepository(Lesson::class)->find($lesson->getId());
+
         self::assertNotNull($fresh);
 
         return $fresh;
@@ -62,6 +64,7 @@ class LessonValidatedServiceTest extends KernelTestCase
     {
         $theme = $this->refRepo->getReference($ref, Theme::class);
         $fresh = $this->em->getRepository(Theme::class)->find($theme->getId());
+
         self::assertNotNull($fresh);
 
         return $fresh;
@@ -76,6 +79,8 @@ class LessonValidatedServiceTest extends KernelTestCase
 
         self::assertInstanceOf(LessonValidated::class, $lv);
         self::assertTrue($lv->isCompleted());
+        self::assertSame($user->getId(), $lv->getUser()?->getId());
+        self::assertSame($lesson->getId(), $lv->getLesson()?->getId());
 
         $cert = $this->em->getRepository(Certification::class)->findOneBy([
             'user' => $user,
@@ -85,6 +90,7 @@ class LessonValidatedServiceTest extends KernelTestCase
 
         self::assertNotNull($cert);
         self::assertNotEmpty($cert->getCertificateCode());
+        self::assertNotNull($cert->getIssuedAt());
     }
 
     public function testValidateSameLessonDoesNotDuplicateLessonCertification(): void
@@ -93,6 +99,11 @@ class LessonValidatedServiceTest extends KernelTestCase
         $lesson = $this->getLesson(ThemeFixtures::LESSON_GUITAR_1_REF);
 
         $this->service->validateLesson($user, $lesson);
+
+        $this->em->clear();
+        $user = $this->getUser();
+        $lesson = $this->getLesson(ThemeFixtures::LESSON_GUITAR_1_REF);
+
         $this->service->validateLesson($user, $lesson);
 
         $certs = $this->em->getRepository(Certification::class)->findBy([
@@ -107,6 +118,7 @@ class LessonValidatedServiceTest extends KernelTestCase
             'user' => $user,
             'lesson' => $lesson,
         ]);
+
         self::assertCount(1, $validations);
         self::assertTrue($validations[0]->isCompleted());
     }
@@ -116,23 +128,27 @@ class LessonValidatedServiceTest extends KernelTestCase
         $user = $this->getUser();
         $lesson = $this->getLesson(ThemeFixtures::LESSON_GUITAR_1_REF);
 
-        // Crée une validation incomplète manuellement
         $lv = new LessonValidated();
-        $lv->setUser($user)->setLesson($lesson);
-        // on suppose que par défaut completed=false tant qu'on n'appelle pas markCompleted()
+        $lv->setUser($user)
+            ->setLesson($lesson);
+
         $this->em->persist($lv);
         $this->em->flush();
+        $existingId = $lv->getId();
+
         $this->em->clear();
 
-        $user = $this->em->getRepository(User::class)->find($user->getId());
-        $lesson = $this->em->getRepository(Lesson::class)->find($lesson->getId());
-        self::assertNotNull($user);
-        self::assertNotNull($lesson);
+        $user = $this->getUser();
+        $lesson = $this->getLesson(ThemeFixtures::LESSON_GUITAR_1_REF);
 
         $returned = $this->service->validateLesson($user, $lesson);
 
-        self::assertSame($lv->getId(), $returned->getId());
+        self::assertSame($existingId, $returned->getId());
         self::assertTrue($returned->isCompleted());
+
+        $validation = $this->lessonValidatedRepo->find($existingId);
+        self::assertNotNull($validation);
+        self::assertTrue($validation->isCompleted());
     }
 
     public function testCompletingAllLessonsInOneCursusCreatesCursusCertification(): void
@@ -147,7 +163,6 @@ class LessonValidatedServiceTest extends KernelTestCase
 
         $this->service->validateLesson($user, $l1);
 
-        // pas encore complet => pas de cert cursus
         $certBefore = $this->em->getRepository(Certification::class)->findOneBy([
             'user' => $user,
             'cursus' => $cursus,
@@ -155,7 +170,12 @@ class LessonValidatedServiceTest extends KernelTestCase
         ]);
         self::assertNull($certBefore);
 
-        // maintenant complet
+        $this->em->clear();
+        $user = $this->getUser();
+        $l2 = $this->getLesson(ThemeFixtures::LESSON_GUITAR_2_REF);
+        $cursus = $l2->getCursus();
+        self::assertNotNull($cursus);
+
         $this->service->validateLesson($user, $l2);
 
         $cert = $this->em->getRepository(Certification::class)->findOneBy([
@@ -166,8 +186,8 @@ class LessonValidatedServiceTest extends KernelTestCase
 
         self::assertNotNull($cert);
         self::assertNotEmpty($cert->getCertificateCode());
+        self::assertNotNull($cert->getIssuedAt());
 
-        // pas de duplication
         $certs = $this->em->getRepository(Certification::class)->findBy([
             'user' => $user,
             'cursus' => $cursus,
@@ -181,19 +201,30 @@ class LessonValidatedServiceTest extends KernelTestCase
         $user = $this->getUser();
         $theme = $this->getTheme(ThemeFixtures::THEME_MUSIQUE_REF);
 
-        $lessons = $this->em->getRepository(Lesson::class)
+        $lessonIds = $this->em->getRepository(Lesson::class)
             ->createQueryBuilder('l')
+            ->select('l.id')
             ->join('l.cursus', 'c')
             ->join('c.theme', 't')
             ->andWhere('t.id = :themeId')
             ->setParameter('themeId', $theme->getId())
+            ->orderBy('l.id', 'ASC')
             ->getQuery()
-            ->getResult();
+            ->getSingleColumnResult();
 
-        self::assertNotEmpty($lessons);
+        self::assertNotEmpty($lessonIds);
 
-        foreach ($lessons as $lesson) {
+        foreach ($lessonIds as $lessonId) {
+            $lesson = $this->em->getRepository(Lesson::class)->find($lessonId);
+
+            self::assertNotNull($lesson);
+            self::assertInstanceOf(Lesson::class, $lesson);
+
             $this->service->validateLesson($user, $lesson);
+
+            $this->em->clear();
+            $user = $this->getUser();
+            $theme = $this->getTheme(ThemeFixtures::THEME_MUSIQUE_REF);
         }
 
         $themeCert = $this->em->getRepository(Certification::class)->findOneBy([
@@ -204,11 +235,10 @@ class LessonValidatedServiceTest extends KernelTestCase
 
         self::assertNotNull($themeCert);
         self::assertNotEmpty($themeCert->getCertificateCode());
+        self::assertNotNull($themeCert->getIssuedAt());
 
-        // vérifie isThemeCompleted
         self::assertTrue($this->service->isThemeCompleted($user, $theme));
 
-        // pas de duplication
         $themeCerts = $this->em->getRepository(Certification::class)->findBy([
             'user' => $user,
             'theme' => $theme,

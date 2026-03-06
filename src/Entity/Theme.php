@@ -26,10 +26,11 @@ class Theme
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
 
-    #[ORM\Column(type: 'datetime')]
-    private ?\DateTimeInterface $createdAt = null;
+    #[ORM\Column(type: 'datetime_immutable')]
+    private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\OneToMany(mappedBy: 'theme', targetEntity: Cursus::class)]
+    #[ORM\OrderBy(['name' => 'ASC'])]
     private Collection $cursus;
 
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
@@ -38,7 +39,7 @@ class Theme
     public function __construct()
     {
         $this->cursus = new ArrayCollection();
-        $this->createdAt = new \DateTime();
+        $this->createdAt = new \DateTimeImmutable();
     }
 
     public function __toString(): string
@@ -46,22 +47,62 @@ class Theme
         return (string) $this->name;
     }
 
-    public function getId(): ?int { return $this->id; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getName(): ?string { return $this->name; }
-    public function setName(?string $name): static { $this->name = $name; return $this;}
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
 
-    public function getDescription(): ?string { return $this->description; }
-    public function setDescription(?string $description): static { $this->description = $description; return $this; }
+    public function setName(?string $name): static
+    {
+        $this->name = $name !== null ? trim($name) : null;
+        return $this;
+    }
 
-    public function getImage(): ?string { return $this->image; }
-    public function setImage(?string $image): static { $this->image = $image; return $this; }
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
 
-    public function getCreatedAt(): ?\DateTimeInterface { return $this->createdAt; }
-    public function setCreatedAt(\DateTimeInterface $createdAt): static { $this->createdAt = $createdAt; return $this; }
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
+        return $this;
+    }
 
-    /** @return Collection<int, Cursus> */
-    public function getCursus(): Collection { return $this->cursus; }
+    public function getImage(): ?string
+    {
+        return $this->image;
+    }
+
+    public function setImage(?string $image): static
+    {
+        $this->image = $image;
+        return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Cursus>
+     */
+    public function getCursus(): Collection
+    {
+        return $this->cursus;
+    }
 
     public function addCursus(Cursus $cursus): static
     {
@@ -69,15 +110,29 @@ class Theme
             $this->cursus->add($cursus);
             $cursus->setTheme($this);
         }
+
         return $this;
     }
 
     public function removeCursus(Cursus $cursus): static
     {
-        $this->cursus->removeElement($cursus);
+        if ($this->cursus->removeElement($cursus)) {
+            if ($cursus->getTheme() === $this) {
+                $cursus->setTheme(null);
+            }
+        }
+
         return $this;
     }
 
-    public function isActive(): bool { return $this->isActive; }
-    public function setIsActive(bool $isActive): static { $this->isActive = $isActive; return $this; }
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+        return $this;
+    }
 }

@@ -20,8 +20,8 @@ class Lesson
 
     #[ORM\Column(type: 'decimal', precision: 6, scale: 2, nullable: false)]
     #[Assert\NotBlank(message: 'Le prix est obligatoire.')]
-    #[Assert\PositiveOrZero(message: 'Le prix doit être positif.')]
-    private string $price = '0.00';
+    #[Assert\PositiveOrZero(message: 'Le prix doit être positif ou nul.')]
+    private ?string $price = null;
 
     #[ORM\ManyToOne(targetEntity: Cursus::class, inversedBy: 'lessons')]
     #[ORM\JoinColumn(nullable: false)]
@@ -39,44 +39,99 @@ class Lesson
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private bool $isActive = true;
 
-    public function getId(): ?int { return $this->id; }
-
-    public function getTitle(): ?string { return $this->title; }
-    public function setTitle(string $title): static { $this->title = $title; return $this; }
-
-    public function getPrice(): float
+    public function getId(): ?int
     {
-        return (float) $this->price;
+        return $this->id;
     }
 
-    public function setPrice(float|string|null $price): static
+    public function getTitle(): ?string
+    {
+        return $this->title;
+    }
+
+    public function setTitle(string $title): static
+    {
+        $this->title = trim($title);
+        return $this;
+    }
+
+    /**
+     * On retourne string pour rester cohérent avec Doctrine decimal.
+     */
+    public function getPrice(): ?string
+    {
+        return $this->price;
+    }
+
+    public function setPrice(float|string|int|null $price): static
     {
         if ($price === null || $price === '') {
-            $this->price = '0.00'; 
+            $this->price = null;
             return $this;
         }
+
         $this->price = number_format((float) $price, 2, '.', '');
         return $this;
     }
 
-    public function getCursus(): ?Cursus { return $this->cursus; }
-    public function setCursus(?Cursus $cursus): static { $this->cursus = $cursus; return $this; }
+    public function getCursus(): ?Cursus
+    {
+        return $this->cursus;
+    }
 
-    public function getFiche(): ?string { return $this->fiche; }
-    public function setFiche(?string $fiche): static { $this->fiche = $fiche; return $this; }
+    public function setCursus(?Cursus $cursus): static
+    {
+        $this->cursus = $cursus;
+        return $this;
+    }
 
-    public function getImage(): ?string { return $this->image; }
-    public function setImage(?string $image): static { $this->image = $image; return $this; }
+    public function getFiche(): ?string
+    {
+        return $this->fiche;
+    }
 
-    public function getVideoUrl(): ?string { return $this->videoUrl; }
-    public function setVideoUrl(?string $videoUrl): static { $this->videoUrl = $videoUrl; return $this; }
+    public function setFiche(?string $fiche): static
+    {
+        $this->fiche = $fiche;
+        return $this;
+    }
 
-    public function isActive(): bool { return $this->isActive; }
-    public function setIsActive(bool $isActive): static { $this->isActive = $isActive; return $this; }
+    public function getImage(): ?string
+    {
+        return $this->image;
+    }
+
+    public function setImage(?string $image): static
+    {
+        $this->image = $image;
+        return $this;
+    }
+
+    public function getVideoUrl(): ?string
+    {
+        return $this->videoUrl;
+    }
+
+    public function setVideoUrl(?string $videoUrl): static
+    {
+        $this->videoUrl = $videoUrl;
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+        return $this;
+    }
 
     /**
-     * Visible dans le catalogue (actif + thème/cursus actifs).
-     * ATTENTION : ne signifie PAS “accès gratuit”, le paywall est géré par LessonAccessService.
+     * Visible dans le catalogue (actif + cursus/thème actifs).
+     * ATTENTION : ne signifie PAS “accès gratuit”.
      */
     public function isVisibleInCatalog(): bool
     {

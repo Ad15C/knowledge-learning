@@ -13,10 +13,8 @@ class ThemeTest extends TestCase
         $theme = new Theme();
 
         self::assertNull($theme->getId());
-        self::assertInstanceOf(\DateTimeInterface::class, $theme->getCreatedAt());
+        self::assertInstanceOf(\DateTimeImmutable::class, $theme->getCreatedAt());
         self::assertCount(0, $theme->getCursus());
-
-        // bool default
         self::assertTrue($theme->isActive());
     }
 
@@ -24,13 +22,22 @@ class ThemeTest extends TestCase
     {
         $theme = new Theme();
 
-        self::assertSame($theme, $theme->setName('Musique'));
+        self::assertSame($theme, $theme->setName('  Musique  '));
         self::assertSame($theme, $theme->setDescription('desc'));
         self::assertSame($theme, $theme->setImage('img.jpg'));
 
         self::assertSame('Musique', $theme->getName());
         self::assertSame('desc', $theme->getDescription());
         self::assertSame('img.jpg', $theme->getImage());
+    }
+
+    public function testSetNameAcceptsNull(): void
+    {
+        $theme = new Theme();
+
+        $theme->setName(null);
+
+        self::assertNull($theme->getName());
     }
 
     public function testAddCursusMaintainsOwningSide(): void
@@ -42,7 +49,7 @@ class ThemeTest extends TestCase
 
         self::assertCount(1, $theme->getCursus());
         self::assertTrue($theme->getCursus()->contains($cursus));
-        self::assertSame($theme, $cursus->getTheme(), 'addCursus() must set owning side on Cursus');
+        self::assertSame($theme, $cursus->getTheme());
     }
 
     public function testAddCursusTwiceDoesNotDuplicate(): void
@@ -66,12 +73,17 @@ class ThemeTest extends TestCase
 
         self::assertCount(0, $theme->getCursus());
         self::assertFalse($theme->getCursus()->contains($cursus));
+        self::assertNull($cursus->getTheme());
+    }
 
-        // IMPORTANT:
-        // Ton entité Theme::removeCursus() ne met PAS $cursus->setTheme(null)
-        // donc on ne peut pas exiger que l'owning side soit null.
-        // Si tu veux ce comportement, il faut corriger l'entité (voir note ci-dessous).
-        self::assertSame($theme, $cursus->getTheme());
+    public function testSetCreatedAt(): void
+    {
+        $theme = new Theme();
+        $date = new \DateTimeImmutable('2024-01-15 10:30:00');
+
+        $theme->setCreatedAt($date);
+
+        self::assertSame($date, $theme->getCreatedAt());
     }
 
     public function testSetIsActive(): void
@@ -83,5 +95,13 @@ class ThemeTest extends TestCase
 
         $theme->setIsActive(true);
         self::assertTrue($theme->isActive());
+    }
+
+    public function testToStringReturnsName(): void
+    {
+        $theme = new Theme();
+        $theme->setName('Piano');
+
+        self::assertSame('Piano', (string) $theme);
     }
 }

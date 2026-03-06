@@ -31,7 +31,6 @@ class AdminLessonControllerTest extends WebTestCase
             ->get(DatabaseToolCollection::class)
             ->get();
 
-        // ThemeFixtures -> thèmes + cursus + lessons
         $this->databaseTool->loadFixtures([
             TestUserFixtures::class,
             ThemeFixtures::class,
@@ -64,6 +63,7 @@ class AdminLessonControllerTest extends WebTestCase
     {
         $lesson = $this->em->getRepository(Lesson::class)->findOneBy([]);
         self::assertNotNull($lesson, 'No lesson found (fixtures missing?).');
+
         return $lesson;
     }
 
@@ -71,6 +71,7 @@ class AdminLessonControllerTest extends WebTestCase
     {
         $cursus = $this->em->getRepository(Cursus::class)->findOneBy(['isActive' => true]);
         self::assertNotNull($cursus, 'No active cursus found (fixtures missing?).');
+
         return $cursus;
     }
 
@@ -78,12 +79,14 @@ class AdminLessonControllerTest extends WebTestCase
     {
         $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => $name]);
         self::assertNotNull($theme, sprintf('Theme "%s" not found.', $name));
+
         return $theme;
     }
 
     private function requestIndex(array $query = []): Crawler
     {
         $qs = $query ? ('?' . http_build_query($query)) : '';
+
         return $this->client->request('GET', 'https://localhost/admin/lesson' . $qs);
     }
 
@@ -106,9 +109,11 @@ class AdminLessonControllerTest extends WebTestCase
     private function getDisplayedLessonTitles(Crawler $crawler): array
     {
         $titles = [];
+
         $crawler->filter('.lesson-card .lesson-title > span:first-child')->each(function (Crawler $node) use (&$titles) {
             $titles[] = trim($node->text());
         });
+
         return $titles;
     }
 
@@ -139,14 +144,14 @@ class AdminLessonControllerTest extends WebTestCase
     public function testEditGetRedirectsToLoginWhenNotLoggedIn(): void
     {
         $lesson = $this->getAnyLesson();
-        $this->client->request('GET', 'https://localhost/admin/lesson/'.$lesson->getId().'/edit');
+        $this->client->request('GET', 'https://localhost/admin/lesson/' . $lesson->getId() . '/edit');
         self::assertResponseRedirects('/login');
     }
 
     public function testEditPostRedirectsToLoginWhenNotLoggedIn(): void
     {
         $lesson = $this->getAnyLesson();
-        $this->client->request('POST', 'https://localhost/admin/lesson/'.$lesson->getId().'/edit', [
+        $this->client->request('POST', 'https://localhost/admin/lesson/' . $lesson->getId() . '/edit', [
             'lesson' => ['title' => 'Hack'],
         ]);
         self::assertResponseRedirects('/login');
@@ -155,14 +160,14 @@ class AdminLessonControllerTest extends WebTestCase
     public function testDeleteConfirmRedirectsToLoginWhenNotLoggedIn(): void
     {
         $lesson = $this->getAnyLesson();
-        $this->client->request('GET', 'https://localhost/admin/lesson/'.$lesson->getId().'/delete');
+        $this->client->request('GET', 'https://localhost/admin/lesson/' . $lesson->getId() . '/delete');
         self::assertResponseRedirects('/login');
     }
 
     public function testDisablePostRedirectsToLoginWhenNotLoggedIn(): void
     {
         $lesson = $this->getAnyLesson();
-        $this->client->request('POST', 'https://localhost/admin/lesson/'.$lesson->getId().'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/lesson/' . $lesson->getId() . '/disable', [
             '_token' => 'whatever',
         ]);
         self::assertResponseRedirects('/login');
@@ -171,7 +176,7 @@ class AdminLessonControllerTest extends WebTestCase
     public function testActivatePostRedirectsToLoginWhenNotLoggedIn(): void
     {
         $lesson = $this->getAnyLesson();
-        $this->client->request('POST', 'https://localhost/admin/lesson/'.$lesson->getId().'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/lesson/' . $lesson->getId() . '/activate', [
             '_token' => 'whatever',
         ]);
         self::assertResponseRedirects('/login');
@@ -209,7 +214,7 @@ class AdminLessonControllerTest extends WebTestCase
         $this->loginAsUser();
         $lesson = $this->getAnyLesson();
 
-        $this->client->request('GET', 'https://localhost/admin/lesson/'.$lesson->getId().'/edit');
+        $this->client->request('GET', 'https://localhost/admin/lesson/' . $lesson->getId() . '/edit');
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -218,7 +223,7 @@ class AdminLessonControllerTest extends WebTestCase
         $this->loginAsUser();
         $lesson = $this->getAnyLesson();
 
-        $this->client->request('POST', 'https://localhost/admin/lesson/'.$lesson->getId().'/edit', [
+        $this->client->request('POST', 'https://localhost/admin/lesson/' . $lesson->getId() . '/edit', [
             'lesson' => ['title' => 'Hack'],
         ]);
         self::assertResponseStatusCodeSame(403);
@@ -229,7 +234,7 @@ class AdminLessonControllerTest extends WebTestCase
         $this->loginAsUser();
         $lesson = $this->getAnyLesson();
 
-        $this->client->request('GET', 'https://localhost/admin/lesson/'.$lesson->getId().'/delete');
+        $this->client->request('GET', 'https://localhost/admin/lesson/' . $lesson->getId() . '/delete');
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -238,7 +243,7 @@ class AdminLessonControllerTest extends WebTestCase
         $this->loginAsUser();
         $lesson = $this->getAnyLesson();
 
-        $this->client->request('POST', 'https://localhost/admin/lesson/'.$lesson->getId().'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/lesson/' . $lesson->getId() . '/disable', [
             '_token' => 'whatever',
         ]);
         self::assertResponseStatusCodeSame(403);
@@ -249,7 +254,7 @@ class AdminLessonControllerTest extends WebTestCase
         $this->loginAsUser();
         $lesson = $this->getAnyLesson();
 
-        $this->client->request('POST', 'https://localhost/admin/lesson/'.$lesson->getId().'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/lesson/' . $lesson->getId() . '/activate', [
             '_token' => 'whatever',
         ]);
         self::assertResponseStatusCodeSame(403);
@@ -274,7 +279,6 @@ class AdminLessonControllerTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        // On prend un titre existant pour un test robuste
         $any = $this->getAnyLesson();
         $needle = mb_substr((string) $any->getTitle(), 0, 6);
 
@@ -284,8 +288,8 @@ class AdminLessonControllerTest extends WebTestCase
         $titles = $this->getDisplayedLessonTitles($crawler);
         self::assertNotEmpty($titles);
 
-        foreach ($titles as $t) {
-            self::assertStringContainsStringIgnoringCase($needle, $t);
+        foreach ($titles as $title) {
+            self::assertStringContainsStringIgnoringCase($needle, $title);
         }
     }
 
@@ -293,7 +297,6 @@ class AdminLessonControllerTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        // Force au moins 1 lesson archivée
         $lesson = $this->getAnyLesson();
         $lesson->setIsActive(false);
         $this->em->flush();
@@ -326,13 +329,11 @@ class AdminLessonControllerTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        // On choisit Musique si existe, sinon n'importe quel thème
         $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Musique'])
             ?? $this->em->getRepository(Theme::class)->findOneBy([]);
 
         self::assertNotNull($theme);
 
-        // On prend un cursus du thème choisi si possible
         $cursus = $this->em->getRepository(Cursus::class)->findOneBy(['theme' => $theme])
             ?? $this->getAnyActiveCursus();
 
@@ -345,7 +346,6 @@ class AdminLessonControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
 
-        // Toutes les cartes doivent contenir au moins le nom du cursus (dans meta)
         $crawler->filter('.lesson-card .lesson-meta')->each(function (Crawler $node) use ($cursus) {
             self::assertStringContainsString((string) $cursus->getName(), $node->text());
         });
@@ -393,7 +393,7 @@ class AdminLessonControllerTest extends WebTestCase
         $created = $this->em->getRepository(Lesson::class)->findOneBy(['title' => 'Lesson Test New']);
         self::assertNotNull($created);
         self::assertTrue($created->isActive());
-        self::assertSame(12.50, $created->getPrice());
+        self::assertEquals(12.50, (float) $created->getPrice());
     }
 
     public function testNewPostInvalidStaysOnPageAndDoesNotCreate(): void
@@ -406,7 +406,7 @@ class AdminLessonControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Créer')->form([
-            'lesson[title]' => '', // invalide (NotBlank)
+            'lesson[title]' => '',
             'lesson[cursus]' => (string) $cursus->getId(),
             'lesson[price]' => '10.00',
             'lesson[fiche]' => '',
@@ -416,10 +416,8 @@ class AdminLessonControllerTest extends WebTestCase
 
         $crawler = $this->client->submit($form);
 
-        // Attendu : pas de redirect, on reste sur la page
         self::assertResponseStatusCodeSame(200);
 
-        // Validation visible : on cherche le message (custom ou défaut)
         $content = (string) $this->client->getResponse()->getContent();
 
         $hasCustom = str_contains($content, 'Le titre est obligatoire.');
@@ -428,7 +426,6 @@ class AdminLessonControllerTest extends WebTestCase
 
         self::assertTrue($hasCustom || $hasDefault, 'Expected a validation message in the response content.');
 
-        // Et surtout : rien n'a été créé
         $this->em->clear();
         $created = $this->em->getRepository(Lesson::class)->findOneBy(['title' => '']);
         self::assertNull($created);
@@ -449,7 +446,7 @@ class AdminLessonControllerTest extends WebTestCase
         $lesson->setImage('/img-avant.jpg');
         $this->em->flush();
 
-        $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/'.$lesson->getId().'/edit');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/' . $lesson->getId() . '/edit');
         self::assertResponseIsSuccessful();
 
         $form = $crawler->filter('form')->first()->form();
@@ -467,7 +464,7 @@ class AdminLessonControllerTest extends WebTestCase
         $lesson = $this->getAnyLesson();
         $id = $lesson->getId();
 
-        $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/'.$id.'/edit');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/' . $id . '/edit');
         self::assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Enregistrer')->form([
@@ -489,7 +486,7 @@ class AdminLessonControllerTest extends WebTestCase
         self::assertSame('Lesson (modifiée)', $reloaded->getTitle());
         self::assertSame('Nouvelle fiche', $reloaded->getFiche());
         self::assertSame('/img-new.jpg', $reloaded->getImage());
-        self::assertSame(33.30, $reloaded->getPrice());
+        self::assertEquals(33.30, (float) $reloaded->getPrice());
     }
 
     // -------------------------
@@ -503,11 +500,11 @@ class AdminLessonControllerTest extends WebTestCase
         $lesson = $this->getAnyLesson();
         $id = $lesson->getId();
 
-        $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/'.$id.'/delete');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/' . $id . '/delete');
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorExists('form[action*="/admin/lesson/'.$id.'/disable"]');
-        $this->extractHiddenToken($crawler, 'form[action*="/admin/lesson/'.$id.'/disable"]');
+        self::assertSelectorExists('form[action*="/admin/lesson/' . $id . '/disable"]');
+        $this->extractHiddenToken($crawler, 'form[action*="/admin/lesson/' . $id . '/disable"]');
     }
 
     public function testDisableWithValidCsrfSetsIsActiveFalse(): void
@@ -520,12 +517,12 @@ class AdminLessonControllerTest extends WebTestCase
         $lesson->setIsActive(true);
         $this->em->flush();
 
-        $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/'.$id.'/delete');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/' . $id . '/delete');
         self::assertResponseIsSuccessful();
 
-        $token = $this->extractHiddenToken($crawler, 'form[action*="/admin/lesson/'.$id.'/disable"]');
+        $token = $this->extractHiddenToken($crawler, 'form[action*="/admin/lesson/' . $id . '/disable"]');
 
-        $this->client->request('POST', 'https://localhost/admin/lesson/'.$id.'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/lesson/' . $id . '/disable', [
             '_token' => $token,
         ]);
 
@@ -549,18 +546,17 @@ class AdminLessonControllerTest extends WebTestCase
         $lesson = $this->getAnyLesson();
         $id = $lesson->getId();
 
-        // Force archived pour avoir le form "Restaurer" dans l'index
         $lesson->setIsActive(false);
         $this->em->flush();
 
         $crawler = $this->requestIndex(['status' => 'archived']);
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorExists('form[action*="/admin/lesson/'.$id.'/activate"]');
+        self::assertSelectorExists('form[action*="/admin/lesson/' . $id . '/activate"]');
 
-        $token = $this->extractHiddenToken($crawler, 'form[action*="/admin/lesson/'.$id.'/activate"]');
+        $token = $this->extractHiddenToken($crawler, 'form[action*="/admin/lesson/' . $id . '/activate"]');
 
-        $this->client->request('POST', 'https://localhost/admin/lesson/'.$id.'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/lesson/' . $id . '/activate', [
             '_token' => $token,
         ]);
 
@@ -587,7 +583,7 @@ class AdminLessonControllerTest extends WebTestCase
         $lesson->setIsActive(true);
         $this->em->flush();
 
-        $this->client->request('POST', 'https://localhost/admin/lesson/'.$id.'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/lesson/' . $id . '/disable', [
             '_token' => 'invalid_token',
         ]);
 
@@ -609,7 +605,7 @@ class AdminLessonControllerTest extends WebTestCase
         $lesson->setIsActive(false);
         $this->em->flush();
 
-        $this->client->request('POST', 'https://localhost/admin/lesson/'.$id.'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/lesson/' . $id . '/activate', [
             '_token' => 'invalid_token',
         ]);
 
@@ -624,6 +620,9 @@ class AdminLessonControllerTest extends WebTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        $this->em->close();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

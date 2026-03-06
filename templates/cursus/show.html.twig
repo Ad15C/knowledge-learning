@@ -3,59 +3,83 @@
 {% block title %}{{ cursus.name }}{% endblock %}
 
 {% block stylesheets %}
-  {{ parent() }}
-  <link rel="stylesheet" href="{{ asset('styles/themes.css') }}">
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/themes.css') }}">
 {% endblock %}
 
 {% block body %}
+<div class="cursus-page">
+    <h1>{{ cursus.name }}</h1>
 
-<h1>{{ cursus.name }}</h1>
+    {% if cursus.description %}
+        <p>{{ cursus.description }}</p>
+    {% endif %}
 
-{% if cursus.description %}
-  <p>{{ cursus.description }}</p>
-{% endif %}
+    <h2>Leçons disponibles</h2>
 
-<h2>Leçons disponibles</h2>
+    <div class="cursus-grid">
+        {% for lesson in cursus.lessons %}
+            {% set hasAccess = userHasAccess[lesson.id]|default(false) %}
+            {% set hasCompleted = userHasCompleted[lesson.id]|default(false) %}
 
-<div class="cursus-grid">
-  {% for lesson in cursus.lessons %}
-    <div class="cursus-card lesson-card">
+            <div class="cursus-card lesson-card">
+                {% if lesson.image %}
+                    <img src="{{ asset(lesson.image) }}" alt="{{ lesson.title }}">
+                {% endif %}
 
-      {% if lesson.image %}
-        <img src="{{ asset(lesson.image) }}" alt="{{ lesson.title }}">
-      {% endif %}
+                <h3>{{ lesson.title }}</h3>
+                <p>Prix : {{ lesson.price|number_format(2, '.', ' ') }} €</p>
 
-      <h3>{{ lesson.title }}</h3>
-      <p>Prix : {{ lesson.price|number_format(2, '.', ' ') }} €</p>
+                <div class="lesson-status">
+                    {% if hasCompleted %}
+                        <span class="badge badge-success">Validée ✔</span>
+                    {% elseif hasAccess %}
+                        <span class="badge badge-unlocked">Accessible</span>
+                    {% else %}
+                        <span class="badge badge-locked">Verrouillée</span>
+                    {% endif %}
+                </div>
 
-      <div class="lesson-actions">
-        {% set hasAccess = userHasAccess[lesson.id]|default(false) %}
-          {% set hasCompleted = userHasCompleted[lesson.id]|default(false) %}
-
-          {% if hasAccess %}
-            {% if not hasCompleted %}
-              <a href="{{ path('lesson_show', {id: lesson.id}) }}" class="btn btn-success">
-                Accéder & valider
-              </a>
-            {% else %}
-              <span class="lesson-validated">Leçon validée ✔</span>
-            {% endif %}
-          {% else %}
-            <form method="post" action="{{ path('cart_add_lesson', {id: lesson.id}) }}" style="display:inline;">
-              <input type="hidden" name="_token" value="{{ csrf_token('cart_add_lesson_' ~ lesson.id) }}">
-              <button type="submit" class="btn btn-outline">Ajouter au panier</button>
-            </form>
-          {% endif %}
-      </div>
-
+                <div class="lesson-actions">
+                    {% if hasAccess %}
+                        <a href="{{ path('lesson_show', { id: lesson.id }) }}" class="btn btn-success">
+                            {% if hasCompleted %}
+                                Revoir la leçon
+                            {% else %}
+                                Accéder à la leçon
+                            {% endif %}
+                        </a>
+                    {% else %}
+                        {% if app.user %}
+                            <form method="post" action="{{ path('cart_add_lesson', { id: lesson.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('cart_add_lesson_' ~ lesson.id) }}">
+                                <button type="submit" class="btn btn-outline">
+                                    Ajouter au panier
+                                </button>
+                            </form>
+                        {% else %}
+                            <a href="{{ path('app_login') }}" class="btn btn-primary">
+                                Se connecter pour acheter
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <p>Aucune leçon disponible pour ce cursus.</p>
+        {% endfor %}
     </div>
-  {% else %}
-    <p>Aucune leçon disponible pour ce cursus.</p>
-  {% endfor %}
+
+    <div class="mt-3">
+        {% if cursus.theme %}
+            <a href="{{ path('theme_show', { id: cursus.theme.id }) }}" class="btn-back">
+                ← Retour au thème "{{ cursus.theme.name }}"
+            </a>
+        {% else %}
+            <a href="{{ path('themes_index') }}" class="btn-back">
+                ← Retour aux thèmes
+            </a>
+        {% endif %}
+    </div>
 </div>
-
-<a href="{{ path('theme_show', {'id': cursus.theme.id}) }}" class="btn-back">
-  ← Retour au thème "{{ cursus.theme.name }}"
-</a>
-
 {% endblock %}

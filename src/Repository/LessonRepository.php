@@ -2,11 +2,11 @@
 
 namespace App\Repository;
 
-use App\Entity\Lesson;
 use App\Entity\Cursus;
+use App\Entity\Lesson;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\ORM\QueryBuilder;
+use Doctrine\Persistence\ManagerRegistry;
 
 class LessonRepository extends ServiceEntityRepository
 {
@@ -14,8 +14,6 @@ class LessonRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Lesson::class);
     }
-
-    // -------------------- ADMIN FILTER (inchangé chez toi) --------------------
 
     public function createAdminFilterQueryBuilder(
         ?string $q = null,
@@ -31,7 +29,7 @@ class LessonRepository extends ServiceEntityRepository
 
         if ($q) {
             $qb->andWhere('LOWER(l.title) LIKE :q')
-               ->setParameter('q', '%'.mb_strtolower(trim($q)).'%');
+                ->setParameter('q', '%' . mb_strtolower(trim($q)) . '%');
         }
 
         if ($status === 'active') {
@@ -41,34 +39,43 @@ class LessonRepository extends ServiceEntityRepository
         }
 
         if ($cursusId) {
-            $qb->andWhere('c.id = :cursusId')->setParameter('cursusId', $cursusId);
+            $qb->andWhere('c.id = :cursusId')
+                ->setParameter('cursusId', $cursusId);
         }
 
         if ($themeId) {
-            $qb->andWhere('t.id = :themeId')->setParameter('themeId', $themeId);
+            $qb->andWhere('t.id = :themeId')
+                ->setParameter('themeId', $themeId);
         }
 
         switch ($sort) {
-            case 'title_asc':  $qb->orderBy('l.title', 'ASC'); break;
-            case 'title_desc': $qb->orderBy('l.title', 'DESC'); break;
+            case 'title_asc':
+                $qb->orderBy('l.title', 'ASC');
+                break;
+
+            case 'title_desc':
+                $qb->orderBy('l.title', 'DESC');
+                break;
+
             case 'price_asc':
                 $qb->addOrderBy('CASE WHEN l.price IS NULL THEN 1 ELSE 0 END', 'ASC')
-                   ->addOrderBy('l.price', 'ASC');
+                    ->addOrderBy('l.price', 'ASC');
                 break;
+
             case 'price_desc':
                 $qb->addOrderBy('CASE WHEN l.price IS NULL THEN 1 ELSE 0 END', 'ASC')
-                   ->addOrderBy('l.price', 'DESC');
+                    ->addOrderBy('l.price', 'DESC');
                 break;
+
             default:
                 $qb->orderBy('l.id', 'DESC');
+                break;
         }
 
         return $qb;
     }
 
     /**
-     * FRONT : leçons visibles d'un cursus
-     *
      * @return Lesson[]
      */
     public function findVisibleByCursus(Cursus $cursus): array
@@ -87,9 +94,6 @@ class LessonRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /**
-     * FRONT : récupérer une leçon visible (page show)
-     */
     public function findVisibleLesson(int $id): ?Lesson
     {
         return $this->createQueryBuilder('l')

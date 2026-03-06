@@ -51,7 +51,7 @@ class PurchaseItemRepository extends ServiceEntityRepository
     }
 
     /**
-     * Leçons achetées et PAYÉES uniquement
+     * @return Lesson[]
      */
     public function findLessonsPurchasedByUser(User $user): array
     {

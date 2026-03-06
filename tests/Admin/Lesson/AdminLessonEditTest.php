@@ -50,6 +50,7 @@ class AdminLessonEditTest extends WebTestCase
         $lesson = $this->em->getRepository(Lesson::class)->findOneBy([]);
         self::assertNotNull($lesson, 'No lesson found in fixtures.');
         self::assertNotNull($lesson->getCursus(), 'Fixture lesson must have a cursus.');
+
         return $lesson;
     }
 
@@ -64,6 +65,7 @@ class AdminLessonEditTest extends WebTestCase
 
         $cursus = $qb->setMaxResults(1)->getQuery()->getOneOrNullResult();
         self::assertNotNull($cursus, 'No active cursus found (except excluded).');
+
         return $cursus;
     }
 
@@ -78,7 +80,6 @@ class AdminLessonEditTest extends WebTestCase
 
         $cursus = $qb->setMaxResults(1)->getQuery()->getOneOrNullResult();
 
-        // Si aucun inactif n’existe, on en crée un en archivant un actif (différent de exclude)
         if (!$cursus) {
             $active = $this->getAnyActiveCursusExcept($excludeId);
             $active->setIsActive(false);
@@ -89,24 +90,30 @@ class AdminLessonEditTest extends WebTestCase
         }
 
         self::assertNotNull($cursus, 'No inactive cursus found/created.');
+
         return $cursus;
     }
 
     private function getSelectOptionLabels(Crawler $crawler, string $selectName): array
     {
         $labels = [];
-        $crawler->filter(sprintf('select[name="%s"] option', $selectName))->each(function (Crawler $opt) use (&$labels) {
-            $labels[] = trim($opt->text());
-        });
+
+        $crawler->filter(sprintf('select[name="%s"] option', $selectName))
+            ->each(function (Crawler $opt) use (&$labels) {
+                $labels[] = trim($opt->text());
+            });
+
         return $labels;
     }
 
     private function getSelectedOptionValue(Crawler $crawler, string $selectName): ?string
     {
         $node = $crawler->filter(sprintf('select[name="%s"] option[selected]', $selectName));
+
         if ($node->count() === 0) {
             return null;
         }
+
         return $node->attr('value');
     }
 
@@ -116,18 +123,16 @@ class AdminLessonEditTest extends WebTestCase
         $hay = mb_strtolower($decoded);
 
         $needles = [
-            // messages Symfony fréquents (EN)
             'this value is not valid',
             'the selected choice is invalid',
             'the value you selected is not a valid choice',
             'is not a valid choice',
             'selected choice is invalid',
 
-            // messages Symfony fréquents (FR)
             "cette valeur n'est pas valide",
             "cette valeur n’est pas valide",
             'le choix sélectionné est invalide',
-            'le choix selectionné est invalide', // sans accent (au cas où)
+            'le choix selectionné est invalide',
             "la valeur sélectionnée n'est pas valide",
             "la valeur sélectionnée n’est pas valide",
             "la valeur sélectionnée n'est pas un choix valide",
@@ -138,8 +143,8 @@ class AdminLessonEditTest extends WebTestCase
             'valeur invalide',
         ];
 
-        foreach ($needles as $n) {
-            if (str_contains($hay, mb_strtolower($n))) {
+        foreach ($needles as $needle) {
+            if (str_contains($hay, mb_strtolower($needle))) {
                 return true;
             }
         }
@@ -171,8 +176,6 @@ class AdminLessonEditTest extends WebTestCase
 
     // -------------------------------------------------
     // Cas important : le cursus courant est archivé
-    // -> il doit quand même apparaître dans le select (patch LessonType)
-    // -> et être sélectionné
     // -------------------------------------------------
 
     public function testEditGetIncludesCurrentArchivedCursusAndDoesNotListOtherArchivedCursus(): void
@@ -183,7 +186,6 @@ class AdminLessonEditTest extends WebTestCase
         $lessonId = $lesson->getId();
         self::assertNotNull($lessonId);
 
-        // On archive le cursus courant de la leçon
         $currentCursus = $lesson->getCursus();
         self::assertNotNull($currentCursus);
         $currentId = $currentCursus->getId();
@@ -193,7 +195,6 @@ class AdminLessonEditTest extends WebTestCase
         $this->em->flush();
         $this->em->clear();
 
-        // On a besoin d’un autre cursus archivé (différent du courant) pour vérifier qu’il n’apparaît PAS
         $otherArchived = $this->getAnyInactiveCursusExcept($currentId);
         $otherArchivedId = $otherArchived->getId();
         self::assertNotNull($otherArchivedId);
@@ -203,25 +204,22 @@ class AdminLessonEditTest extends WebTestCase
 
         $labels = $this->getSelectOptionLabels($crawler, 'lesson[cursus]');
 
-        // Le cursus courant archivé doit être présent en option
         $currentName = $currentCursus->getName();
         if ($currentName) {
             self::assertContains($currentName, $labels, 'Current archived cursus should still be listed on edit.');
         }
 
-        // Un autre cursus archivé ne doit pas être listé
         $otherName = $otherArchived->getName();
         if ($otherName) {
             self::assertNotContains($otherName, $labels, 'Other archived cursus should NOT be listed on edit.');
         }
 
-        // Et l’option sélectionnée doit être le cursus courant
         $selectedValue = $this->getSelectedOptionValue($crawler, 'lesson[cursus]');
         self::assertSame((string) $currentId, (string) $selectedValue, 'Current cursus should be selected by default.');
     }
 
     // -------------------------------------------------
-    // POST OK : édition simple (titre/prix), cursus courant archivé conservé
+    // POST OK : édition simple
     // -------------------------------------------------
 
     public function testEditPostOkWithCurrentArchivedCursusKeepsItAndUpdatesFields(): void
@@ -232,7 +230,6 @@ class AdminLessonEditTest extends WebTestCase
         $lessonId = $lesson->getId();
         self::assertNotNull($lessonId);
 
-        // Archive cursus courant
         $currentCursus = $lesson->getCursus();
         self::assertNotNull($currentCursus);
         $currentId = $currentCursus->getId();
@@ -249,7 +246,7 @@ class AdminLessonEditTest extends WebTestCase
 
         $form = $crawler->selectButton('Enregistrer')->form([
             'lesson[title]' => $newTitle,
-            'lesson[cursus]' => (string) $currentId, // doit être accepté même archivé (cursus courant)
+            'lesson[cursus]' => (string) $currentId,
             'lesson[price]' => '99.90',
             'lesson[fiche]' => 'Fiche edit',
             'lesson[videoUrl]' => '',
@@ -273,7 +270,7 @@ class AdminLessonEditTest extends WebTestCase
 
         self::assertSame($newTitle, $updated->getTitle());
         self::assertSame((string) $currentId, (string) $updated->getCursus()?->getId(), 'Cursus should remain the current (archived) one.');
-        self::assertSame(99.90, $updated->getPrice());
+        self::assertEquals(99.90, (float) $updated->getPrice());
     }
 
     // -------------------------------------------------
@@ -293,7 +290,6 @@ class AdminLessonEditTest extends WebTestCase
         $currentId = $currentCursus->getId();
         self::assertNotNull($currentId);
 
-        // On choisit un autre cursus actif
         $target = $this->getAnyActiveCursusExcept($currentId);
         $targetId = $target->getId();
         self::assertNotNull($targetId);
@@ -320,12 +316,11 @@ class AdminLessonEditTest extends WebTestCase
         self::assertNotNull($updated);
         self::assertSame((string) $targetId, (string) $updated->getCursus()?->getId());
         self::assertSame($newTitle, $updated->getTitle());
-        self::assertSame(12.34, $updated->getPrice());
+        self::assertEquals(12.34, (float) $updated->getPrice());
     }
 
     // -------------------------------------------------
-    // Sécurité formulaire : poster un cursus archivé NON courant doit échouer
-    // (bypass DomCrawler choice validation)
+    // Sécurité formulaire
     // -------------------------------------------------
 
     public function testEditPostRejectsOtherArchivedCursusId(): void
@@ -341,13 +336,10 @@ class AdminLessonEditTest extends WebTestCase
         $currentId = $currentCursus->getId();
         self::assertNotNull($currentId);
 
-        // On s’assure que le cursus courant est actif (peu importe ici),
-        // et on récupère un "autre" cursus archivé (différent)
         $otherArchived = $this->getAnyInactiveCursusExcept($currentId);
         $otherArchivedId = $otherArchived->getId();
         self::assertNotNull($otherArchivedId);
 
-        // GET pour récupérer le token CSRF
         $crawler = $this->client->request('GET', sprintf('https://localhost/admin/lesson/%d/edit', $lessonId));
         self::assertResponseIsSuccessful();
 
@@ -356,7 +348,6 @@ class AdminLessonEditTest extends WebTestCase
 
         $originalTitle = $lesson->getTitle();
 
-        // POST "manuel" : on force un cursus archivé non-courant (pas dans les choices)
         $this->client->request('POST', sprintf('https://localhost/admin/lesson/%d/edit', $lessonId), [
             'lesson' => [
                 '_token' => $csrf,
@@ -369,7 +360,6 @@ class AdminLessonEditTest extends WebTestCase
             ],
         ]);
 
-        // Doit rester sur la page (form invalide)
         self::assertResponseStatusCodeSame(200);
 
         $content = (string) $this->client->getResponse()->getContent();
@@ -378,7 +368,6 @@ class AdminLessonEditTest extends WebTestCase
             'Expected an "invalid choice" validation error when posting an archived cursus not equal to the current one.'
         );
 
-        // Et surtout : la leçon ne doit pas avoir changé en DB
         $this->em->clear();
         $reloaded = $this->em->getRepository(Lesson::class)->find($lessonId);
         self::assertNotNull($reloaded);
@@ -400,8 +389,7 @@ class AdminLessonEditTest extends WebTestCase
             'Anonymous user should be redirected.'
         );
 
-        // si ton login est bien /login :
-        self::assertStringContainsString('/login', $this->client->getResponse()->headers->get('Location'));
+        self::assertStringContainsString('/login', (string) $this->client->getResponse()->headers->get('Location'));
     }
 
     public function testEditUserWithoutAdminRoleIsForbidden(): void
@@ -514,7 +502,6 @@ class AdminLessonEditTest extends WebTestCase
             'lesson[price]' => '15.00',
         ]);
 
-        // Force token invalide
         $form['lesson[_token]'] = 'invalid_token';
 
         $this->client->submit($form);
@@ -530,6 +517,9 @@ class AdminLessonEditTest extends WebTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        $this->em->close();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

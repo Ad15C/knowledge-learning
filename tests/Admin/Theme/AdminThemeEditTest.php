@@ -54,10 +54,10 @@ class AdminThemeEditTest extends WebTestCase
         $theme->setImage('/img-avant.jpg');
         $this->em->flush();
 
-        $crawler = $this->client->request('GET', 'https://localhost/admin/themes/'.$theme->getId().'/edit');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/themes/' . $theme->getId() . '/edit');
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorTextContains('h1', 'Modifier : '.$theme->getName());
+        self::assertSelectorTextContains('h1', 'Modifier : ' . $theme->getName());
 
         $form = $crawler->filter('form')->first()->form();
         self::assertSame('Musique', $form['theme[name]']->getValue());
@@ -72,7 +72,7 @@ class AdminThemeEditTest extends WebTestCase
         $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Musique']);
         self::assertNotNull($theme);
 
-        $crawler = $this->client->request('GET', 'https://localhost/admin/themes/'.$theme->getId().'/edit');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/themes/' . $theme->getId() . '/edit');
         self::assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Enregistrer')->form([
@@ -88,14 +88,13 @@ class AdminThemeEditTest extends WebTestCase
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
 
-        // Flash rendu par base.html.twig
         self::assertSelectorExists('.flash-messages .flash.flash-success');
         self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Thème modifié.');
 
-        // Reload DB
         $id = $theme->getId();
         $this->em->clear();
 
+        /** @var Theme|null $reloaded */
         $reloaded = $this->em->getRepository(Theme::class)->find($id);
         self::assertNotNull($reloaded);
 
@@ -116,35 +115,47 @@ class AdminThemeEditTest extends WebTestCase
         $originalDescription = $theme->getDescription();
         $originalImage = $theme->getImage();
 
-        $crawler = $this->client->request('GET', 'https://localhost/admin/themes/'.$id.'/edit');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/themes/' . $id . '/edit');
         self::assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Enregistrer')->form([
-            'theme[name]' => '', // invalide (NotBlank)
+            'theme[name]' => '',
             'theme[description]' => 'Description modifiée (ne doit pas être persistée)',
             'theme[image]' => '/img-invalid.jpg',
         ]);
 
         $this->client->submit($form);
 
-        // Pas de redirect => on reste sur la page (200)
         self::assertResponseStatusCodeSame(200);
 
-        // Erreur de formulaire : selon le thème Symfony, l'erreur sort souvent ici.
-        // On met 2 assertions tolérantes : au moins une des deux doit matcher.
-        $hasError = $this->client->getCrawler()->filter('.form-error-message')->count() > 0
+        $content = (string) $this->client->getResponse()->getContent();
+
+        $hasError =
+            $this->client->getCrawler()->filter('.form-error-message')->count() > 0
             || $this->client->getCrawler()->filter('.invalid-feedback')->count() > 0
-            || str_contains($this->client->getResponse()->getContent(), 'Le nom est obligatoire.');
+            || str_contains($content, 'Le nom est obligatoire.')
+            || str_contains($content, 'This value should not be blank')
+            || str_contains($content, 'Cette valeur ne doit pas être vide');
 
         self::assertTrue($hasError, 'Aucune erreur de validation visible pour le champ "name".');
 
-        // DB inchangée
         $this->em->clear();
+
+        /** @var Theme|null $reloaded */
         $reloaded = $this->em->getRepository(Theme::class)->find($id);
         self::assertNotNull($reloaded);
 
         self::assertSame($originalName, $reloaded->getName());
         self::assertSame($originalDescription, $reloaded->getDescription());
         self::assertSame($originalImage, $reloaded->getImage());
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

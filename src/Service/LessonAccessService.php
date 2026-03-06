@@ -11,11 +11,12 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class LessonAccessService
 {
-    public function __construct(private EntityManagerInterface $em) {}
+    public function __construct(private EntityManagerInterface $em)
+    {
+    }
 
     public function userCanAccessLesson(User $user, Lesson $lesson): bool
     {
-        // Admin bypass
         if (in_array('ROLE_ADMIN', $user->getRoles(), true)) {
             return true;
         }
@@ -41,22 +42,20 @@ class LessonAccessService
     }
 
     /**
-     * @return array<int,bool> map [lessonId => true]
+     * @return array<int,bool>
      */
     public function getAccessibleLessonMapForCursus(User $user, Cursus $cursus): array
     {
-        // Admin => accès à tout
         if (in_array('ROLE_ADMIN', $user->getRoles(), true)) {
             $all = [];
             foreach ($cursus->getLessons() as $lesson) {
-                if ($lesson->getId()) {
+                if ($lesson->getId() !== null) {
                     $all[$lesson->getId()] = true;
                 }
             }
             return $all;
         }
 
-        // 1) Si achat du cursus payé => toutes les leçons
         $qbCursus = $this->em->getRepository(PurchaseItem::class)->createQueryBuilder('pi');
         $qbCursus->join('pi.purchase', 'p')
             ->andWhere('p.user = :user')
@@ -70,14 +69,13 @@ class LessonAccessService
         if ($qbCursus->getQuery()->getOneOrNullResult() !== null) {
             $all = [];
             foreach ($cursus->getLessons() as $lesson) {
-                if ($lesson->getId()) {
+                if ($lesson->getId() !== null) {
                     $all[$lesson->getId()] = true;
                 }
             }
             return $all;
         }
 
-        // 2) Sinon : achat leçon par leçon (paid) dans ce cursus
         $qb = $this->em->getRepository(PurchaseItem::class)->createQueryBuilder('pi');
         $qb->join('pi.purchase', 'p')
             ->join('pi.lesson', 'l')
@@ -93,7 +91,7 @@ class LessonAccessService
         $map = [];
         foreach ($items as $item) {
             $lesson = $item->getLesson();
-            if ($lesson && $lesson->getId()) {
+            if ($lesson !== null && $lesson->getId() !== null) {
                 $map[$lesson->getId()] = true;
             }
         }

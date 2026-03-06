@@ -1,72 +1,118 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Leçon Validée{% endblock %}
+{% block title %}Leçon validée{% endblock %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="{{ asset('css/lesson_validated.css') }}">
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/lesson_validated.css') }}">
 {% endblock %}
 
 {% block body %}
 <div class="lesson-validated-container">
     <div class="lesson-validated-card">
-        <h1>Bravo {{ app.user.firstname ?? app.user.username }} !</h1>
+        <h1>Bravo {{ app.user.firstname ?? app.user.username ?? '' }} !</h1>
 
-        {% if lessonValidated.lesson %}
-            <p>Vous avez terminé la leçon : <strong>{{ lessonValidated.lesson.title }}</strong></p>
+        {% if lesson %}
+            <p>
+                Vous avez terminé la leçon :
+                <strong>{{ lesson.title }}</strong>
+            </p>
 
-            {% set theme = lessonValidated.lesson.cursus?->theme %}
+            {% if cursus %}
+                <p>
+                    Cursus : <strong>{{ cursus.name }}</strong>
+                </p>
+            {% endif %}
+
             {% if theme %}
-                {% set totalLessons = theme.lessons|length %}
-                {% set completedLessons = app.user.completedLessons|filter(l => l.cursus.theme.id == theme.id)|length %}
-                {% set progressPercent = (completedLessons / totalLessons * 100)|round(0, 'floor') %}
+                <p>
+                    Thème : <strong>{{ theme.name }}</strong>
+                </p>
+            {% endif %}
 
-                <!-- Cercle de progression -->
+            {% if totalLessonsCount > 0 %}
                 <div class="progress-circle" data-progress="{{ progressPercent }}">
                     <span>{{ progressPercent }}%</span>
-                    <svg>
+                    <svg width="120" height="120" viewBox="0 0 120 120">
                         <circle class="bg" r="50" cx="60" cy="60"></circle>
                         <circle class="progress" r="50" cx="60" cy="60"></circle>
                     </svg>
                 </div>
-                <p class="progress-text">{{ completedLessons }}/{{ totalLessons }} leçons terminées</p>
 
-                {% if allCompleted %}
-                    <p style="color:green; font-weight:bold;">
-                        Félicitations ! Vous avez complété toutes les leçons de ce thème : <strong>{{ theme.title }}</strong> et obtenu votre certification 🎓
-                    </p>
-                {% else %}
-                    <p>Continuez à valider les leçons pour compléter le thème et obtenir votre certification.</p>
-                {% endif %}
-
-                <a href="{{ path('lesson_list', {'cursusId': lessonValidated.lesson.cursus.id}) }}" class="btn btn-primary">
-                    Retour aux leçons
-                </a>
-            {% else %}
-                <p>Thème introuvable pour cette leçon.</p>
-                <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">Retour au tableau de bord</a>
+                <p class="progress-text">
+                    {{ completedLessonsCount }}/{{ totalLessonsCount }} leçons terminées dans ce cursus
+                </p>
             {% endif %}
 
+            {% if allCompleted %}
+                <p class="success-message">
+                    Félicitations ! Vous avez complété toutes les leçons de ce cursus.
+                </p>
+            {% else %}
+                <p>
+                    Continuez à valider les autres leçons pour terminer le cursus.
+                </p>
+            {% endif %}
+
+            {% if certification %}
+                <div class="certification-box">
+                    <h2>Certification obtenue</h2>
+                    <p><strong>Code :</strong> {{ certification.certificateCode }}</p>
+
+                    {% if certification.issuedAt %}
+                        <p><strong>Date :</strong> {{ certification.issuedAt|date('d/m/Y H:i') }}</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <div class="lesson-validated-actions">
+                <a href="{{ path('lesson_show', { id: lesson.id }) }}" class="btn btn-outline">
+                    Revenir à la leçon
+                </a>
+
+                {% if cursus %}
+                    <a href="{{ path('cursus_show', { id: cursus.id }) }}" class="btn btn-primary">
+                        Retour au cursus
+                    </a>
+                {% else %}
+                    <a href="{{ path('themes_index') }}" class="btn btn-secondary">
+                        Retour aux thèmes
+                    </a>
+                {% endif %}
+            </div>
         {% else %}
             <p>Leçon introuvable.</p>
-            <a href="{{ path('user_dashboard') }}" class="btn btn-secondary">Retour au tableau de bord</a>
+
+            <a href="{{ path('themes_index') }}" class="btn btn-secondary">
+                Retour aux thèmes
+            </a>
         {% endif %}
     </div>
 </div>
 {% endblock %}
 
 {% block javascripts %}
-<script>
-document.querySelectorAll('.progress-circle').forEach(circle => {
-    const progress = circle.dataset.progress;
-    const circleProgress = circle.querySelector('.progress');
-    const radius = circleProgress.r.baseVal.value;
-    const circumference = 2 * Math.PI * radius;
+    {{ parent() }}
+    <script>
+        document.querySelectorAll('.progress-circle').forEach(circle => {
+            const progress = parseFloat(circle.dataset.progress || '0');
+            const circleProgress = circle.querySelector('.progress');
 
-    circleProgress.style.strokeDasharray = `${circumference} ${circumference}`;
-    circleProgress.style.strokeDashoffset = circumference;
+            if (!circleProgress) {
+                return;
+            }
 
-    const offset = circumference - (progress / 100) * circumference;
-    setTimeout(() => { circleProgress.style.strokeDashoffset = offset; }, 200);
-});
-</script>
+            const radius = circleProgress.r.baseVal.value;
+            const circumference = 2 * Math.PI * radius;
+
+            circleProgress.style.strokeDasharray = `${circumference} ${circumference}`;
+            circleProgress.style.strokeDashoffset = circumference;
+
+            const offset = circumference - (progress / 100) * circumference;
+
+            setTimeout(() => {
+                circleProgress.style.strokeDashoffset = offset;
+            }, 200);
+        });
+    </script>
 {% endblock %}
