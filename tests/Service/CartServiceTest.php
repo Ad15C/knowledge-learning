@@ -7,7 +7,8 @@ use App\Entity\PurchaseItem;
 use App\Repository\PurchaseRepository;
 use App\Service\CartService;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Security\Core\Security;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 class CartServiceTest extends TestCase
@@ -16,10 +17,10 @@ class CartServiceTest extends TestCase
     {
         $purchaseRepo = $this->createMock(PurchaseRepository::class);
 
-        $security = $this->createMock(Security::class);
-        $security->method('getUser')->willReturn(null);
+        $tokenStorage = $this->createMock(TokenStorageInterface::class);
+        $tokenStorage->method('getToken')->willReturn(null);
 
-        $service = new CartService($purchaseRepo, $security);
+        $service = new CartService($purchaseRepo, $tokenStorage);
 
         self::assertSame(0, $service->getCartItemCount());
     }
@@ -37,10 +38,13 @@ class CartServiceTest extends TestCase
             ])
             ->willReturn(null);
 
-        $security = $this->createMock(Security::class);
-        $security->method('getUser')->willReturn($user);
+        $token = $this->createMock(TokenInterface::class);
+        $token->method('getUser')->willReturn($user);
 
-        $service = new CartService($purchaseRepo, $security);
+        $tokenStorage = $this->createMock(TokenStorageInterface::class);
+        $tokenStorage->method('getToken')->willReturn($token);
+
+        $service = new CartService($purchaseRepo, $tokenStorage);
 
         self::assertSame(0, $service->getCartItemCount());
     }
@@ -67,10 +71,13 @@ class CartServiceTest extends TestCase
             ])
             ->willReturn($purchase);
 
-        $security = $this->createMock(Security::class);
-        $security->method('getUser')->willReturn($user);
+        $token = $this->createMock(TokenInterface::class);
+        $token->method('getUser')->willReturn($user);
 
-        $service = new CartService($purchaseRepo, $security);
+        $tokenStorage = $this->createMock(TokenStorageInterface::class);
+        $tokenStorage->method('getToken')->willReturn($token);
+
+        $service = new CartService($purchaseRepo, $tokenStorage);
 
         self::assertSame(2, $service->getCartItemCount());
     }

@@ -21,7 +21,10 @@ class Contact
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'Veuillez renseigner votre e-mail.')]
-    #[Assert\Email(message: 'Veuillez renseigner un e-mail valide.')]
+    #[Assert\Email(
+        message: 'Veuillez renseigner un e-mail valide.',
+        mode: 'html5'
+    )]
     #[Assert\Length(max: 255)]
     private ?string $email = null;
 

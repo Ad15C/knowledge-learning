@@ -35,7 +35,10 @@ class RegistrationFormType extends AbstractType
                 'label' => 'Email',
                 'constraints' => [
                     new Assert\NotBlank(['message' => 'Veuillez saisir votre email.']),
-                    new Assert\Email(['message' => 'Format d’email invalide.']),
+                    new Assert\Email([
+                        'message' => 'Format d’email invalide.',
+                        'mode' => 'html5',
+                    ]),
                 ],
             ])
             ->add('plainPassword', RepeatedType::class, [
