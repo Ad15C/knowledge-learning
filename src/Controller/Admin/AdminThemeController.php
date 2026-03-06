@@ -20,12 +20,18 @@ class AdminThemeController extends AbstractController
     public function index(Request $request, ThemeRepository $repo): Response
     {
         $q = $request->query->get('q');
-        $status = $request->query->get('status', 'all'); // all|active|archived
+        $status = $request->query->get('status', 'all');
         $sort = $request->query->get('sort', 'created_desc');
 
-        // ✅ Choix A : "actif" = isActive seulement
-        // ✅ + badge "Visible sur le site" calculé en 1 requête
-        $themesWithVisibility = $repo->findAdminThemesWithVisibility($q, $status, $sort, true);
+        $requireCursus = $status === 'active';
+
+        $themesWithVisibility = $repo->findAdminThemesWithVisibility(
+            $q,
+            $status,
+            $sort,
+            true,
+            $requireCursus
+        );
 
         return $this->render('admin/theme/index.html.twig', [
             'themesWithVisibility' => $themesWithVisibility,

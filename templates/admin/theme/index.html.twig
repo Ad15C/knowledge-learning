@@ -15,24 +15,40 @@
 
 <form method="get" class="admin-filters">
   <div class="admin-filters-row">
-    <input type="search" name="q" value="{{ filters.q ?? '' }}" placeholder="Rechercher un thème…" class="admin-filter-input">
+    <input
+      type="search"
+      name="q"
+      value="{{ filters.q ?? '' }}"
+      placeholder="Rechercher un thème…"
+      class="admin-filter-input"
+    >
 
     <select name="status" class="admin-filter-select">
-      <option value="all"      {{ (filters.status ?? 'all') == 'all' ? 'selected' }}>Tous</option>
-      <option value="active"   {{ (filters.status ?? 'all') == 'active' ? 'selected' }}>Actifs</option>
-      <option value="archived" {{ (filters.status ?? 'all') == 'archived' ? 'selected' }}>Archivés</option>
+      <option value="all" {{ (filters.status ?? 'all') == 'all' ? 'selected' : '' }}>Tous</option>
+      <option value="active" {{ (filters.status ?? 'all') == 'active' ? 'selected' : '' }}>Actifs</option>
+      <option value="archived" {{ (filters.status ?? 'all') == 'archived' ? 'selected' : '' }}>Archivés</option>
     </select>
 
     <select name="sort" class="admin-filter-select">
-      <option value="created_desc" {{ (filters.sort ?? 'created_desc') == 'created_desc' ? 'selected' }}>Plus récents</option>
-      <option value="name_asc"     {{ (filters.sort ?? 'created_desc') == 'name_asc' ? 'selected' }}>Nom A → Z</option>
-      <option value="name_desc"    {{ (filters.sort ?? 'created_desc') == 'name_desc' ? 'selected' }}>Nom Z → A</option>
+      <option value="created_desc" {{ (filters.sort ?? 'created_desc') == 'created_desc' ? 'selected' : '' }}>Plus récents</option>
+      <option value="created_asc" {{ (filters.sort ?? 'created_desc') == 'created_asc' ? 'selected' : '' }}>Plus anciens</option>
+      <option value="name_asc" {{ (filters.sort ?? 'created_desc') == 'name_asc' ? 'selected' : '' }}>Nom A → Z</option>
+      <option value="name_desc" {{ (filters.sort ?? 'created_desc') == 'name_desc' ? 'selected' : '' }}>Nom Z → A</option>
     </select>
 
     <button class="btn" type="submit">Filtrer</button>
     <a class="btn btn-secondary" href="{{ path('admin_theme_index') }}">Réinitialiser</a>
   </div>
 </form>
+
+{% if (filters.status ?? 'all') == 'active' %}
+  <div class="admin-info-message">
+    <p>
+      Affichage des thèmes actifs.
+      Certains thèmes actifs peuvent ne pas être visibles sur le site s’ils n’ont pas encore de cursus actif ou de leçon active.
+    </p>
+  </div>
+{% endif %}
 
 <div class="themes-grid">
   {% for row in themesWithVisibility %}
@@ -43,10 +59,15 @@
 
       {% if theme.image %}
         {% set img = theme.image %}
-        <img src="{{ img starts with 'http' ? img : asset(img) }}" alt="{{ theme.name }}" class="theme-image" loading="lazy">
+        <img
+          src="{{ img starts with 'http' ? img : asset(img) }}"
+          alt="{{ theme.name }}"
+          class="theme-image"
+          loading="lazy"
+        >
       {% endif %}
 
-      <h2>
+      <h2 class="theme-card-title">
         <span>{{ theme.name }}</span>
 
         {% if theme.isActive %}
@@ -56,9 +77,9 @@
         {% endif %}
 
         {% if isVisible %}
-          <span class="badge bg-success">Visible</span>
+          <span class="badge bg-success">Visible sur le site</span>
         {% else %}
-          <span class="badge bg-secondary">Non visible</span>
+          <span class="badge bg-secondary">Non visible sur le site</span>
         {% endif %}
       </h2>
 
@@ -74,20 +95,34 @@
       {% endfor %}
 
       {% if names|length %}
-        <p class="theme-meta"><strong>Cursus :</strong> {{ names|join(', ') }}</p>
+        <p class="theme-meta">
+          <strong>Cursus actifs :</strong> {{ names|join(', ') }}
+        </p>
       {% else %}
         <p class="theme-meta muted">Aucun cursus actif</p>
       {% endif %}
 
       <div class="admin-actions">
-        <a href="{{ path('admin_theme_edit', {'id': theme.id}) }}" class="btn btn-secondary">Modifier</a>
+        <a href="{{ path('admin_theme_edit', {'id': theme.id}) }}" class="btn btn-secondary">
+          Modifier
+        </a>
 
         {% if theme.isActive %}
-          <a href="{{ path('admin_theme_delete', {'id': theme.id}) }}" class="btn btn-archive">Archiver</a>
+          <a href="{{ path('admin_theme_delete', {'id': theme.id}) }}" class="btn btn-warning">
+            Désactiver
+          </a>
         {% else %}
-          <form method="post" action="{{ path('admin_theme_activate', {'id': theme.id}) }}" class="inline-form">
-            <input type="hidden" name="_token" value="{{ csrf_token('theme_activate' ~ theme.id) }}">
-            <button class="btn btn-restore" type="submit">Restaurer</button>
+          <form
+            method="post"
+            action="{{ path('admin_theme_activate', {'id': theme.id}) }}"
+            class="inline-form"
+          >
+            <input
+              type="hidden"
+              name="_token"
+              value="{{ csrf_token('theme_activate' ~ theme.id) }}"
+            >
+            <button class="btn btn-restore" type="submit">Activer</button>
           </form>
         {% endif %}
       </div>
