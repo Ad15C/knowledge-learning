@@ -114,6 +114,11 @@ class Purchase
     public function getTotal(): float { return (float) $this->total; }
 
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
 
     public function getPaidAt(): ?\DateTimeImmutable { return $this->paidAt; }
     public function setPaidAt(?\DateTimeImmutable $paidAt): static { $this->paidAt = $paidAt; return $this; }

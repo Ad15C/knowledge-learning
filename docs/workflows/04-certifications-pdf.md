@@ -2,19 +2,44 @@
 
 ## Génération des certifications
 
-Déclenchée par `LessonValidatedService::validateLesson()` :
+La génération est déclenchée dans :
 
-- certification `type=lesson` après validation d’une leçon
-- certification `type=theme` si toutes les leçons d’un thème sont validées
-- certification `type=cursus` si toutes les leçons d’un cursus sont validées
+- `LessonValidatedService::validateLesson()`
 
-Chaque certification :
+## Types
+
+- `lesson`
+- `cursus`
+- `theme`
+
+## Conditions
+
+### Certification lesson
+
+Créée lorsqu’une leçon est validée.
+
+### Certification cursus
+
+Créée si toutes les leçons du cursus sont validées.
+
+### Certification theme
+
+Créée si toutes les leçons du thème sont validées.
+
+## Données
+
+Chaque certification contient :
 
 - `certificateCode = uniqid('KL-')`
-- `issuedAt = now`
+- `issuedAt = DateTimeImmutable`
 
-## Téléchargement PDF
+## Affichage
 
-- user : route dédiée dashboard (si existante dans ton projet)
-- admin : `GET /admin/certifications/{id}/download`
-- rendu Twig → Dompdf → PDF
+La page leçon peut afficher la certification associée à la leçon si elle existe déjà.
+
+## PDF
+
+Le téléchargement PDF dépend des routes présentes dans le projet :
+
+- côté user : selon implémentation de l’espace membre
+- côté admin : route dédiée de téléchargement si disponible

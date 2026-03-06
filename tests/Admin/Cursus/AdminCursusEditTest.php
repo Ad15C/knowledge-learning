@@ -30,7 +30,6 @@ class AdminCursusEditTest extends WebTestCase
             ->get(DatabaseToolCollection::class)
             ->get();
 
-        // ThemeFixtures crée déjà des cursus + thèmes + lessons
         $this->databaseTool->loadFixtures([
             TestUserFixtures::class,
             ThemeFixtures::class,
@@ -59,6 +58,7 @@ class AdminCursusEditTest extends WebTestCase
     {
         $cursus = $this->em->getRepository(Cursus::class)->findOneBy([]);
         self::assertNotNull($cursus, 'No cursus found (fixtures missing?).');
+
         return $cursus;
     }
 
@@ -66,15 +66,18 @@ class AdminCursusEditTest extends WebTestCase
     {
         $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => $name]);
         self::assertNotNull($theme, sprintf('Theme "%s" not found.', $name));
+
         return $theme;
     }
 
     private function getThemeSelectLabels(Crawler $crawler): array
     {
         $labels = [];
+
         $crawler->filter('select[name="cursus[theme]"] option')->each(function (Crawler $opt) use (&$labels) {
             $labels[] = trim($opt->text());
         });
+
         return $labels;
     }
 
@@ -86,7 +89,7 @@ class AdminCursusEditTest extends WebTestCase
     {
         $cursus = $this->getAnyCursus();
 
-        $this->client->request('GET', 'https://localhost/admin/cursus/'.$cursus->getId().'/edit');
+        $this->client->request('GET', 'https://localhost/admin/cursus/' . $cursus->getId() . '/edit');
         self::assertResponseRedirects('/login');
     }
 
@@ -94,9 +97,10 @@ class AdminCursusEditTest extends WebTestCase
     {
         $cursus = $this->getAnyCursus();
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$cursus->getId().'/edit', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $cursus->getId() . '/edit', [
             'cursus' => ['name' => 'Hack'],
         ]);
+
         self::assertResponseRedirects('/login');
     }
 
@@ -105,7 +109,7 @@ class AdminCursusEditTest extends WebTestCase
         $this->loginAsUser();
         $cursus = $this->getAnyCursus();
 
-        $this->client->request('GET', 'https://localhost/admin/cursus/'.$cursus->getId().'/edit');
+        $this->client->request('GET', 'https://localhost/admin/cursus/' . $cursus->getId() . '/edit');
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -114,9 +118,10 @@ class AdminCursusEditTest extends WebTestCase
         $this->loginAsUser();
         $cursus = $this->getAnyCursus();
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$cursus->getId().'/edit', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $cursus->getId() . '/edit', [
             'cursus' => ['name' => 'Hack'],
         ]);
+
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -135,10 +140,10 @@ class AdminCursusEditTest extends WebTestCase
         $cursus->setImage('/img-avant.jpg');
         $this->em->flush();
 
-        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/'.$cursus->getId().'/edit');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/' . $cursus->getId() . '/edit');
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorTextContains('h1', 'Modifier : '.$cursus->getName());
+        self::assertSelectorTextContains('h1', 'Modifier : ' . $cursus->getName());
 
         $form = $crawler->filter('form')->first()->form();
 
@@ -154,21 +159,18 @@ class AdminCursusEditTest extends WebTestCase
 
         $cursus = $this->getAnyCursus();
 
-        // On force le thème courant à "Informatique"
         $informatique = $this->getThemeByName('Informatique');
         $cursus->setTheme($informatique);
         $this->em->flush();
 
-        // Archive le thème courant
         $informatique->setIsActive(false);
         $this->em->flush();
 
-        // S'assure qu'au moins un autre thème reste actif
         $musique = $this->getThemeByName('Musique');
         $musique->setIsActive(true);
         $this->em->flush();
 
-        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/'.$cursus->getId().'/edit');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/' . $cursus->getId() . '/edit');
         self::assertResponseIsSuccessful();
 
         $labels = $this->getThemeSelectLabels($crawler);
@@ -187,7 +189,7 @@ class AdminCursusEditTest extends WebTestCase
 
         $musique = $this->getThemeByName('Musique');
 
-        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/'.$id.'/edit');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/' . $id . '/edit');
         self::assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Enregistrer')->form([
@@ -209,14 +211,14 @@ class AdminCursusEditTest extends WebTestCase
         self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Cursus modifié.');
 
         $this->em->clear();
-        /** @var Cursus $reloaded */
+        /** @var Cursus|null $reloaded */
         $reloaded = $this->em->getRepository(Cursus::class)->find($id);
 
         self::assertNotNull($reloaded);
         self::assertSame('Cursus (modifié)', $reloaded->getName());
         self::assertSame('Nouvelle description', $reloaded->getDescription());
         self::assertSame('/img-new.jpg', $reloaded->getImage());
-        self::assertSame(99.90, $reloaded->getPrice());
+        self::assertEquals(99.90, (float) $reloaded->getPrice());
         self::assertSame('Musique', $reloaded->getTheme()?->getName());
     }
 
@@ -227,63 +229,58 @@ class AdminCursusEditTest extends WebTestCase
         $cursus = $this->getAnyCursus();
         $id = $cursus->getId();
 
-        // État initial
         $cursus->setName('Nom initial');
         $cursus->setDescription('Desc initiale');
         $cursus->setPrice(10.00);
         $this->em->flush();
 
         $this->em->clear();
+        /** @var Cursus|null $before */
         $before = $this->em->getRepository(Cursus::class)->find($id);
         self::assertNotNull($before);
 
-        // GET edit pour récupérer le form complet (CSRF, etc.)
-        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/'.$id.'/edit');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/' . $id . '/edit');
         self::assertResponseIsSuccessful();
 
-        // Soumission invalide : nom vide
         $form = $crawler->selectButton('Enregistrer')->form([
             'cursus[name]' => '',
-            'cursus[theme]' => (string) $before->getTheme()->getId(),
+            'cursus[theme]' => (string) $before->getTheme()?->getId(),
             'cursus[price]' => '10.00',
             'cursus[description]' => 'Desc initiale',
             'cursus[image]' => $before->getImage() ?? '',
         ]);
 
-        // IMPORTANT : récupérer le crawler de la réponse POST
         $crawler = $this->client->submit($form);
 
-        // Invalide => pas de redirect
         self::assertResponseStatusCodeSame(200);
 
-        // Au moins une erreur visible
-       $content = (string) $this->client->getResponse()->getContent();
+        $content = (string) $this->client->getResponse()->getContent();
 
-        // Ton message custom (si le Assert\NotBlank est bien appliqué)
         $hasCustom = str_contains($content, 'Le nom est obligatoire.');
-
-        // Ou message par défaut Symfony (selon config/locale)
         $hasDefault = str_contains($content, 'This value should not be blank')
-                || str_contains($content, 'Cette valeur ne doit pas être vide');
+            || str_contains($content, 'Cette valeur ne doit pas être vide');
 
         self::assertTrue(
             $hasCustom || $hasDefault,
             'Expected a validation message in the response content.'
         );
 
-        // DB inchangée
         $this->em->clear();
+        /** @var Cursus|null $after */
         $after = $this->em->getRepository(Cursus::class)->find($id);
         self::assertNotNull($after);
 
         self::assertSame('Nom initial', $after->getName());
         self::assertSame('Desc initiale', $after->getDescription());
-        self::assertSame(10.00, $after->getPrice());
+        self::assertEquals(10.00, (float) $after->getPrice());
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
-        $this->em->close();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

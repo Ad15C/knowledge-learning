@@ -5,8 +5,8 @@ namespace App\Repository;
 use App\Entity\Cursus;
 use App\Entity\Theme;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\ORM\QueryBuilder;
+use Doctrine\Persistence\ManagerRegistry;
 
 class CursusRepository extends ServiceEntityRepository
 {
@@ -16,7 +16,7 @@ class CursusRepository extends ServiceEntityRepository
     }
 
     /**
-     * ADMIN (inchangé)
+     * ADMIN
      */
     public function findWithLessons(int $id): ?Cursus
     {
@@ -30,11 +30,6 @@ class CursusRepository extends ServiceEntityRepository
     }
 
     /**
-     * FRONT : cursus visibles d'un thème
-     * - cursus actif
-     * - thème actif
-     * - au moins 1 leçon active
-     *
      * @return Cursus[]
      */
     public function findVisibleByTheme(Theme $theme): array
@@ -53,9 +48,6 @@ class CursusRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /**
-     * FRONT : un cursus visible + charge ses leçons visibles (page show)
-     */
     public function findVisibleWithVisibleLessons(int $id): ?Cursus
     {
         return $this->createQueryBuilder('c')
@@ -71,8 +63,6 @@ class CursusRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    // -------------------- ADMIN FILTER (inchangé chez toi) --------------------
-
     public function createAdminFilterQueryBuilder(
         ?string $q = null,
         ?string $status = 'all',
@@ -85,7 +75,7 @@ class CursusRepository extends ServiceEntityRepository
 
         if ($q) {
             $qb->andWhere('LOWER(c.name) LIKE :q')
-               ->setParameter('q', '%'.mb_strtolower(trim($q)).'%');
+                ->setParameter('q', '%' . mb_strtolower(trim($q)) . '%');
         }
 
         if ($status === 'active') {
@@ -96,26 +86,31 @@ class CursusRepository extends ServiceEntityRepository
 
         if ($themeId) {
             $qb->andWhere('t.id = :themeId')
-               ->setParameter('themeId', $themeId);
+                ->setParameter('themeId', $themeId);
         }
 
         switch ($sort) {
             case 'name_asc':
                 $qb->orderBy('c.name', 'ASC');
                 break;
+
             case 'name_desc':
                 $qb->orderBy('c.name', 'DESC');
                 break;
+
             case 'price_asc':
                 $qb->orderBy('CASE WHEN c.price IS NULL THEN 1 ELSE 0 END', 'ASC')
-                   ->addOrderBy('c.price', 'ASC');
+                    ->addOrderBy('c.price', 'ASC');
                 break;
+
             case 'price_desc':
                 $qb->orderBy('CASE WHEN c.price IS NULL THEN 1 ELSE 0 END', 'ASC')
-                   ->addOrderBy('c.price', 'DESC');
+                    ->addOrderBy('c.price', 'DESC');
                 break;
+
             default:
                 $qb->orderBy('c.id', 'DESC');
+                break;
         }
 
         return $qb;

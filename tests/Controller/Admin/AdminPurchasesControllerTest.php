@@ -2,6 +2,7 @@
 
 namespace App\Tests\Controller\Admin;
 
+use App\DataFixtures\PurchaseFixtures;
 use App\DataFixtures\TestUserFixtures;
 use App\DataFixtures\ThemeFixtures;
 use App\Entity\Purchase;
@@ -25,7 +26,6 @@ class AdminPurchasesControllerTest extends WebTestCase
     {
         self::ensureKernelShutdown();
 
-        // Ton app force HTTP -> HTTPS (301). On force HTTPS pour éviter les redirections.
         $this->client = static::createClient([], [
             'HTTPS' => 'on',
             'HTTP_HOST' => 'localhost',
@@ -44,9 +44,10 @@ class AdminPurchasesControllerTest extends WebTestCase
         $this->databaseTool->loadFixtures([
             TestUserFixtures::class,
             ThemeFixtures::class,
+            PurchaseFixtures::class,
         ]);
 
-        // Créer une commande de test (status cart)
+        // Purchase dédiée au test de changement de statut
         $user = $this->getUser();
 
         $purchase = new Purchase();
@@ -100,24 +101,18 @@ class AdminPurchasesControllerTest extends WebTestCase
 
         $purchase = $this->em->getRepository(Purchase::class)->find($this->purchaseId);
         self::assertNotNull($purchase, 'Purchase should exist.');
+
         return $purchase;
     }
 
     /**
-     * Récupère le CSRF token EXACTEMENT comme un navigateur :
-     * - on va sur la page show (admin)
-     * - on lit la value du champ hidden _token du formulaire de status
-     *
-     * => plus de problèmes de session/token storage.
+     * Récupère le CSRF token depuis la page show.
      */
     private function fetchCsrfTokenFromShowPage(int $purchaseId): string
     {
         $crawler = $this->client->request('GET', '/admin/purchases/' . $purchaseId);
         self::assertResponseIsSuccessful();
 
-        // On cherche le hidden input name="_token"
-        // idéalement dans le formulaire de status. Si ton template n'a pas d'action explicite,
-        // on prend le premier _token trouvé.
         $tokenNode = $crawler->filter('form input[name="_token"]');
 
         self::assertGreaterThan(
@@ -142,7 +137,7 @@ class AdminPurchasesControllerTest extends WebTestCase
 
         $expected = [
             'admin_purchase_index' => ['/admin/purchases', ['GET']],
-            'admin_purchase_show'  => ['/admin/purchases/{id}', ['GET']],
+            'admin_purchase_show' => ['/admin/purchases/{id}', ['GET']],
             'admin_purchase_update_status' => ['/admin/purchases/{id}/status', ['POST']],
         ];
 
@@ -165,6 +160,7 @@ class AdminPurchasesControllerTest extends WebTestCase
     public function testIndexAccessibleForAdmin(): void
     {
         $this->loginAsAdmin();
+
         $this->client->request('GET', '/admin/purchases');
         self::assertResponseIsSuccessful();
     }
@@ -172,6 +168,7 @@ class AdminPurchasesControllerTest extends WebTestCase
     public function testIndexForbiddenForRoleUser(): void
     {
         $this->loginAsUser();
+
         $this->client->request('GET', '/admin/purchases');
         self::assertResponseStatusCodeSame(403);
     }
@@ -185,6 +182,7 @@ class AdminPurchasesControllerTest extends WebTestCase
     public function testShowAccessibleForAdmin(): void
     {
         $this->loginAsAdmin();
+
         $this->client->request('GET', '/admin/purchases/' . $this->purchaseId);
         self::assertResponseIsSuccessful();
     }
@@ -192,6 +190,7 @@ class AdminPurchasesControllerTest extends WebTestCase
     public function testShowForbiddenForRoleUser(): void
     {
         $this->loginAsUser();
+
         $this->client->request('GET', '/admin/purchases/' . $this->purchaseId);
         self::assertResponseStatusCodeSame(403);
     }
@@ -210,9 +209,7 @@ class AdminPurchasesControllerTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        // On récupère le token depuis la page show (même session navigateur)
         $token = $this->fetchCsrfTokenFromShowPage($this->purchaseId);
-
         $url = '/admin/purchases/' . $this->purchaseId . '/status';
 
         $this->client->request('POST', $url, [
@@ -277,7 +274,6 @@ class AdminPurchasesControllerTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        // Force purchase to paid first
         $purchase = $this->reloadPurchase();
         $purchase->markPaid(new \DateTimeImmutable());
         $this->em->flush();
@@ -285,7 +281,6 @@ class AdminPurchasesControllerTest extends WebTestCase
         $token = $this->fetchCsrfTokenFromShowPage($this->purchaseId);
         $url = '/admin/purchases/' . $this->purchaseId . '/status';
 
-        // paid -> cart forbidden
         $this->client->request('POST', $url, [
             '_token' => $token,
             'status' => Purchase::STATUS_CART,

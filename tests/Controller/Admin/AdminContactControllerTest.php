@@ -2,6 +2,7 @@
 
 namespace App\Tests\Controller\Admin;
 
+use App\DataFixtures\ContactFixtures;
 use App\DataFixtures\TestUserFixtures;
 use App\Entity\Contact;
 use App\Entity\User;
@@ -28,22 +29,31 @@ class AdminContactControllerTest extends WebTestCase
 
         /** @var DatabaseToolCollection $dbTools */
         $dbTools = static::getContainer()->get(DatabaseToolCollection::class);
-        $dbTools->get()->loadFixtures([TestUserFixtures::class]);
+        $dbTools->get()->loadFixtures([
+            TestUserFixtures::class,
+            ContactFixtures::class,
+        ]);
     }
 
     private function loginAsAdmin(): User
     {
-        $admin = $this->em->getRepository(User::class)->findOneBy(['email' => TestUserFixtures::ADMIN_EMAIL]);
+        $admin = $this->em->getRepository(User::class)
+            ->findOneBy(['email' => TestUserFixtures::ADMIN_EMAIL]);
+
         self::assertNotNull($admin, 'Admin fixture introuvable.');
         $this->client->loginUser($admin);
+
         return $admin;
     }
 
     private function loginAsUser(): User
     {
-        $user = $this->em->getRepository(User::class)->findOneBy(['email' => TestUserFixtures::USER_EMAIL]);
+        $user = $this->em->getRepository(User::class)
+            ->findOneBy(['email' => TestUserFixtures::USER_EMAIL]);
+
         self::assertNotNull($user, 'User fixture introuvable.');
         $this->client->loginUser($user);
+
         return $user;
     }
 
@@ -53,21 +63,21 @@ class AdminContactControllerTest extends WebTestCase
         string $subject = 'payment',
         string $message = 'Bonjour, ceci est un message de test suffisamment long.'
     ): Contact {
-        $c = (new Contact())
+        $contact = (new Contact())
             ->setEmail($email)
             ->setFullname($fullname)
             ->setSubject($subject)
-            ->setMessage($message);
+            ->setMessage($message)
+            ->setSentAt(new \DateTimeImmutable());
 
-        // sentAt est fixé par le listener prePersist
-        $this->em->persist($c);
+        $this->em->persist($contact);
         $this->em->flush();
 
-        return $c;
+        return $contact;
     }
 
     /**
-     * Récupère le token CSRF depuis le HTML de la page index (méthode la plus robuste en tests).
+     * Récupère le token CSRF depuis le HTML de la page index.
      * $action = 'read' | 'unread' | 'handled'
      */
     private function getCsrfTokenForContactAction(int $contactId, string $action): string
@@ -76,8 +86,8 @@ class AdminContactControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
 
         $formAction = "/admin/contact/{$contactId}/{$action}";
-
         $input = $crawler->filter(sprintf('form[action="%s"] input[name="_token"]', $formAction));
+
         self::assertGreaterThan(
             0,
             $input->count(),
@@ -88,7 +98,7 @@ class AdminContactControllerTest extends WebTestCase
     }
 
     /**
-     * POST avec Referer sûr (évite redirect vers une route POST-only si Referer absent).
+     * POST avec Referer sûr.
      */
     private function postWithReferer(string $uri, array $params = [], string $referer = '/admin/contact/'): void
     {
@@ -112,8 +122,6 @@ class AdminContactControllerTest extends WebTestCase
     public function testIndexAnonymousRedirectsToLogin(): void
     {
         $this->client->request('GET', '/admin/contact/');
-
-        // Peut être 302 (security), voire 301/302 selon ta config -> on reste souple
         self::assertTrue($this->client->getResponse()->isRedirection());
 
         $this->client->followRedirect();
@@ -121,7 +129,9 @@ class AdminContactControllerTest extends WebTestCase
 
         $html = (string) $this->client->getResponse()->getContent();
         self::assertTrue(
-            str_contains($html, 'Connexion') || str_contains($html, 'Se connecter') || str_contains($html, 'login'),
+            str_contains($html, 'Connexion')
+            || str_contains($html, 'Se connecter')
+            || str_contains($html, 'login'),
             'Après redirect, on ne semble pas être sur une page de login.'
         );
     }
@@ -160,8 +170,8 @@ class AdminContactControllerTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $c = $this->createContact('method@test.io');
-        $id = $c->getId();
+        $contact = $this->createContact('method@test.io');
+        $id = $contact->getId();
 
         $this->client->request('GET', "/admin/contact/{$id}/read");
         self::assertResponseStatusCodeSame(405);
@@ -181,13 +191,13 @@ class AdminContactControllerTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $c = $this->createContact('show@test.io', 'Show Client', 'payment');
-        self::assertNull($c->getReadAt());
+        $contact = $this->createContact('show@test.io', 'Show Client', 'payment');
+        self::assertNull($contact->getReadAt());
 
-        $this->client->request('GET', '/admin/contact/' . $c->getId());
+        $this->client->request('GET', '/admin/contact/' . $contact->getId());
         self::assertResponseIsSuccessful();
 
-        $reloaded = $this->em->getRepository(Contact::class)->find($c->getId());
+        $reloaded = $this->em->getRepository(Contact::class)->find($contact->getId());
         self::assertNotNull($reloaded);
         self::assertNotNull($reloaded->getReadAt(), 'La route show devrait marquer le message comme lu.');
         self::assertTrue($reloaded->isRead());
@@ -210,14 +220,12 @@ class AdminContactControllerTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $c = $this->createContact('markread@test.io');
-        $id = $c->getId();
+        $contact = $this->createContact('markread@test.io');
+        $id = $contact->getId();
 
-        // Sans CSRF => 403
         $this->postWithReferer("/admin/contact/{$id}/read");
         self::assertResponseStatusCodeSame(403);
 
-        // Avec CSRF récupéré depuis l'index (où le formulaire est rendu)
         $token = $this->getCsrfTokenForContactAction($id, 'read');
 
         $this->postWithReferer("/admin/contact/{$id}/read", ['_token' => $token]);
@@ -241,14 +249,12 @@ class AdminContactControllerTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $c = $this->createContact('markunread@test.io');
-        $id = $c->getId();
+        $contact = $this->createContact('markunread@test.io');
+        $id = $contact->getId();
 
-        // Force lu
-        $c->markRead();
+        $contact->markRead();
         $this->em->flush();
 
-        // Sans CSRF => 403
         $this->postWithReferer("/admin/contact/{$id}/unread");
         self::assertResponseStatusCodeSame(403);
 
@@ -275,10 +281,9 @@ class AdminContactControllerTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $c = $this->createContact('markhandled@test.io');
-        $id = $c->getId();
+        $contact = $this->createContact('markhandled@test.io');
+        $id = $contact->getId();
 
-        // Sans CSRF => 403
         $this->postWithReferer("/admin/contact/{$id}/handled");
         self::assertResponseStatusCodeSame(403);
 
@@ -306,21 +311,19 @@ class AdminContactControllerTest extends WebTestCase
         $this->loginAsAdmin();
 
         $this->createContact('payment@test.io', 'Client Payment', 'payment');
-        $c2 = $this->createContact('login@test.io', 'Client Login', 'login');
-        $c3 = $this->createContact('handled@test.io', 'Client Handled', 'other');
+        $contactRead = $this->createContact('login@test.io', 'Client Login', 'login');
+        $contactHandled = $this->createContact('handled@test.io', 'Client Handled', 'other');
 
-        $c2->markRead();
-        $c3->setHandled(true);
+        $contactRead->markRead();
+        $contactHandled->setHandled(true);
         $this->em->flush();
 
-        // subject=login => c2 uniquement
         $this->client->request('GET', '/admin/contact/?subject=login');
         self::assertResponseIsSuccessful();
         $html = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('login@test.io', $html);
         self::assertStringNotContainsString('payment@test.io', $html);
 
-        // status=unread => payment uniquement
         $this->client->request('GET', '/admin/contact/?status=unread');
         self::assertResponseIsSuccessful();
         $html = (string) $this->client->getResponse()->getContent();
@@ -328,7 +331,6 @@ class AdminContactControllerTest extends WebTestCase
         self::assertStringNotContainsString('login@test.io', $html);
         self::assertStringNotContainsString('handled@test.io', $html);
 
-        // status=read => login uniquement
         $this->client->request('GET', '/admin/contact/?status=read');
         self::assertResponseIsSuccessful();
         $html = (string) $this->client->getResponse()->getContent();
@@ -336,7 +338,6 @@ class AdminContactControllerTest extends WebTestCase
         self::assertStringNotContainsString('payment@test.io', $html);
         self::assertStringNotContainsString('handled@test.io', $html);
 
-        // status=handled => handled uniquement
         $this->client->request('GET', '/admin/contact/?status=handled');
         self::assertResponseIsSuccessful();
         $html = (string) $this->client->getResponse()->getContent();
@@ -344,11 +345,16 @@ class AdminContactControllerTest extends WebTestCase
         self::assertStringNotContainsString('payment@test.io', $html);
         self::assertStringNotContainsString('login@test.io', $html);
 
-        // q => recherche
         $this->client->request('GET', '/admin/contact/?q=Client%20Payment');
         self::assertResponseIsSuccessful();
         $html = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('payment@test.io', $html);
         self::assertStringNotContainsString('login@test.io', $html);
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        $this->em->close();
     }
 }

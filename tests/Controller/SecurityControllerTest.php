@@ -41,23 +41,20 @@ class SecurityControllerTest extends WebTestCase
     {
         $em = $client->getContainer()->get('doctrine')->getManager();
 
-        // Créer un thème
         $theme = new Theme();
         $theme->setName('Theme test');
         $em->persist($theme);
 
-        // Créer un cursus lié au thème
         $cursus = new Cursus();
         $cursus->setName('Cursus test')
-               ->setPrice($cursusPrice)
-               ->setTheme($theme);
+            ->setPrice($cursusPrice)
+            ->setTheme($theme);
         $em->persist($cursus);
 
-        // Créer la leçon liée au cursus
         $lesson = new Lesson();
         $lesson->setTitle($title)
-               ->setPrice($lessonPrice)
-               ->setCursus($cursus);
+            ->setPrice($lessonPrice)
+            ->setCursus($cursus);
         $em->persist($lesson);
 
         $em->flush();
@@ -68,18 +65,16 @@ class SecurityControllerTest extends WebTestCase
     // -----------------------------
     // LOGIN / AUTHENTIFICATION
     // -----------------------------
-    public function testLoginPageAndAuthentication()
+    public function testLoginPageAndAuthentication(): void
     {
         $client = static::createClient();
         $user = $this->createTestUser($client);
 
-        // Page login accessible
         $crawler = $client->request('GET', '/login');
         $this->assertResponseIsSuccessful();
         $this->assertSelectorExists('input[name="_username"]');
         $this->assertSelectorExists('input[name="_password"]');
 
-        // Login avec identifiants corrects
         $form = $crawler->filter('#login-submit')->form([
             '_username' => $user->getEmail(),
             '_password' => 'Password1!',
@@ -90,12 +85,8 @@ class SecurityControllerTest extends WebTestCase
         $this->assertResponseRedirects('/dashboard');
 
         $client->followRedirect();
-
-        // adapte selon ton dashboard
         $this->assertResponseIsSuccessful();
 
-
-        // Login avec mot de passe incorrect
         $crawler = $client->request('GET', '/login');
 
         $form = $crawler->filter('#login-submit')->form([
@@ -108,26 +99,21 @@ class SecurityControllerTest extends WebTestCase
         $this->assertResponseRedirects('/login');
 
         $client->followRedirect();
-
         $this->assertSelectorExists('.flash-error');
 
-
-        // Session persistante
         $client->loginUser($user);
 
         $client->request('GET', '/dashboard');
-
         $this->assertResponseIsSuccessful();
 
         $client->request('GET', '/dashboard');
-
         $this->assertResponseIsSuccessful();
     }
 
     // -----------------------------
     // LOGOUT
     // -----------------------------
-    public function testLogoutDestroysSession()
+    public function testLogoutDestroysSession(): void
     {
         $client = static::createClient();
         $user = $this->createTestUser($client);
@@ -136,11 +122,9 @@ class SecurityControllerTest extends WebTestCase
         $client->request('GET', '/dashboard');
         $this->assertResponseIsSuccessful();
 
-        // logout
         $client->request('GET', '/logout');
         $this->assertResponseRedirects('/login');
 
-        // Dashboard inaccessible après logout
         $client->followRedirect();
         $client->request('GET', '/dashboard');
         $this->assertResponseRedirects('/login');
@@ -149,7 +133,7 @@ class SecurityControllerTest extends WebTestCase
     // -----------------------------
     // SÉCURITÉ / ACCÈS PAGES PROTÉGÉES
     // -----------------------------
-    public function testProtectedRoutesRequireLogin()
+    public function testProtectedRoutesRequireLogin(): void
     {
         $client = static::createClient();
         $lesson = $this->createTestLesson($client);
@@ -163,11 +147,15 @@ class SecurityControllerTest extends WebTestCase
 
         foreach ($protectedRoutes as $url) {
             $client->request('GET', $url);
-            $this->assertResponseRedirects('/login', 302, "La route $url devrait rediriger vers /login pour un utilisateur non connecté.");
+            $this->assertResponseRedirects(
+                '/login',
+                302,
+                "La route $url devrait rediriger vers /login pour un utilisateur non connecté."
+            );
         }
     }
 
-    public function testAuthenticatedUserCanAccessProtectedRoutes()
+    public function testAuthenticatedUserCanAccessProtectedRoutes(): void
     {
         $client = static::createClient();
         $user = $this->createTestUser($client);
@@ -175,16 +163,36 @@ class SecurityControllerTest extends WebTestCase
 
         $client->loginUser($user);
 
-        $protectedRoutes = [
+        // Pages qui doivent répondre directement en 200
+        $successfulRoutes = [
             '/dashboard',
             '/dashboard/purchases',
             '/dashboard/certifications',
-            '/lesson/' . $lesson->getId(),
         ];
 
-        foreach ($protectedRoutes as $url) {
+        foreach ($successfulRoutes as $url) {
             $client->request('GET', $url);
-            $this->assertResponseIsSuccessful("L'utilisateur connecté devrait accéder à $url sans problème.");
+            $this->assertResponseIsSuccessful(
+                "L'utilisateur connecté devrait accéder à $url sans problème."
+            );
         }
+
+        // /lesson/{id} a un comportement spécifique : redirection vers /cursus/{id}
+        $client->request('GET', '/lesson/' . $lesson->getId());
+        $this->assertTrue(
+            $client->getResponse()->isRedirection(),
+            "La route /lesson/{id} devrait rediriger pour un utilisateur connecté."
+        );
+
+        $location = (string) $client->getResponse()->headers->get('Location');
+        $this->assertStringContainsString(
+            '/cursus/' . $lesson->getCursus()?->getId(),
+            $location
+        );
+
+        $client->followRedirect();
+        $this->assertResponseIsSuccessful(
+            "Après redirection depuis /lesson/{id}, la page cible devrait être accessible."
+        );
     }
 }

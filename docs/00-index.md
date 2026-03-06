@@ -25,3 +25,23 @@ Cette documentation permet :
 - de faciliter la maintenance du projet
 - d’expliquer les règles métier importantes
 - de documenter les décisions techniques
+
+## Résumé fonctionnel actuel
+
+Le système Learning est organisé autour de trois niveaux :
+
+- `Theme`
+- `Cursus`
+- `Lesson`
+
+Le fonctionnement côté front suit désormais cette règle métier :
+
+- **visiteur non connecté** : voit le catalogue, mais pas le contenu des leçons
+- **utilisateur connecté non payé** : voit le catalogue et peut acheter une leçon ou un cursus
+- **utilisateur connecté payé** : peut accéder au contenu de la leçon et la valider
+
+Important :
+
+- la **visibilité dans le catalogue** est distincte du **droit d’accès au contenu**
+- l’accès au contenu est protégé par un **paywall serveur**
+- la validation d’une leçon déclenche la logique de progression et de certification

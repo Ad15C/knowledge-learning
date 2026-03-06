@@ -35,6 +35,7 @@ class LessonControllerTest extends WebTestCase
         ]);
 
         $this->refRepo = $fixtureExecutor->getReferenceRepository();
+        $this->em->clear();
     }
 
     private function forceOrderNumber(Purchase $purchase): void
@@ -50,20 +51,24 @@ class LessonControllerTest extends WebTestCase
 
     private function getFixtureUser(): User
     {
-        /** @var User $user */
         $user = $this->refRepo->getReference(TestUserFixtures::USER_REF, User::class);
         self::assertInstanceOf(User::class, $user);
 
-        return $this->em->getRepository(User::class)->find($user->getId());
+        $managed = $this->em->getRepository(User::class)->find($user->getId());
+        self::assertNotNull($managed);
+
+        return $managed;
     }
 
     private function getFixtureLesson(): Lesson
     {
-        /** @var Lesson $lesson */
         $lesson = $this->refRepo->getReference(ThemeFixtures::LESSON_GUITAR_1_REF, Lesson::class);
         self::assertInstanceOf(Lesson::class, $lesson);
 
-        return $this->em->getRepository(Lesson::class)->find($lesson->getId());
+        $managed = $this->em->getRepository(Lesson::class)->find($lesson->getId());
+        self::assertNotNull($managed);
+
+        return $managed;
     }
 
     private function createPaidPurchaseForLesson(User $user, Lesson $lesson): void
@@ -87,18 +92,15 @@ class LessonControllerTest extends WebTestCase
         $this->em->persist($purchase);
         $this->em->persist($item);
         $this->em->flush();
+        $this->em->clear();
     }
 
-    /**
-     * Récupère le token CSRF depuis le formulaire de la page.
-     * (Pas besoin du service "session" dans le container.)
-     */
     private function fetchCsrfTokenFromLessonPage(int $lessonId): string
     {
         $crawler = $this->client->request('GET', '/lesson/' . $lessonId);
         self::assertResponseIsSuccessful();
 
-        $tokenNode = $crawler->filter('form[action$="/lesson/'.$lessonId.'/complete"] input[name="_token"]');
+        $tokenNode = $crawler->filter('form[action$="/lesson/' . $lessonId . '/complete"] input[name="_token"]');
         self::assertGreaterThan(0, $tokenNode->count(), 'CSRF token input not found in complete form.');
 
         $token = $tokenNode->attr('value');
@@ -107,16 +109,22 @@ class LessonControllerTest extends WebTestCase
         return $token;
     }
 
-    public function testShowWithoutPurchaseShowsNoAccessMessage(): void
+    public function testShowWithoutPurchaseRedirectsToCursusWithFlash(): void
     {
         $user = $this->getFixtureUser();
         $lesson = $this->getFixtureLesson();
+        $cursus = $lesson->getCursus();
+
+        self::assertNotNull($cursus);
 
         $this->client->loginUser($user);
         $this->client->request('GET', '/lesson/' . $lesson->getId());
 
+        self::assertResponseRedirects('/cursus/' . $cursus->getId());
+
+        $this->client->followRedirect();
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.lesson-page', "Vous n'avez pas encore accès à cette leçon.");
+        self::assertSelectorTextContains('body', "Tu n'as pas accès à cette leçon.");
     }
 
     public function testShowWithPaidPurchaseShowsCompleteButton(): void
@@ -126,6 +134,12 @@ class LessonControllerTest extends WebTestCase
 
         $this->createPaidPurchaseForLesson($user, $lesson);
 
+        $user = $this->em->getRepository(User::class)->find($user->getId());
+        $lesson = $this->em->getRepository(Lesson::class)->find($lesson->getId());
+
+        self::assertNotNull($user);
+        self::assertNotNull($lesson);
+
         $this->client->loginUser($user);
         $crawler = $this->client->request('GET', '/lesson/' . $lesson->getId());
 
@@ -133,32 +147,86 @@ class LessonControllerTest extends WebTestCase
 
         self::assertGreaterThan(
             0,
-            $crawler->filter('form[action$="/lesson/'.$lesson->getId().'/complete"] button:contains("Marquer comme complétée")')->count(),
+            $crawler->filter('form[action$="/lesson/' . $lesson->getId() . '/complete"] button')->count(),
             'Complete button should be visible when purchase is paid.'
+        );
+
+        self::assertStringContainsString(
+            'Marquer la leçon comme complétée',
+            $crawler->filter('form[action$="/lesson/' . $lesson->getId() . '/complete"] button')->text()
         );
     }
 
-    public function testCompleteWithoutAccessIsDeniedAndRedirects(): void
+    public function testCompleteWithoutAccessWithInvalidCsrfReturns403(): void
     {
         $user = $this->getFixtureUser();
         $lesson = $this->getFixtureLesson();
 
         $this->client->loginUser($user);
 
-        // récupère le CSRF token depuis la page (même sans accès, le formulaire peut ne pas exister)
-        // => donc ici on construit un token "invalide" intentionnellement si pas de form
-        // MAIS ton controller check d'abord CSRF, donc il faut un token valide pour tester l'accès serveur.
-        //
-        // Solution: on utilise une page où le form existe.
-        // Si ton template ne montre PAS le form sans accès, alors ce test doit plutôt vérifier 403 CSRF.
-        //
-        // On va donc faire un test cohérent: on envoie un token bidon et on attend AccessDenied.
         $this->client->request('POST', '/lesson/' . $lesson->getId() . '/complete', [
             '_token' => 'invalid-token',
         ]);
 
-        // ton controller: CSRF invalide => AccessDeniedException => 403
         self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testCompleteWithoutAccessWithValidCsrfRedirectsToCursus(): void
+    {
+        $user = $this->getFixtureUser();
+        $lesson = $this->getFixtureLesson();
+        $cursus = $lesson->getCursus();
+
+        self::assertNotNull($cursus);
+
+        // 1. On crée temporairement un achat payé pour pouvoir afficher la page
+        // et récupérer un vrai token CSRF depuis le formulaire.
+        $this->createPaidPurchaseForLesson($user, $lesson);
+
+        $user = $this->em->getRepository(User::class)->find($user->getId());
+        $lesson = $this->em->getRepository(Lesson::class)->find($lesson->getId());
+
+        self::assertNotNull($user);
+        self::assertNotNull($lesson);
+
+        $this->client->loginUser($user);
+
+        $token = $this->fetchCsrfTokenFromLessonPage($lesson->getId());
+
+        // 2. On supprime ensuite l'achat pour retirer l'accès métier,
+        // tout en gardant le token CSRF de la même session.
+        $items = $this->em->getRepository(PurchaseItem::class)->findBy([
+            'lesson' => $lesson,
+        ]);
+
+        foreach ($items as $item) {
+            $purchase = $item->getPurchase();
+            $this->em->remove($item);
+
+            if ($purchase !== null) {
+                $this->em->remove($purchase);
+            }
+        }
+
+        $this->em->flush();
+        $this->em->clear();
+
+        $lesson = $this->getFixtureLesson();
+        $cursus = $lesson->getCursus();
+
+        self::assertNotNull($cursus);
+
+        // 3. Le token est valide, mais l'accès n'existe plus :
+        // le contrôleur doit rediriger vers le cursus.
+        $this->client->request('POST', '/lesson/' . $lesson->getId() . '/complete', [
+            '_token' => $token,
+        ]);
+
+        self::assertResponseRedirects('/cursus/' . $cursus->getId());
+
+        $this->client->followRedirect();
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', "Tu n'as pas accès à cette leçon.");
     }
 
     public function testCompleteMarksLessonCompletedAndCreatesCertification(): void
@@ -167,6 +235,12 @@ class LessonControllerTest extends WebTestCase
         $lesson = $this->getFixtureLesson();
 
         $this->createPaidPurchaseForLesson($user, $lesson);
+
+        $user = $this->em->getRepository(User::class)->find($user->getId());
+        $lesson = $this->em->getRepository(Lesson::class)->find($lesson->getId());
+
+        self::assertNotNull($user);
+        self::assertNotNull($lesson);
 
         $this->client->loginUser($user);
 
@@ -180,11 +254,15 @@ class LessonControllerTest extends WebTestCase
 
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
-
         self::assertSelectorTextContains('.lesson-page', 'Vous avez déjà complété cette leçon.');
+
+        $this->em->clear();
 
         $userReloaded = $this->em->getRepository(User::class)->find($user->getId());
         $lessonReloaded = $this->em->getRepository(Lesson::class)->find($lesson->getId());
+
+        self::assertNotNull($userReloaded);
+        self::assertNotNull($lessonReloaded);
 
         $cert = $this->em->getRepository(Certification::class)->findOneBy([
             'user' => $userReloaded,

@@ -6,6 +6,7 @@ use App\DataFixtures\TestUserFixtures;
 use App\DataFixtures\ThemeFixtures;
 use App\Entity\Cursus;
 use App\Entity\Theme;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -36,7 +37,7 @@ class AdminThemeIndexTest extends WebTestCase
 
     private function loginAsAdmin(): void
     {
-        $admin = $this->em->getRepository(\App\Entity\User::class)
+        $admin = $this->em->getRepository(User::class)
             ->findOneBy(['email' => TestUserFixtures::ADMIN_EMAIL]);
 
         self::assertNotNull($admin, 'Admin fixture not found. Fixtures not loaded?');
@@ -153,10 +154,10 @@ class AdminThemeIndexTest extends WebTestCase
         $this->loginAsAdmin();
 
         $old = (new Theme())->setName('ZZ Old Theme')->setIsActive(true);
-        $old->setCreatedAt(new \DateTime('2020-01-01 00:00:00'));
+        $old->setCreatedAt(new \DateTimeImmutable('2020-01-01 00:00:00'));
 
         $new = (new Theme())->setName('AA New Theme')->setIsActive(true);
-        $new->setCreatedAt(new \DateTime('2030-01-01 00:00:00'));
+        $new->setCreatedAt(new \DateTimeImmutable('2030-01-01 00:00:00'));
 
         $this->em->persist($old);
         $this->em->persist($new);
@@ -180,10 +181,10 @@ class AdminThemeIndexTest extends WebTestCase
         $this->loginAsAdmin();
 
         $a = (new Theme())->setName('Created A')->setIsActive(true);
-        $a->setCreatedAt(new \DateTime('2020-01-01 00:00:00'));
+        $a->setCreatedAt(new \DateTimeImmutable('2020-01-01 00:00:00'));
 
         $b = (new Theme())->setName('Created B')->setIsActive(true);
-        $b->setCreatedAt(new \DateTime('2030-01-01 00:00:00'));
+        $b->setCreatedAt(new \DateTimeImmutable('2030-01-01 00:00:00'));
 
         $this->em->persist($a);
         $this->em->persist($b);
@@ -236,7 +237,6 @@ class AdminThemeIndexTest extends WebTestCase
 
         $names = $this->extractThemeNames((string) $this->client->getResponse()->getContent());
 
-        //  "active" = theme.isActive=true (même sans cursus actif)
         self::assertContains('Actif Cursus Actif', $names);
         self::assertContains('Actif Sans Cursus', $names);
         self::assertContains('Actif Cursus Inactif', $names);
@@ -244,7 +244,6 @@ class AdminThemeIndexTest extends WebTestCase
 
     private function assertSelectedOption(string $html, string $selectName, string $expectedValue): void
     {
-        // Cherche: <select name="status"> ... <option value="archived" selected> ...
         $pattern = sprintf(
             '/<select[^>]*name="%s"[^>]*>.*?<option[^>]*value="%s"[^>]*(selected)?[^>]*>/s',
             preg_quote($selectName, '/'),
@@ -273,7 +272,6 @@ class AdminThemeIndexTest extends WebTestCase
         self::assertContains('Jardinage', $names);
         self::assertContains('Cuisine', $names);
 
-        // Bonus: le select status reste sur "all"
         $this->assertSelectedOption($html, 'status', 'all');
     }
 
@@ -281,7 +279,6 @@ class AdminThemeIndexTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        // Musique (fixture) a des cursus actifs -> doit sortir en status=active
         $this->client->request('GET', 'https://localhost/admin/themes?q=mus&status=active');
         self::assertResponseIsSuccessful();
 
@@ -293,7 +290,6 @@ class AdminThemeIndexTest extends WebTestCase
         self::assertNotContains('Informatique', $names);
         self::assertNotContains('Jardinage', $names);
 
-        // Bonus: le select status reste sur "active"
         $this->assertSelectedOption($html, 'status', 'active');
     }
 
@@ -301,7 +297,6 @@ class AdminThemeIndexTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        // On force un thème inactif pour avoir quelque chose en archived
         $themeCuisine = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Cuisine']);
         self::assertNotNull($themeCuisine);
         $themeCuisine->setIsActive(false);
@@ -312,13 +307,17 @@ class AdminThemeIndexTest extends WebTestCase
 
         $html = (string) $this->client->getResponse()->getContent();
 
-        // Le champ q doit être rempli
         self::assertStringContainsString('name="q" value="cui"', $html);
-
-        // status sélectionné = archived
         $this->assertSelectedOption($html, 'status', 'archived');
-
-        // sort sélectionné = name_desc
         $this->assertSelectedOption($html, 'sort', 'name_desc');
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

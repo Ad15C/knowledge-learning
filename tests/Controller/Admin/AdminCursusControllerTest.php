@@ -48,16 +48,18 @@ class AdminCursusControllerTest extends WebTestCase
 
     private function extractCsrfTokenFromCrawler(Crawler $crawler, string $formSelector = 'form'): string
     {
-        $tokenNode = $crawler->filter($formSelector.' input[name="_token"]')->first();
+        $tokenNode = $crawler->filter($formSelector . ' input[name="_token"]')->first();
         self::assertGreaterThan(0, $tokenNode->count(), 'CSRF token input not found.');
+
         $token = (string) $tokenNode->attr('value');
         self::assertNotEmpty($token, 'CSRF token value is empty.');
+
         return $token;
     }
 
     private function getDisableTokenForCursus(int $id): string
     {
-        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/'.$id.'/delete');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/' . $id . '/delete');
         self::assertResponseIsSuccessful();
 
         $formSelector = sprintf('form[action="/admin/cursus/%d/disable"][method="post"]', $id);
@@ -81,6 +83,7 @@ class AdminCursusControllerTest extends WebTestCase
     {
         $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Musique']);
         self::assertNotNull($theme, 'Theme "Musique" not found in ThemeFixtures.');
+
         return $theme;
     }
 
@@ -88,7 +91,17 @@ class AdminCursusControllerTest extends WebTestCase
     {
         $cursus = $this->em->getRepository(Cursus::class)->findOneBy([]);
         self::assertNotNull($cursus, 'No cursus found. ThemeFixtures should create some cursus.');
+
         return $cursus;
+    }
+
+    private function assertDecimalEquals(string $expected, string $actual, string $message = ''): void
+    {
+        self::assertEquals(
+            (float) $expected,
+            (float) $actual,
+            $message !== '' ? $message : sprintf('Failed asserting decimal value %s equals %s.', $actual, $expected)
+        );
     }
 
     public function testIndexIsReachableForAdmin(): void
@@ -118,10 +131,9 @@ class AdminCursusControllerTest extends WebTestCase
 
         $form = $crawler->filter('form')->first()->form();
 
-        // champs exacts de CursusType
         $form['cursus[name]'] = 'Cursus Test Create';
-        $form['cursus[theme]'] = (string) $theme->getId(); // EntityType => id string ok
-        $form['cursus[price]'] = '99.90';                 // MoneyType
+        $form['cursus[theme]'] = (string) $theme->getId();
+        $form['cursus[price]'] = '99.90';
         $form['cursus[description]'] = 'Desc test';
         $form['cursus[image]'] = '';
 
@@ -134,24 +146,24 @@ class AdminCursusControllerTest extends WebTestCase
         self::assertSelectorExists('.flash-messages .flash.flash-success');
         self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Cursus créé.');
 
+        $this->em->clear();
         $created = $this->em->getRepository(Cursus::class)->findOneBy(['name' => 'Cursus Test Create']);
+
         self::assertNotNull($created);
         self::assertTrue($created->isActive());
         self::assertSame('Musique', $created->getTheme()?->getName());
-        self::assertSame(99.90, $created->getPrice());
+        $this->assertDecimalEquals('99.90', $created->getPrice());
     }
 
     public function testNewPostRedirectsToThemesIfNoActiveTheme(): void
     {
         $this->loginAsAdmin();
 
-        // On archive tous les thèmes
         foreach ($this->em->getRepository(Theme::class)->findAll() as $t) {
             $t->setIsActive(false);
         }
         $this->em->flush();
 
-        // POST direct : le contrôleur redirige avant validation du form si aucun thème actif
         $this->client->request('POST', 'https://localhost/admin/cursus/new', [
             'cursus' => [
                 'name' => 'X',
@@ -173,7 +185,7 @@ class AdminCursusControllerTest extends WebTestCase
 
         $cursus = $this->getAnyCursus();
 
-        $this->client->request('GET', 'https://localhost/admin/cursus/'.$cursus->getId().'/edit');
+        $this->client->request('GET', 'https://localhost/admin/cursus/' . $cursus->getId() . '/edit');
         self::assertResponseIsSuccessful();
     }
 
@@ -184,16 +196,13 @@ class AdminCursusControllerTest extends WebTestCase
         $cursus = $this->getAnyCursus();
         $id = $cursus->getId();
 
-        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/'.$id.'/edit');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/' . $id . '/edit');
         self::assertResponseIsSuccessful();
 
-        // On prend le 1er form (plus robuste que selectButton si le texte change)
         $form = $crawler->filter('form')->first()->form();
 
         $form['cursus[name]'] = 'Cursus (modifié)';
-        // On garde le thème courant (sinon required)
         $form['cursus[theme]'] = (string) $cursus->getTheme()?->getId();
-        // MoneyType required
         $form['cursus[price]'] = '123.45';
 
         $this->client->submit($form);
@@ -207,8 +216,10 @@ class AdminCursusControllerTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Cursus::class)->find($id);
+
+        self::assertNotNull($reloaded);
         self::assertSame('Cursus (modifié)', $reloaded->getName());
-        self::assertSame(123.45, $reloaded->getPrice());
+        $this->assertDecimalEquals('123.45', $reloaded->getPrice());
     }
 
     public function testDeleteConfirmPageIsReachableAndDoesNotChangeState(): void
@@ -221,11 +232,13 @@ class AdminCursusControllerTest extends WebTestCase
         $cursus->setIsActive(true);
         $this->em->flush();
 
-        $this->client->request('GET', 'https://localhost/admin/cursus/'.$id.'/delete');
+        $this->client->request('GET', 'https://localhost/admin/cursus/' . $id . '/delete');
         self::assertResponseIsSuccessful();
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Cursus::class)->find($id);
+
+        self::assertNotNull($reloaded);
         self::assertTrue($reloaded->isActive(), 'GET delete confirm should not archive the cursus.');
     }
 
@@ -235,7 +248,7 @@ class AdminCursusControllerTest extends WebTestCase
 
         $cursus = $this->getAnyCursus();
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$cursus->getId().'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $cursus->getId() . '/disable', [
             '_token' => 'bad',
         ]);
 
@@ -254,7 +267,7 @@ class AdminCursusControllerTest extends WebTestCase
 
         $token = $this->getDisableTokenForCursus($id);
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$id.'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $id . '/disable', [
             '_token' => $token,
         ]);
 
@@ -267,6 +280,8 @@ class AdminCursusControllerTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Cursus::class)->find($id);
+
+        self::assertNotNull($reloaded);
         self::assertFalse($reloaded->isActive());
     }
 
@@ -276,7 +291,7 @@ class AdminCursusControllerTest extends WebTestCase
 
         $cursus = $this->getAnyCursus();
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$cursus->getId().'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $cursus->getId() . '/activate', [
             '_token' => 'bad',
         ]);
 
@@ -295,7 +310,7 @@ class AdminCursusControllerTest extends WebTestCase
 
         $token = $this->getActivateTokenForCursusFromArchivedList($id);
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$id.'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $id . '/activate', [
             '_token' => $token,
         ]);
 
@@ -308,6 +323,8 @@ class AdminCursusControllerTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Cursus::class)->find($id);
+
+        self::assertNotNull($reloaded);
         self::assertTrue($reloaded->isActive());
     }
 
@@ -323,7 +340,7 @@ class AdminCursusControllerTest extends WebTestCase
 
         $token = $this->getDisableTokenForCursus($id);
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$id.'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $id . '/disable', [
             '_token' => $token,
         ]);
 
@@ -336,6 +353,8 @@ class AdminCursusControllerTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Cursus::class)->find($id);
+
+        self::assertNotNull($reloaded);
         self::assertFalse($reloaded->isActive());
     }
 
@@ -346,21 +365,18 @@ class AdminCursusControllerTest extends WebTestCase
         $cursus = $this->getAnyCursus();
         $id = $cursus->getId();
 
-        // On veut "activate alors que déjà actif"
         $cursus->setIsActive(true);
         $this->em->flush();
 
-        // Astuce : passer temporairement en archived pour récupérer le token via HTML
         $cursus->setIsActive(false);
         $this->em->flush();
         $token = $this->getActivateTokenForCursusFromArchivedList($id);
 
-        // Revenir actif avant d'appeler /activate => idempotence
         $cursus = $this->em->getRepository(Cursus::class)->find($id);
         $cursus->setIsActive(true);
         $this->em->flush();
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$id.'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $id . '/activate', [
             '_token' => $token,
         ]);
 
@@ -373,6 +389,8 @@ class AdminCursusControllerTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Cursus::class)->find($id);
+
+        self::assertNotNull($reloaded);
         self::assertTrue($reloaded->isActive());
     }
 }

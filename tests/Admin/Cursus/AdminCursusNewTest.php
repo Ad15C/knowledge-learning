@@ -72,6 +72,7 @@ class AdminCursusNewTest extends WebTestCase
                 'price' => '10.00',
             ],
         ]);
+
         self::assertResponseRedirects('/login');
     }
 
@@ -93,6 +94,7 @@ class AdminCursusNewTest extends WebTestCase
                 'price' => '10.00',
             ],
         ]);
+
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -102,9 +104,10 @@ class AdminCursusNewTest extends WebTestCase
 
     private function setAllThemesActive(bool $active): void
     {
-        foreach ($this->em->getRepository(Theme::class)->findAll() as $t) {
-            $t->setIsActive($active);
+        foreach ($this->em->getRepository(Theme::class)->findAll() as $theme) {
+            $theme->setIsActive($active);
         }
+
         $this->em->flush();
     }
 
@@ -112,15 +115,18 @@ class AdminCursusNewTest extends WebTestCase
     {
         $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => $name]);
         self::assertNotNull($theme, sprintf('Theme "%s" not found.', $name));
+
         return $theme;
     }
 
     private function getThemeSelectOptionLabels(Crawler $crawler): array
     {
         $labels = [];
+
         $crawler->filter('select[name="cursus[theme]"] option')->each(function (Crawler $opt) use (&$labels) {
             $labels[] = trim($opt->text());
         });
+
         return $labels;
     }
 
@@ -196,11 +202,12 @@ class AdminCursusNewTest extends WebTestCase
         self::assertSelectorExists('.flash-messages .flash.flash-success');
         self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Cursus créé.');
 
+        /** @var Cursus|null $created */
         $created = $this->em->getRepository(Cursus::class)->findOneBy(['name' => 'Cursus Test New']);
         self::assertNotNull($created);
         self::assertTrue($created->isActive());
         self::assertSame('Musique', $created->getTheme()?->getName());
-        self::assertSame(88.50, $created->getPrice());
+        self::assertEquals(88.50, (float) $created->getPrice());
     }
 
     public function testNewGetWithNoActiveThemesShowsImpossibleMessageAndDisabledSubmit(): void
@@ -248,6 +255,9 @@ class AdminCursusNewTest extends WebTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        $this->em->close();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

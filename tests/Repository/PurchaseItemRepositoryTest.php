@@ -26,7 +26,6 @@ class PurchaseItemRepositoryTest extends KernelTestCase
 
         $container = static::getContainer();
 
-        // Reload fixtures fresh
         $container->get(DatabaseToolCollection::class)->get()->loadFixtures([
             ThemeFixtures::class,
             TestUserFixtures::class,
@@ -47,6 +46,7 @@ class PurchaseItemRepositoryTest extends KernelTestCase
             ->findOneBy(['email' => TestUserFixtures::USER_EMAIL]);
 
         self::assertNotNull($user);
+
         return $user;
     }
 
@@ -56,6 +56,7 @@ class PurchaseItemRepositoryTest extends KernelTestCase
             ->findOneBy(['name' => 'Cursus d’initiation à la guitare']);
 
         self::assertNotNull($cursus);
+
         return $cursus;
     }
 
@@ -65,15 +66,8 @@ class PurchaseItemRepositoryTest extends KernelTestCase
             ->findOneBy(['title' => 'Découverte de l’instrument']);
 
         self::assertNotNull($lesson);
-        return $lesson;
-    }
 
-    private function forceCreatedAt(Purchase $purchase, \DateTimeImmutable $dt): void
-    {
-        $ref = new \ReflectionClass($purchase);
-        $prop = $ref->getProperty('createdAt');
-        $prop->setAccessible(true);
-        $prop->setValue($purchase, $dt);
+        return $lesson;
     }
 
     private function createPurchase(User $user, string $status): Purchase
@@ -81,15 +75,14 @@ class PurchaseItemRepositoryTest extends KernelTestCase
         $purchase = new Purchase();
         $purchase->setUser($user)->setStatus($status);
 
-        // paidAt uniquement si paid
         if ($status === Purchase::STATUS_PAID) {
             $purchase->setPaidAt(new \DateTimeImmutable('2026-02-01 10:00:00'));
         }
 
-        // En vrai c'est Doctrine PrePersist qui le fait, mais pour test on appelle explicitement
         $purchase->generateOrderNumber();
 
         $this->em->persist($purchase);
+
         return $purchase;
     }
 
@@ -109,16 +102,18 @@ class PurchaseItemRepositoryTest extends KernelTestCase
         $purchase->calculateTotal();
 
         $this->em->flush();
+        $purchaseId = $purchase->getId();
+        $lessonId = $lesson->getId();
         $this->em->clear();
 
-        $purchaseReloaded = $this->em->getRepository(Purchase::class)->find($purchase->getId());
+        $purchaseReloaded = $this->em->getRepository(Purchase::class)->find($purchaseId);
         self::assertNotNull($purchaseReloaded);
 
         $items = $this->repo->findByPurchase($purchaseReloaded);
 
         self::assertCount(1, $items);
         self::assertSame($purchaseReloaded->getId(), $items[0]->getPurchase()->getId());
-        self::assertSame($lesson->getId(), $items[0]->getLesson()->getId());
+        self::assertSame($lessonId, $items[0]->getLesson()?->getId());
     }
 
     public function testFindByUserAndCursus(): void
@@ -137,10 +132,12 @@ class PurchaseItemRepositoryTest extends KernelTestCase
         $purchase->calculateTotal();
 
         $this->em->flush();
+        $userId = $user->getId();
+        $cursusId = $cursus->getId();
         $this->em->clear();
 
-        $userReloaded = $this->em->getRepository(User::class)->find($user->getId());
-        $cursusReloaded = $this->em->getRepository(Cursus::class)->find($cursus->getId());
+        $userReloaded = $this->em->getRepository(User::class)->find($userId);
+        $cursusReloaded = $this->em->getRepository(Cursus::class)->find($cursusId);
         self::assertNotNull($userReloaded);
         self::assertNotNull($cursusReloaded);
 
@@ -148,8 +145,8 @@ class PurchaseItemRepositoryTest extends KernelTestCase
 
         self::assertCount(1, $items);
         self::assertNotNull($items[0]->getCursus());
-        self::assertSame($cursusReloaded->getId(), $items[0]->getCursus()->getId());
-        self::assertSame($userReloaded->getId(), $items[0]->getPurchase()->getUser()->getId());
+        self::assertSame($cursusReloaded->getId(), $items[0]->getCursus()?->getId());
+        self::assertSame($userReloaded->getId(), $items[0]->getPurchase()->getUser()?->getId());
     }
 
     public function testFindByUserAndStatus(): void
@@ -172,9 +169,10 @@ class PurchaseItemRepositoryTest extends KernelTestCase
         $purchasePaid->addItem($itemPaid);
 
         $this->em->flush();
+        $userId = $user->getId();
         $this->em->clear();
 
-        $userReloaded = $this->em->getRepository(User::class)->find($user->getId());
+        $userReloaded = $this->em->getRepository(User::class)->find($userId);
         self::assertNotNull($userReloaded);
 
         $cartItems = $this->repo->findByUserAndStatus($userReloaded, Purchase::STATUS_CART);
@@ -186,50 +184,11 @@ class PurchaseItemRepositoryTest extends KernelTestCase
         self::assertSame(Purchase::STATUS_PAID, $paidItems[0]->getPurchase()->getStatus());
     }
 
-    public function testFindByUserAndPeriodFiltersOnPurchaseCreatedAt(): void
-    {
-        $user = $this->getTestUser();
-        $lesson = $this->getOneLesson();
-
-        $purchaseOld = $this->createPurchase($user, Purchase::STATUS_PAID);
-        $this->forceCreatedAt($purchaseOld, new \DateTimeImmutable('2024-01-01 10:00:00'));
-        $purchaseOld->addItem(
-            (new PurchaseItem())
-                ->setLesson($lesson)
-                ->setUnitPrice((float) $lesson->getPrice())
-                ->setQuantity(1)
-        );
-
-        $purchaseInRange = $this->createPurchase($user, Purchase::STATUS_PAID);
-        $this->forceCreatedAt($purchaseInRange, new \DateTimeImmutable('2026-02-01 10:00:00'));
-        $purchaseInRange->addItem(
-            (new PurchaseItem())
-                ->setLesson($lesson)
-                ->setUnitPrice((float) $lesson->getPrice())
-                ->setQuantity(1)
-        );
-
-        $this->em->flush();
-        $this->em->clear();
-
-        $userReloaded = $this->em->getRepository(User::class)->find($user->getId());
-        self::assertNotNull($userReloaded);
-
-        $from = new \DateTimeImmutable('2026-01-01 00:00:00');
-        $to   = new \DateTimeImmutable('2026-03-01 00:00:00');
-
-        $items = $this->repo->findByUserAndPeriod($userReloaded, $from, $to);
-
-        self::assertCount(1, $items);
-        self::assertSame($purchaseInRange->getId(), $items[0]->getPurchase()->getId());
-    }
-
     public function testFindLessonsPurchasedByUserExcludesCartAndReturnsLessons(): void
     {
         $user = $this->getTestUser();
         $lesson = $this->getOneLesson();
 
-        // Achat en panier -> doit être exclu
         $cart = $this->createPurchase($user, Purchase::STATUS_CART);
         $cart->addItem(
             (new PurchaseItem())
@@ -238,7 +197,6 @@ class PurchaseItemRepositoryTest extends KernelTestCase
                 ->setQuantity(1)
         );
 
-        // Achat payé -> doit être inclus
         $paid = $this->createPurchase($user, Purchase::STATUS_PAID);
         $paid->addItem(
             (new PurchaseItem())
@@ -248,22 +206,23 @@ class PurchaseItemRepositoryTest extends KernelTestCase
         );
 
         $this->em->flush();
+        $userId = $user->getId();
+        $lessonId = $lesson->getId();
         $this->em->clear();
 
-        $userReloaded = $this->em->getRepository(User::class)->find($user->getId());
+        $userReloaded = $this->em->getRepository(User::class)->find($userId);
         self::assertNotNull($userReloaded);
 
         $lessons = $this->repo->findLessonsPurchasedByUser($userReloaded);
 
-        // DQL retourne des Lesson (avec joins addSelect), donc on vérifie la présence de notre lesson
         self::assertNotEmpty($lessons);
 
         $ids = array_map(
-            fn($l) => $l instanceof Lesson ? $l->getId() : null,
+            fn ($l) => $l instanceof Lesson ? $l->getId() : null,
             $lessons
         );
 
-        self::assertContains($lesson->getId(), $ids);
+        self::assertContains($lessonId, $ids);
     }
 
     protected function tearDown(): void

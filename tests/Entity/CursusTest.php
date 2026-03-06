@@ -15,10 +15,13 @@ class CursusTest extends TestCase
 
         $cursus->setName('Cursus PHP');
         self::assertSame('Cursus PHP', $cursus->getName());
-        self::assertSame('Cursus PHP', (string) $cursus); // __toString
+        self::assertSame('Cursus PHP', (string) $cursus);
 
         $cursus->setPrice(199.99);
-        self::assertEquals(199.99, $cursus->getPrice());
+        self::assertSame('199.99', $cursus->getPrice());
+
+        $cursus->setPrice('250');
+        self::assertSame('250.00', $cursus->getPrice());
 
         $cursus->setDescription('Apprenez PHP de A à Z');
         self::assertSame('Apprenez PHP de A à Z', $cursus->getDescription());
@@ -31,6 +34,17 @@ class CursusTest extends TestCase
         self::assertFalse($cursus->isActive());
     }
 
+    public function testDefaults(): void
+    {
+        $cursus = new Cursus();
+
+        self::assertNull($cursus->getId());
+        self::assertSame('0.00', $cursus->getPrice());
+        self::assertTrue($cursus->isActive());
+        self::assertCount(0, $cursus->getLessons());
+        self::assertFalse($cursus->isVisibleInCatalog());
+    }
+
     public function testThemeRelation(): void
     {
         $cursus = new Cursus();
@@ -41,27 +55,46 @@ class CursusTest extends TestCase
         self::assertSame($theme, $cursus->getTheme());
     }
 
-    public function testLessonRelation(): void
+    public function testAddLessonRelation(): void
     {
         $cursus = new Cursus();
 
-        // On mock Lesson pour éviter de devoir remplir title/price/cursus/etc.
         $lesson = $this->createMock(Lesson::class);
-
-        // addLesson() appelle $lesson->setCursus($this)
-        $lesson->expects(self::once())->method('setCursus')->with($cursus);
+        $lesson->expects(self::once())
+            ->method('setCursus')
+            ->with($cursus);
 
         $cursus->addLesson($lesson);
 
         self::assertCount(1, $cursus->getLessons());
         self::assertTrue($cursus->getLessons()->contains($lesson));
-
-        // removeLesson
-        $cursus->removeLesson($lesson);
-        self::assertCount(0, $cursus->getLessons());
     }
 
-    public function testIsPubliclyAccessibleDependsOnThemeAndActive(): void
+    public function testRemoveLessonRelation(): void
+    {
+        $cursus = new Cursus();
+
+        $lesson = $this->createMock(Lesson::class);
+
+        $lesson->expects(self::exactly(2))
+            ->method('setCursus')
+            ->withConsecutive(
+                [$cursus],
+                [null]
+            );
+
+        $lesson->expects(self::once())
+            ->method('getCursus')
+            ->willReturn($cursus);
+
+        $cursus->addLesson($lesson);
+        $cursus->removeLesson($lesson);
+
+        self::assertCount(0, $cursus->getLessons());
+        self::assertFalse($cursus->getLessons()->contains($lesson));
+    }
+
+    public function testIsVisibleInCatalogWhenThemeActiveAndCursusActive(): void
     {
         $cursus = new Cursus();
 
@@ -69,26 +102,34 @@ class CursusTest extends TestCase
         $theme->method('isActive')->willReturn(true);
 
         $cursus->setTheme($theme);
-
-        // actif + theme actif => true
         $cursus->setIsActive(true);
-        self::assertTrue($cursus->isPubliclyAccessible());
 
-        // cursus inactif => false
-        $cursus->setIsActive(false);
-        self::assertFalse($cursus->isPubliclyAccessible());
-
-        // theme inactif => false
-        $cursus->setIsActive(true);
-        $theme2 = $this->createMock(Theme::class);
-        $theme2->method('isActive')->willReturn(false);
-        $cursus->setTheme($theme2);
-        self::assertFalse($cursus->isPubliclyAccessible());
+        self::assertTrue($cursus->isVisibleInCatalog());
     }
 
-    public function testIdInitiallyNull(): void
+    public function testIsVisibleInCatalogWhenCursusInactive(): void
     {
         $cursus = new Cursus();
-        self::assertNull($cursus->getId());
+
+        $theme = $this->createMock(Theme::class);
+        $theme->method('isActive')->willReturn(true);
+
+        $cursus->setTheme($theme);
+        $cursus->setIsActive(false);
+
+        self::assertFalse($cursus->isVisibleInCatalog());
+    }
+
+    public function testIsVisibleInCatalogWhenThemeInactive(): void
+    {
+        $cursus = new Cursus();
+
+        $theme = $this->createMock(Theme::class);
+        $theme->method('isActive')->willReturn(false);
+
+        $cursus->setTheme($theme);
+        $cursus->setIsActive(true);
+
+        self::assertFalse($cursus->isVisibleInCatalog());
     }
 }
