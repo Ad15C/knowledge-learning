@@ -32,51 +32,53 @@ class MenuNavigationWorkflowTest extends WebTestCase
         $crawler = $this->client->request('GET', '/');
         $this->assertResponseIsSuccessful();
 
-        // Visiteur
+        // Menu visiteur
         $this->assertLinkExistsWithText($crawler, 'Accueil');
         $this->assertLinkExistsWithText($crawler, 'Thèmes');
+        $this->assertLinkExistsWithText($crawler, "S'inscrire");
+        $this->assertLinkExistsWithText($crawler, 'Se connecter');
 
-        // Visiteur => PAS de Panier / Contact / Dashboard / Déconnexion
+        // Éléments absents pour un visiteur
         $this->assertLinkNotExistsWithText($crawler, 'Panier');
         $this->assertLinkNotExistsWithText($crawler, 'Contact');
         $this->assertLinkNotExistsWithText($crawler, 'Déconnexion');
         $this->assertLinkNotExistsWithText($crawler, 'Dashboard User');
         $this->assertLinkNotExistsWithText($crawler, 'Dashboard Admin');
-
-        // Visiteur => liens auth
-        $this->assertLinkExistsWithText($crawler, "S'inscrire");
-        $this->assertLinkExistsWithText($crawler, 'Se connecter');
     }
 
     public function testMenuLoggedUserAndNavigationLinks(): void
     {
         $user = $this->createVerifiedUser('menuuser@example.com', 'MenuPass123!');
 
-        // Login robuste (ne dépend pas du formulaire)
+        // Authentification sans dépendre du formulaire
         $this->client->loginUser($user);
 
-        // Homepage pour tester le menu global
+        // 1) Test du menu principal sur la home
         $crawler = $this->client->request('GET', '/');
         $this->assertResponseIsSuccessful();
 
-        // Liens présents pour un user connecté (base.html.twig)
         $this->assertLinkExistsWithText($crawler, 'Accueil');
         $this->assertLinkExistsWithText($crawler, 'Thèmes');
         $this->assertLinkExistsWithText($crawler, 'Panier');
         $this->assertLinkExistsWithText($crawler, 'Contact');
-
-        // Dashboard + Déconnexion
         $this->assertLinkExistsWithText($crawler, 'Dashboard User');
         $this->assertLinkExistsWithText($crawler, 'Déconnexion');
 
-        // User connecté => plus Se connecter / S'inscrire
         $this->assertLinkNotExistsWithText($crawler, 'Se connecter');
         $this->assertLinkNotExistsWithText($crawler, "S'inscrire");
+        $this->assertLinkNotExistsWithText($crawler, 'Dashboard Admin');
 
-        // Navigation “Dashboard” (routes directes)
-        $this->client->request('GET', '/dashboard');
+        // 2) Test de la page dashboard + sidebar utilisateur
+        $crawler = $this->client->request('GET', '/dashboard');
         $this->assertResponseIsSuccessful();
 
+        $this->assertLinkExistsWithText($crawler, 'Vue d’ensemble');
+        $this->assertLinkExistsWithText($crawler, 'Mon profil');
+        $this->assertLinkExistsWithText($crawler, 'Sécurité');
+        $this->assertLinkExistsWithText($crawler, 'Mes achats');
+        $this->assertLinkExistsWithText($crawler, 'Mes certificats');
+
+        // 3) Vérification d’accès aux routes dashboard
         $this->client->request('GET', '/dashboard/edit');
         $this->assertResponseIsSuccessful();
 
@@ -89,23 +91,27 @@ class MenuNavigationWorkflowTest extends WebTestCase
         $this->client->request('GET', '/dashboard/certifications');
         $this->assertResponseIsSuccessful();
 
-        // Logout
+        // 4) Logout
         $this->client->request('GET', '/logout');
-
-        // Selon config firewall, logout redirige vers /, /login, etc.
         $this->assertTrue(
             $this->client->getResponse()->isRedirection(),
             'La route /logout doit rediriger.'
         );
-        $this->client->followRedirect();
 
-        // Après logout => /dashboard redirige vers login
-        $this->client->request('GET', '/dashboard');
-        $this->assertTrue($this->client->getResponse()->isRedirection());
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
-        // On s'attend à tomber sur une page avec un formulaire de login
+        // 5) Après logout, /dashboard ne doit plus être accessible
+        $this->client->request('GET', '/dashboard');
+        $this->assertTrue(
+            $this->client->getResponse()->isRedirection(),
+            'Après logout, /dashboard doit rediriger.'
+        );
+
+        $this->client->followRedirect();
+        $this->assertResponseIsSuccessful();
+
+        // On vérifie qu’on arrive sur une page de connexion
         $this->assertSelectorExists('form');
     }
 
@@ -115,11 +121,8 @@ class MenuNavigationWorkflowTest extends WebTestCase
 
         $user = new User();
         $user->setEmail($email);
-
-        // Adapté à tes setters (tu utilises firstname/lastname ailleurs)
-        $user->setFirstname('Menu');
-        $user->setLastname('User');
-
+        $user->setFirstName('Menu');
+        $user->setLastName('User');
         $user->setRoles(['ROLE_USER']);
         $user->setIsVerified(true);
         $user->setPassword($passwordHasher->hashPassword($user, $plainPassword));

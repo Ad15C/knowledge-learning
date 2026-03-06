@@ -7,6 +7,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Bridge\Doctrine\Security\User\UserLoaderInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
@@ -14,11 +15,28 @@ use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
 /**
  * @extends ServiceEntityRepository<User>
  */
-class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface
+class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface, UserLoaderInterface
 {
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, User::class);
+    }
+
+    /**
+     * Chargement utilisé par Symfony Security pour l'authentification.
+     * On désactive temporairement les filtres Doctrine pour pouvoir
+     * retrouver aussi les comptes archivés, puis laisser le UserChecker
+     * décider du message métier à afficher.
+     */
+    public function loadUserByIdentifier(string $identifier): ?User
+    {
+        return $this->withoutEnabledDoctrineFilters(function () use ($identifier) {
+            return $this->createQueryBuilder('u')
+                ->andWhere('LOWER(u.email) = :email')
+                ->setParameter('email', mb_strtolower($identifier))
+                ->getQuery()
+                ->getOneOrNullResult();
+        });
     }
 
     public function countActiveAdmins(): int
@@ -53,7 +71,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                 $expr->like('LOWER(u.lastName)', ':q'),
                 $expr->like('LOWER(u.email)', ':q')
             )
-        )->setParameter('q', '%'.mb_strtolower($q).'%');
+        )->setParameter('q', '%' . mb_strtolower($q) . '%');
     }
 
     /**
@@ -115,7 +133,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             return $qb->getQuery()->getResult();
         };
 
-        // si on veut inclure les archivés, on bypass tous les filtres Doctrine actifs
         return $includeArchived
             ? $this->withoutEnabledDoctrineFilters($runner)
             : $runner();
@@ -123,7 +140,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     public function findForAdminListPaginated(
         string $q,
-        string $status, // active|archived|all
+        string $status,
         string $sort,
         string $dir,
         int $page,
@@ -140,7 +157,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                 $qb->andWhere('u.archivedAt IS NULL');
             } elseif ($status === 'archived') {
                 $qb->andWhere('u.archivedAt IS NOT NULL');
-            } // all => pas de filtre
+            }
 
             $dir = strtoupper($dir) === 'DESC' ? 'DESC' : 'ASC';
 
@@ -163,7 +180,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ];
         };
 
-        // Si on veut voir archived/all, on bypass les filtres globaux
         $needsArchived = ($status === 'archived' || $status === 'all');
 
         return $needsArchived

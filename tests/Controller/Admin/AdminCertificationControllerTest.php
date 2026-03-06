@@ -6,109 +6,115 @@ use App\DataFixtures\TestUserFixtures;
 use App\DataFixtures\ThemeFixtures;
 use App\Entity\Certification;
 use App\Entity\Lesson;
-use App\Repository\UserRepository;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class AdminCertificationControllerTest extends WebTestCase
 {
-    private function loadBaseFixtures($container): void
-    {
-        /** @var DatabaseToolCollection $dbTools */
-        $dbTools = $container->get(DatabaseToolCollection::class);
+    private KernelBrowser $client;
+    private EntityManagerInterface $em;
 
+    protected function setUp(): void
+    {
+        self::ensureKernelShutdown();
+
+        $this->client = static::createClient([], [
+            'HTTPS' => 'on',
+            'HTTP_HOST' => 'localhost',
+            'SERVER_PORT' => 443,
+        ]);
+
+        $this->em = static::getContainer()->get(EntityManagerInterface::class);
+
+        /** @var DatabaseToolCollection $dbTools */
+        $dbTools = static::getContainer()->get(DatabaseToolCollection::class);
         $dbTools->get()->loadFixtures([
             TestUserFixtures::class,
             ThemeFixtures::class,
         ]);
     }
 
-    private function createCertification($container): Certification
+    private function getAdmin(): User
     {
-        /** @var EntityManagerInterface $em */
-        $em = $container->get(EntityManagerInterface::class);
+        $admin = $this->em->getRepository(User::class)
+            ->findOneBy(['email' => TestUserFixtures::ADMIN_EMAIL]);
 
-        $lesson = $em->getRepository(Lesson::class)->findOneBy([
+        self::assertNotNull($admin, 'Admin fixture introuvable.');
+
+        return $admin;
+    }
+
+    private function getUser(): User
+    {
+        $user = $this->em->getRepository(User::class)
+            ->findOneBy(['email' => TestUserFixtures::USER_EMAIL]);
+
+        self::assertNotNull($user, 'User fixture introuvable.');
+
+        return $user;
+    }
+
+    private function createCertification(): Certification
+    {
+        $lesson = $this->em->getRepository(Lesson::class)->findOneBy([
             'title' => 'Découverte de l’instrument',
         ]);
-        self::assertNotNull($lesson);
+        self::assertNotNull($lesson, 'Leçon fixture introuvable.');
 
-        /** @var UserRepository $userRepo */
-        $userRepo = $container->get(UserRepository::class);
-        $holder = $userRepo->findOneBy(['email' => TestUserFixtures::USER_EMAIL]);
-        self::assertNotNull($holder);
+        $holder = $this->getUser();
 
         $cert = (new Certification())
             ->setUser($holder)
             ->setLesson($lesson)
             ->setType('LESSON')
             ->setCertificateCode('CERT_TEST_001')
-            ->setIssuedAt(new \DateTimeImmutable('now'));
+            ->setIssuedAt(new \DateTimeImmutable());
 
-        $em->persist($cert);
-        $em->flush();
+        $this->em->persist($cert);
+        $this->em->flush();
 
         return $cert;
     }
 
     public function testDownloadAnonymousIsRedirectedToLogin(): void
     {
-        $client = static::createClient();
-        $client->followRedirects(true); // ✅ traverse le 301 vers https
+        $this->client->request('GET', 'https://localhost/admin/certifications/1/download');
 
-        $container = $client->getContainer();
-        $this->loadBaseFixtures($container);
-
-        $client->request('GET', '/admin/certifications/1/download');
-
-        // Après redirections : normalement redirect vers login (form_login)
-        // Si ton app finit sur la page login en 200, adapte (mais souvent 200 après follow).
-        $status = $client->getResponse()->getStatusCode();
-        self::assertTrue(in_array($status, [200, 302, 401, 403], true), 'Status inattendu: ' . $status);
+        self::assertTrue($this->client->getResponse()->isRedirection());
+        $location = (string) $this->client->getResponse()->headers->get('Location');
+        self::assertStringContainsString('/login', $location);
     }
 
     public function testDownloadAsUserIsForbidden(): void
     {
-        $client = static::createClient();
-        $client->followRedirects(true);
+        $user = $this->getUser();
+        $this->client->loginUser($user, 'main');
 
-        $container = $client->getContainer();
-        $this->loadBaseFixtures($container);
-
-        /** @var UserRepository $userRepo */
-        $userRepo = $container->get(UserRepository::class);
-        $user = $userRepo->findOneBy(['email' => TestUserFixtures::USER_EMAIL]);
-        self::assertNotNull($user);
-
-        $client->loginUser($user);
-        $client->request('GET', '/admin/certifications/1/download');
+        $this->client->request('GET', 'https://localhost/admin/certifications/1/download');
 
         self::assertResponseStatusCodeSame(403);
     }
 
     public function testDownloadAsAdminReturnsPdf(): void
     {
-        $client = static::createClient();
-        $client->followRedirects(true);
+        $admin = $this->getAdmin();
+        $cert = $this->createCertification();
 
-        $container = $client->getContainer();
-        $this->loadBaseFixtures($container);
-
-        /** @var UserRepository $userRepo */
-        $userRepo = $container->get(UserRepository::class);
-        $admin = $userRepo->findOneBy(['email' => TestUserFixtures::ADMIN_EMAIL]);
-        self::assertNotNull($admin);
-
-        $cert = $this->createCertification($container);
-
-        $client->loginUser($admin);
-        $client->request('GET', '/admin/certifications/' . $cert->getId() . '/download');
+        $this->client->loginUser($admin, 'main');
+        $this->client->request('GET', 'https://localhost/admin/certifications/' . $cert->getId() . '/download');
 
         self::assertResponseIsSuccessful();
 
-        $response = $client->getResponse();
+        $response = $this->client->getResponse();
+
         self::assertTrue($response->headers->contains('Content-Type', 'application/pdf'));
+
+        $disposition = (string) $response->headers->get('Content-Disposition');
+        self::assertStringContainsString('attachment;', $disposition);
+        self::assertStringContainsString('certificat-CERT_TEST_001.pdf', $disposition);
 
         $content = $response->getContent() ?? '';
         self::assertNotEmpty($content);
@@ -117,20 +123,20 @@ class AdminCertificationControllerTest extends WebTestCase
 
     public function testDownloadNotFoundReturns404(): void
     {
-        $client = static::createClient();
-        $client->followRedirects(true);
+        $admin = $this->getAdmin();
 
-        $container = $client->getContainer();
-        $this->loadBaseFixtures($container);
-
-        /** @var UserRepository $userRepo */
-        $userRepo = $container->get(UserRepository::class);
-        $admin = $userRepo->findOneBy(['email' => TestUserFixtures::ADMIN_EMAIL]);
-        self::assertNotNull($admin);
-
-        $client->loginUser($admin);
-        $client->request('GET', '/admin/certifications/999999/download');
+        $this->client->loginUser($admin, 'main');
+        $this->client->request('GET', 'https://localhost/admin/certifications/999999/download');
 
         self::assertResponseStatusCodeSame(404);
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

@@ -30,8 +30,12 @@ doctrine:
 when@test:
     doctrine:
         dbal:
-            # "TEST_TOKEN" is typically set by ParaTest
             dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+        orm:
+            filters:
+                archived_user:
+                    class: App\Doctrine\ArchivedUserFilter
+                    enabled: false
 
 when@prod:
     doctrine:

@@ -22,25 +22,55 @@ class UserRepositoryTest extends KernelTestCase
 
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
 
-        // ✅ Désactive un éventuel filtre global qui masque les archivés (ex: StofDoctrineExtensions softdeleteable)
-        $filters = $this->em->getFilters();
-        if ($filters->isEnabled('softdeleteable')) {
-            $filters->disable('softdeleteable');
-        }
-
         $repo = $this->em->getRepository(User::class);
         self::assertInstanceOf(UserRepository::class, $repo);
         $this->repository = $repo;
 
+        $this->disableAllDoctrineFilters();
+
         $this->em->createQuery('DELETE FROM App\Entity\User u')->execute();
         $this->em->clear();
+
+        $this->enableFilterIfExists('archived_user');
+    }
+
+    private function disableAllDoctrineFilters(): void
+    {
+        $filters = $this->em->getFilters();
+
+        foreach (array_keys($filters->getEnabledFilters()) as $name) {
+            $filters->disable($name);
+        }
+    }
+
+    private function enableFilterIfExists(string $filterName): void
+    {
+        $filters = $this->em->getFilters();
+
+        if (!$filters->isEnabled($filterName)) {
+            try {
+                $filters->enable($filterName);
+            } catch (\InvalidArgumentException) {
+                // filtre non défini dans cet environnement
+            }
+        }
+    }
+
+    private function disableFilterIfEnabled(string $filterName): void
+    {
+        $filters = $this->em->getFilters();
+
+        if ($filters->isEnabled($filterName)) {
+            $filters->disable($filterName);
+        }
     }
 
     private function createUser(
         string $email = 'user@test.com',
         string $firstName = 'John',
         string $lastName = 'Doe',
-        array $roles = []
+        array $roles = [],
+        bool $isVerified = true
     ): User {
         $user = new User();
 
@@ -48,13 +78,16 @@ class UserRepositoryTest extends KernelTestCase
             ->setPassword('password_hash')
             ->setFirstName($firstName)
             ->setLastName($lastName)
-            ->setRoles($roles);
+            ->setRoles($roles)
+            ->setIsVerified($isVerified);
 
         return $user;
     }
 
-    private function archiveUser(User $user, \DateTimeImmutable $dt = new \DateTimeImmutable('2026-02-01 10:00:00')): void
-    {
+    private function archiveUser(
+        User $user,
+        \DateTimeImmutable $dt = new \DateTimeImmutable('2026-02-01 10:00:00')
+    ): void {
         $user->setArchivedAt($dt);
     }
 
@@ -82,6 +115,39 @@ class UserRepositoryTest extends KernelTestCase
 
         self::assertInstanceOf(User::class, $found);
         self::assertSame('find@test.com', $found->getEmail());
+    }
+
+    public function testLoadUserByIdentifierFindsActiveUser(): void
+    {
+        $user = $this->createUser('login@test.com');
+        $this->em->persist($user);
+        $this->em->flush();
+        $this->em->clear();
+
+        $found = $this->repository->loadUserByIdentifier('login@test.com');
+
+        self::assertInstanceOf(User::class, $found);
+        self::assertSame('login@test.com', $found->getEmail());
+    }
+
+    public function testLoadUserByIdentifierFindsArchivedUserDespiteDoctrineFilter(): void
+    {
+        $this->enableFilterIfExists('archived_user');
+
+        $user = $this->createUser('archived-login@test.com');
+        $this->archiveUser($user);
+
+        $this->disableFilterIfEnabled('archived_user');
+        $this->em->persist($user);
+        $this->em->flush();
+        $this->em->clear();
+        $this->enableFilterIfExists('archived_user');
+
+        $found = $this->repository->loadUserByIdentifier('archived-login@test.com');
+
+        self::assertInstanceOf(User::class, $found);
+        self::assertSame('archived-login@test.com', $found->getEmail());
+        self::assertTrue($found->isArchived());
     }
 
     public function testUpdateUser(): void
@@ -168,10 +234,13 @@ class UserRepositoryTest extends KernelTestCase
 
         $userActive = $this->createUser('user@test.com', 'Us', 'Er', []);
 
+        $this->disableFilterIfEnabled('archived_user');
         $this->em->persist($adminActive);
         $this->em->persist($adminArchived);
         $this->em->persist($userActive);
         $this->em->flush();
+        $this->em->clear();
+        $this->enableFilterIfExists('archived_user');
 
         self::assertSame(1, $this->repository->countActiveAdmins());
     }
@@ -183,11 +252,13 @@ class UserRepositoryTest extends KernelTestCase
         $u3 = $this->createUser('c@test.com', 'Cara', 'By');
         $this->archiveUser($u3);
 
+        $this->disableFilterIfEnabled('archived_user');
         $this->em->persist($u1);
         $this->em->persist($u2);
         $this->em->persist($u3);
         $this->em->flush();
         $this->em->clear();
+        $this->enableFilterIfExists('archived_user');
 
         $active = $this->repository->findActiveUsers();
 
@@ -200,15 +271,16 @@ class UserRepositoryTest extends KernelTestCase
     {
         $u1 = $this->createUser('john@test.com', 'John', 'Doe');
         $u2 = $this->createUser('alice@test.com', 'Alice', 'Smith');
-
-        $u3 = $this->createUser('arch_smi@test.com', 'Arch', 'Ived');
+        $u3 = $this->createUser('arch_smi@test.com', 'Arch', 'Smith');
         $this->archiveUser($u3);
 
+        $this->disableFilterIfEnabled('archived_user');
         $this->em->persist($u1);
         $this->em->persist($u2);
         $this->em->persist($u3);
         $this->em->flush();
         $this->em->clear();
+        $this->enableFilterIfExists('archived_user');
 
         $results = $this->repository->findForAdminList(null, 'name', 'ASC', false);
         self::assertCount(2, $results);
@@ -226,6 +298,8 @@ class UserRepositoryTest extends KernelTestCase
 
     public function testFindForAdminListPaginated(): void
     {
+        $this->disableFilterIfEnabled('archived_user');
+
         for ($i = 1; $i <= 5; $i++) {
             $u = $this->createUser("u$i@test.com", "First$i", "Last$i");
             if ($i === 5) {
@@ -233,11 +307,12 @@ class UserRepositoryTest extends KernelTestCase
             }
             $this->em->persist($u);
         }
+
         $this->em->flush();
         $this->em->clear();
+        $this->enableFilterIfExists('archived_user');
 
         $page1 = $this->repository->findForAdminListPaginated('', 'active', 'name', 'ASC', 1, 2);
-
         self::assertSame(4, $page1['total']);
         self::assertCount(2, $page1['items']);
 
@@ -246,6 +321,14 @@ class UserRepositoryTest extends KernelTestCase
 
         $page3 = $this->repository->findForAdminListPaginated('', 'active', 'name', 'ASC', 3, 2);
         self::assertCount(0, $page3['items']);
+
+        $archived = $this->repository->findForAdminListPaginated('', 'archived', 'name', 'ASC', 1, 10);
+        self::assertSame(1, $archived['total']);
+        self::assertCount(1, $archived['items']);
+
+        $all = $this->repository->findForAdminListPaginated('', 'all', 'name', 'ASC', 1, 10);
+        self::assertSame(5, $all['total']);
+        self::assertCount(5, $all['items']);
     }
 
     protected function tearDown(): void
@@ -253,6 +336,7 @@ class UserRepositoryTest extends KernelTestCase
         parent::tearDown();
 
         if (isset($this->em)) {
+            $this->disableAllDoctrineFilters();
             $this->em->close();
         }
 

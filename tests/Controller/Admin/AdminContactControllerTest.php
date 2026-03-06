@@ -41,7 +41,7 @@ class AdminContactControllerTest extends WebTestCase
             ->findOneBy(['email' => TestUserFixtures::ADMIN_EMAIL]);
 
         self::assertNotNull($admin, 'Admin fixture introuvable.');
-        $this->client->loginUser($admin);
+        $this->client->loginUser($admin, 'main');
 
         return $admin;
     }
@@ -52,7 +52,7 @@ class AdminContactControllerTest extends WebTestCase
             ->findOneBy(['email' => TestUserFixtures::USER_EMAIL]);
 
         self::assertNotNull($user, 'User fixture introuvable.');
-        $this->client->loginUser($user);
+        $this->client->loginUser($user, 'main');
 
         return $user;
     }
@@ -78,7 +78,7 @@ class AdminContactControllerTest extends WebTestCase
 
     /**
      * Récupère le token CSRF depuis le HTML de la page index.
-     * $action = 'read' | 'unread' | 'handled'
+     * $action = read|unread|handled
      */
     private function getCsrfTokenForContactAction(int $contactId, string $action): string
     {
@@ -97,9 +97,6 @@ class AdminContactControllerTest extends WebTestCase
         return (string) $input->attr('value');
     }
 
-    /**
-     * POST avec Referer sûr.
-     */
     private function postWithReferer(string $uri, array $params = [], string $referer = '/admin/contact/'): void
     {
         $this->client->request(
@@ -231,14 +228,57 @@ class AdminContactControllerTest extends WebTestCase
         $this->postWithReferer("/admin/contact/{$id}/read", ['_token' => $token]);
         self::assertTrue($this->client->getResponse()->isRedirection());
 
-        $this->client->followRedirect();
-        self::assertResponseIsSuccessful();
-
         $reloaded = $this->em->getRepository(Contact::class)->find($id);
         self::assertNotNull($reloaded);
         self::assertNotNull($reloaded->getReadAt());
         self::assertTrue($reloaded->isRead());
         self::assertSame('read', $reloaded->getStatus());
+    }
+
+    public function testPostMarkReadWithInvalidCsrfReturns403(): void
+    {
+        $this->loginAsAdmin();
+
+        $contact = $this->createContact('markread-invalid@test.io');
+        $id = $contact->getId();
+
+        $this->postWithReferer("/admin/contact/{$id}/read", ['_token' => 'invalid-token']);
+        self::assertResponseStatusCodeSame(403);
+
+        $reloaded = $this->em->getRepository(Contact::class)->find($id);
+        self::assertNotNull($reloaded);
+        self::assertNull($reloaded->getReadAt());
+        self::assertFalse($reloaded->isRead());
+    }
+
+    public function testPostMarkReadForbiddenForRoleUserEvenWithValidCsrf(): void
+    {
+        $this->loginAsAdmin();
+        $contact = $this->createContact('markread-user@test.io');
+        $id = $contact->getId();
+        $token = $this->getCsrfTokenForContactAction($id, 'read');
+
+        $this->loginAsUser();
+        $this->postWithReferer("/admin/contact/{$id}/read", ['_token' => $token]);
+
+        self::assertResponseStatusCodeSame(403);
+
+        $reloaded = $this->em->getRepository(Contact::class)->find($id);
+        self::assertNotNull($reloaded);
+        self::assertNull($reloaded->getReadAt());
+        self::assertFalse($reloaded->isRead());
+    }
+
+    public function testPostMarkReadRedirectsAnonymousToLogin(): void
+    {
+        $contact = $this->createContact('markread-anon@test.io');
+        $id = $contact->getId();
+
+        $this->postWithReferer("/admin/contact/{$id}/read", ['_token' => 'whatever']);
+        self::assertTrue($this->client->getResponse()->isRedirection());
+
+        $location = (string) $this->client->getResponse()->headers->get('Location');
+        self::assertStringContainsString('/login', $location);
     }
 
     // -------------------------
@@ -263,14 +303,65 @@ class AdminContactControllerTest extends WebTestCase
         $this->postWithReferer("/admin/contact/{$id}/unread", ['_token' => $token]);
         self::assertTrue($this->client->getResponse()->isRedirection());
 
-        $this->client->followRedirect();
-        self::assertResponseIsSuccessful();
-
         $reloaded = $this->em->getRepository(Contact::class)->find($id);
         self::assertNotNull($reloaded);
         self::assertNull($reloaded->getReadAt());
         self::assertFalse($reloaded->isRead());
         self::assertSame('unread', $reloaded->getStatus());
+    }
+
+    public function testPostMarkUnreadWithInvalidCsrfReturns403(): void
+    {
+        $this->loginAsAdmin();
+
+        $contact = $this->createContact('markunread-invalid@test.io');
+        $id = $contact->getId();
+
+        $contact->markRead();
+        $this->em->flush();
+
+        $this->postWithReferer("/admin/contact/{$id}/unread", ['_token' => 'invalid-token']);
+        self::assertResponseStatusCodeSame(403);
+
+        $reloaded = $this->em->getRepository(Contact::class)->find($id);
+        self::assertNotNull($reloaded);
+        self::assertTrue($reloaded->isRead());
+        self::assertNotNull($reloaded->getReadAt());
+    }
+
+    public function testPostMarkUnreadForbiddenForRoleUserEvenWithValidCsrf(): void
+    {
+        $this->loginAsAdmin();
+        $contact = $this->createContact('markunread-user@test.io');
+        $id = $contact->getId();
+        $contact->markRead();
+        $this->em->flush();
+
+        $token = $this->getCsrfTokenForContactAction($id, 'unread');
+
+        $this->loginAsUser();
+        $this->postWithReferer("/admin/contact/{$id}/unread", ['_token' => $token]);
+
+        self::assertResponseStatusCodeSame(403);
+
+        $reloaded = $this->em->getRepository(Contact::class)->find($id);
+        self::assertNotNull($reloaded);
+        self::assertTrue($reloaded->isRead());
+        self::assertNotNull($reloaded->getReadAt());
+    }
+
+    public function testPostMarkUnreadRedirectsAnonymousToLogin(): void
+    {
+        $contact = $this->createContact('markunread-anon@test.io');
+        $id = $contact->getId();
+        $contact->markRead();
+        $this->em->flush();
+
+        $this->postWithReferer("/admin/contact/{$id}/unread", ['_token' => 'whatever']);
+        self::assertTrue($this->client->getResponse()->isRedirection());
+
+        $location = (string) $this->client->getResponse()->headers->get('Location');
+        self::assertStringContainsString('/login', $location);
     }
 
     // -------------------------
@@ -292,14 +383,57 @@ class AdminContactControllerTest extends WebTestCase
         $this->postWithReferer("/admin/contact/{$id}/handled", ['_token' => $token]);
         self::assertTrue($this->client->getResponse()->isRedirection());
 
-        $this->client->followRedirect();
-        self::assertResponseIsSuccessful();
-
         $reloaded = $this->em->getRepository(Contact::class)->find($id);
         self::assertNotNull($reloaded);
         self::assertTrue($reloaded->isHandled());
         self::assertNotNull($reloaded->getHandledAt());
         self::assertSame('handled', $reloaded->getStatus());
+    }
+
+    public function testPostMarkHandledWithInvalidCsrfReturns403(): void
+    {
+        $this->loginAsAdmin();
+
+        $contact = $this->createContact('markhandled-invalid@test.io');
+        $id = $contact->getId();
+
+        $this->postWithReferer("/admin/contact/{$id}/handled", ['_token' => 'invalid-token']);
+        self::assertResponseStatusCodeSame(403);
+
+        $reloaded = $this->em->getRepository(Contact::class)->find($id);
+        self::assertNotNull($reloaded);
+        self::assertFalse($reloaded->isHandled());
+        self::assertNull($reloaded->getHandledAt());
+    }
+
+    public function testPostMarkHandledForbiddenForRoleUserEvenWithValidCsrf(): void
+    {
+        $this->loginAsAdmin();
+        $contact = $this->createContact('markhandled-user@test.io');
+        $id = $contact->getId();
+        $token = $this->getCsrfTokenForContactAction($id, 'handled');
+
+        $this->loginAsUser();
+        $this->postWithReferer("/admin/contact/{$id}/handled", ['_token' => $token]);
+
+        self::assertResponseStatusCodeSame(403);
+
+        $reloaded = $this->em->getRepository(Contact::class)->find($id);
+        self::assertNotNull($reloaded);
+        self::assertFalse($reloaded->isHandled());
+        self::assertNull($reloaded->getHandledAt());
+    }
+
+    public function testPostMarkHandledRedirectsAnonymousToLogin(): void
+    {
+        $contact = $this->createContact('markhandled-anon@test.io');
+        $id = $contact->getId();
+
+        $this->postWithReferer("/admin/contact/{$id}/handled", ['_token' => 'whatever']);
+        self::assertTrue($this->client->getResponse()->isRedirection());
+
+        $location = (string) $this->client->getResponse()->headers->get('Location');
+        self::assertStringContainsString('/login', $location);
     }
 
     // -------------------------
@@ -355,6 +489,9 @@ class AdminContactControllerTest extends WebTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        $this->em->close();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }
