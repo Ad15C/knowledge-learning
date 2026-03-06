@@ -10,6 +10,7 @@ use App\Service\CartService;
 use Doctrine\ORM\EntityManagerInterface;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Bundle\SecurityBundle\Security;
 
 class CartServiceIntegrationTest extends WebTestCase
 {

@@ -60,7 +60,7 @@ class PurchaseItemRepository extends ServiceEntityRepository
         return $qb
             ->select('DISTINCT l, c, t')
             ->from(Lesson::class, 'l')
-            ->join(PurchaseItem::class, 'pi', 'WITH', 'pi.lesson = l')
+            ->join(PurchaseItem::class, 'pi', 'ON', 'pi.lesson = l')
             ->join('pi.purchase', 'p')
             ->leftJoin('l.cursus', 'c')
             ->leftJoin('c.theme', 't')

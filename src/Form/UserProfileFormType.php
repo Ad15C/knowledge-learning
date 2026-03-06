@@ -33,7 +33,9 @@ class UserProfileFormType extends AbstractType
                 'label' => 'Email',
                 'constraints' => [
                     new Assert\NotBlank(),
-                    new Assert\Email()
+                    new Assert\Email([
+                        'mode' => 'html5',
+                    ])
                 ]
             ]);
     }

@@ -4,34 +4,39 @@ namespace App\Tests\Form;
 
 use App\Entity\Contact;
 use App\Form\ContactFormType;
-use Symfony\Component\Form\Extension\Validator\ValidatorExtension;
-use Symfony\Component\Form\Test\TypeTestCase;
-use Symfony\Component\Validator\Validation;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\Form\FormInterface;
 
-class ContactFormTypeTest extends TypeTestCase
+class ContactFormTypeTest extends KernelTestCase
 {
-    protected function getExtensions(): array
-    {
-        // Permet de faire fonctionner $form->isValid() avec les Assert (PHP attributes) de l'Entity
-        $validator = Validation::createValidatorBuilder()
-            ->enableAttributeMapping()
-            ->getValidator();
+    private FormFactoryInterface $formFactory;
 
-        return [
-            new ValidatorExtension($validator),
-        ];
+    protected function setUp(): void
+    {
+        self::bootKernel();
+        $this->formFactory = static::getContainer()->get('form.factory');
     }
 
-    private function getAllErrorMessages(\Symfony\Component\Form\FormInterface $form): array
+    private function createForm(?Contact $contact = null): FormInterface
+    {
+        return $this->formFactory->create(ContactFormType::class, $contact, [
+            'csrf_protection' => false,
+        ]);
+    }
+
+    private function getAllErrorMessages(FormInterface $form): array
     {
         $messages = [];
+
         foreach ($form->getErrors(true, true) as $error) {
             $messages[] = $error->getMessage();
         }
+
         return $messages;
     }
 
-    private function assertFormErrorsContain(\Symfony\Component\Form\FormInterface $form, string $expectedPart): void
+    private function assertFormErrorsContain(FormInterface $form, string $expectedPart): void
     {
         $messages = $this->getAllErrorMessages($form);
 
@@ -51,7 +56,7 @@ class ContactFormTypeTest extends TypeTestCase
 
     public function testFormHasExpectedFields(): void
     {
-        $form = $this->factory->create(ContactFormType::class);
+        $form = $this->createForm();
 
         $this->assertTrue($form->has('fullname'));
         $this->assertTrue($form->has('email'));
@@ -62,7 +67,7 @@ class ContactFormTypeTest extends TypeTestCase
     public function testSubmitValidDataMapsToEntityAndIsValid(): void
     {
         $contact = new Contact();
-        $form = $this->factory->create(ContactFormType::class, $contact);
+        $form = $this->createForm($contact);
 
         $form->submit([
             'fullname' => 'Marie Curie',
@@ -82,7 +87,7 @@ class ContactFormTypeTest extends TypeTestCase
 
     public function testInvalidEmailMakesFormInvalid(): void
     {
-        $form = $this->factory->create(ContactFormType::class, new Contact());
+        $form = $this->createForm(new Contact());
 
         $form->submit([
             'fullname' => 'Marie',
@@ -94,38 +99,33 @@ class ContactFormTypeTest extends TypeTestCase
         $this->assertTrue($form->isSynchronized());
         $this->assertFalse($form->isValid());
 
-        // robuste : on vérifie le message de l'Assert\Email
         $this->assertFormErrorsContain($form, 'Veuillez renseigner un e-mail valide.');
     }
 
     public function testTooShortMessageMakesFormInvalid(): void
     {
-        $form = $this->factory->create(ContactFormType::class, new Contact());
+        $form = $this->createForm(new Contact());
 
         $form->submit([
             'fullname' => 'Marie',
             'email' => 'marie@example.com',
             'subject' => 'theme',
-            'message' => 'Court', // < 10 caractères
+            'message' => 'Court',
         ]);
 
         $this->assertTrue($form->isSynchronized());
         $this->assertFalse($form->isValid());
 
-        // minMessage: 'Le message doit faire au moins {{ limit }} caractères.'
         $this->assertFormErrorsContain($form, 'Le message doit faire au moins');
     }
 
     public function testBlankFieldsMakeFormInvalid(): void
     {
-        $form = $this->factory->create(ContactFormType::class, new Contact());
+        $form = $this->createForm(new Contact());
 
-        // IMPORTANT: pour ChoiceType, '' peut être "valeur invalide"
-        // → on omet carrément subject pour laisser null, et déclencher NotBlank côté entity.
         $form->submit([
             'fullname' => '',
             'email' => '',
-            // 'subject' => '',  // on n'envoie pas
             'message' => '',
         ]);
 
@@ -140,7 +140,7 @@ class ContactFormTypeTest extends TypeTestCase
 
     public function testSubjectChoicesAndPlaceholderAreCorrect(): void
     {
-        $form = $this->factory->create(ContactFormType::class);
+        $form = $this->createForm();
         $subjectConfig = $form->get('subject')->getConfig();
 
         $this->assertSame('Choisissez un sujet', $subjectConfig->getOption('placeholder'));

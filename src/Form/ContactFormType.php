@@ -9,6 +9,7 @@ use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class ContactFormType extends AbstractType
@@ -20,8 +21,17 @@ class ContactFormType extends AbstractType
                 'label' => 'Votre nom'
             ])
             ->add('email', EmailType::class, [
-                'label' => 'Votre e-mail'
-            ])
+                    'label' => 'Email',
+                    'constraints' => [
+                        new Assert\NotBlank([
+                            'message' => 'Veuillez renseigner votre e-mail.',
+                        ]),
+                        new Assert\Email([
+                            'message' => 'Veuillez renseigner un e-mail valide.',
+                            'mode' => 'html5',
+                        ]),
+                    ],
+                ])
             ->add('subject', ChoiceType::class, [
                 'label' => 'Sujet',
                 'choices' => [
