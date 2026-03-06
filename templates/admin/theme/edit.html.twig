@@ -22,9 +22,23 @@
   {{ form_start(form) }}
 
   <div class="admin-form-grid">
-    <div class="admin-form-field--full">{{ form_row(form.name) }}</div>
-    <div class="admin-form-field--full">{{ form_row(form.description) }}</div>
-    <div class="admin-form-field--full">{{ form_row(form.image) }}</div>
+    <div class="admin-form-field--full">
+      {{ form_label(form.name) }}
+      {{ form_widget(form.name) }}
+      {{ form_errors(form.name) }}
+    </div>
+
+    <div class="admin-form-field--full">
+      {{ form_label(form.description) }}
+      {{ form_widget(form.description) }}
+      {{ form_errors(form.description) }}
+    </div>
+
+    <div class="admin-form-field--full">
+      {{ form_label(form.image) }}
+      {{ form_widget(form.image) }}
+      {{ form_errors(form.image) }}
+    </div>
   </div>
 
   <div class="admin-form-actions">
@@ -32,7 +46,9 @@
     <a href="{{ path('admin_theme_index') }}" class="btn btn-secondary">Annuler</a>
 
     {% if theme.isActive %}
-      <a href="{{ path('admin_theme_delete', {id: theme.id}) }}" class="btn btn-danger">Archiver</a>
+      <a href="{{ path('admin_theme_delete', {'id': theme.id}) }}" class="btn btn-warning">
+        Désactiver
+      </a>
     {% endif %}
   </div>
 

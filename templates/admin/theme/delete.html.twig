@@ -5,13 +5,13 @@
   <link rel="stylesheet" href="{{ asset('styles/admin/theme.css') }}">
 {% endblock %}
 
-{% block title %}Admin - Archiver un thème{% endblock %}
+{% block title %}Admin - Désactiver un thème{% endblock %}
 
 {% block dashboard_content %}
 
   <div class="admin-page-header">
     <div>
-      <h1 class="admin-page-title">Archiver un thème</h1>
+      <h1 class="admin-page-title">Désactiver un thème</h1>
       <p class="admin-page-subtitle">
         Ce thème ne sera plus visible côté utilisateurs.
       </p>
@@ -29,20 +29,20 @@
     {% endif %}
 
     <div class="admin-alert">
-      ⚠️ Ce thème ne sera plus visible côté utilisateurs.
+      ⚠️ Ce thème sera désactivé et ne sera plus visible côté utilisateurs.
       <strong>Les cursus, leçons et commandes ne seront pas supprimés.</strong>
     </div>
 
     <form method="post"
-          action="{{ path('admin_theme_disable', { id: theme.id }) }}"
-          class="inline-form"
-          onsubmit="return confirm('Confirmer l\\'archivage ?');">
+      action="{{ path('admin_theme_disable', {'id': theme.id}) }}"
+      class="inline-form"
+      onsubmit="return confirm('Confirmer la désactivation ?');">
 
       {# IMPORTANT : token dédié à l’action disable #}
       <input type="hidden" name="_token" value="{{ csrf_token('theme_disable' ~ theme.id) }}">
 
       <div class="admin-form-actions">
-        <button class="btn btn-danger" type="submit">Confirmer l’archivage</button>
+        <button class="btn btn-danger" type="submit">Confirmer la désactivation</button>
         <a href="{{ path('admin_theme_index') }}" class="btn btn-secondary">Annuler</a>
       </div>
 

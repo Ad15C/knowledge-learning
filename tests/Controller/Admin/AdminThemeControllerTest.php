@@ -22,7 +22,6 @@ class AdminThemeControllerTest extends WebTestCase
     {
         self::ensureKernelShutdown();
 
-        // ✅ Force HTTPS (security.yaml: requires_channel: https sur ^/admin)
         $this->client = static::createClient([], [
             'HTTPS' => 'on',
             'HTTP_HOST' => 'localhost',
@@ -63,6 +62,7 @@ class AdminThemeControllerTest extends WebTestCase
     {
         $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => $name]);
         self::assertNotNull($theme, sprintf('Theme "%s" not found in fixtures.', $name));
+
         return $theme;
     }
 
@@ -80,14 +80,12 @@ class AdminThemeControllerTest extends WebTestCase
 
     public function testAdminAreaRequiresAdminRole(): void
     {
-        // Non loggé => redirect login ou 403 (selon config)
         $this->client->request('GET', '/admin/themes');
         self::assertTrue(
             $this->client->getResponse()->isRedirection() ||
             $this->client->getResponse()->getStatusCode() === 403
         );
 
-        // ROLE_USER => 403
         $this->loginAsUser();
         $this->client->request('GET', '/admin/themes');
         self::assertResponseStatusCodeSame(403);
@@ -109,6 +107,61 @@ class AdminThemeControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
     }
 
+    public function testNewPageDisplaysFormCsrfAndButtons(): void
+    {
+        $this->loginAsAdmin();
+
+        $crawler = $this->client->request('GET', '/admin/themes/new');
+        self::assertResponseIsSuccessful();
+
+        self::assertGreaterThan(0, $crawler->filter('form')->count());
+
+        self::assertGreaterThan(
+            0,
+            $crawler->filter('input[name="theme[_token]"], input[name="_token"]')->count(),
+            'Le champ CSRF du formulaire est introuvable.'
+        );
+
+        self::assertGreaterThan(
+            0,
+            $crawler->filter('button[type="submit"]')->reduce(
+                fn (Crawler $node) => trim($node->text()) === 'Créer'
+            )->count(),
+            'Le bouton "Créer" est introuvable.'
+        );
+
+        self::assertGreaterThan(
+            0,
+            $crawler->filter('a.btn.btn-secondary')->reduce(
+                fn (Crawler $node) =>
+                    trim($node->text()) === 'Annuler'
+                    && $node->attr('href') === '/admin/themes'
+            )->count(),
+            'Le lien "Annuler" vers la liste est introuvable.'
+        );
+    }
+
+    public function testNewPostInvalidDisplaysValidationError(): void
+    {
+        $this->loginAsAdmin();
+
+        $crawler = $this->client->request('GET', '/admin/themes/new');
+        self::assertResponseIsSuccessful();
+
+        $form = $crawler->filter('form')->first()->form();
+        $form['theme[name]'] = '';
+        $form['theme[description]'] = 'Description test';
+        $form['theme[image]'] = '';
+
+        $this->client->submit($form);
+
+        self::assertResponseStatusCodeSame(200);
+        self::assertStringContainsString(
+            'Le nom est obligatoire.',
+            $this->client->getResponse()->getContent()
+        );
+    }
+
     public function testNewPostCreatesThemeAndRedirects(): void
     {
         $this->loginAsAdmin();
@@ -124,9 +177,41 @@ class AdminThemeControllerTest extends WebTestCase
         $this->client->submit($form);
         self::assertResponseRedirects('/admin/themes');
 
+        $this->client->followRedirect();
+        self::assertResponseIsSuccessful();
+
         $created = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Theme Test Create']);
         self::assertNotNull($created);
         self::assertTrue($created->isActive());
+    }
+
+    public function testNewPostValidRedirectsAndShowsSuccessFlash(): void
+    {
+        $this->loginAsAdmin();
+
+        $crawler = $this->client->request('GET', '/admin/themes/new');
+        self::assertResponseIsSuccessful();
+
+        $form = $crawler->filter('form')->first()->form();
+        $form['theme[name]'] = 'Theme Flash Test';
+        $form['theme[description]'] = 'Description flash';
+        $form['theme[image]'] = '';
+
+        $this->client->submit($form);
+
+        self::assertResponseRedirects('/admin/themes');
+
+        $this->client->followRedirect();
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorTextContains('.flash-success', 'Thème créé.');
+
+        $this->em->clear();
+        $created = $this->em->getRepository(Theme::class)->findOneBy([
+            'name' => 'Theme Flash Test',
+        ]);
+
+        self::assertNotNull($created);
     }
 
     public function testEditPageIsReachableForAdmin(): void
@@ -179,7 +264,6 @@ class AdminThemeControllerTest extends WebTestCase
         $theme->setIsActive(true);
         $this->em->flush();
 
-        // La page /delete doit contenir le form POST vers /disable avec le token CSRF
         $crawler = $this->client->request('GET', '/admin/themes/'.$theme->getId().'/delete');
         self::assertResponseIsSuccessful();
 
@@ -188,13 +272,11 @@ class AdminThemeControllerTest extends WebTestCase
         $formNode = $crawler->filter(sprintf('form[action="%s"]', $action));
         self::assertGreaterThan(0, $formNode->count(), 'Disable form not found on delete confirmation page.');
 
-        // CSRF invalide => 403
         $badForm = $formNode->first()->form();
         $badForm->setValues(['_token' => 'bad']);
         $this->client->submit($badForm);
         self::assertResponseStatusCodeSame(403);
 
-        // CSRF valide => redirect + isActive=false
         $crawler = $this->client->request('GET', '/admin/themes/'.$theme->getId().'/delete');
         self::assertResponseIsSuccessful();
 
@@ -216,13 +298,11 @@ class AdminThemeControllerTest extends WebTestCase
         $theme->setIsActive(false);
         $this->em->flush();
 
-        // CSRF invalide => 403
         $this->client->request('POST', '/admin/themes/'.$theme->getId().'/activate', [
             '_token' => 'bad',
         ]);
         self::assertResponseStatusCodeSame(403);
 
-        // Token présent sur l'index status=archived (ton Twig affiche le form "Restaurer")
         $crawler = $this->client->request('GET', '/admin/themes?status=archived');
         self::assertResponseIsSuccessful();
 

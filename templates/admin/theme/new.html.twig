@@ -22,9 +22,23 @@
     {{ form_start(form) }}
 
       <div class="admin-form-grid">
-        <div class="admin-form-field--full">{{ form_row(form.name) }}</div>
-        <div class="admin-form-field--full">{{ form_row(form.description) }}</div>
-        <div class="admin-form-field--full">{{ form_row(form.image) }}</div>
+        <div class="admin-form-field--full">
+          {{ form_label(form.name) }}
+          {{ form_widget(form.name) }}
+          {{ form_errors(form.name) }}
+        </div>
+
+        <div class="admin-form-field--full">
+          {{ form_label(form.description) }}
+          {{ form_widget(form.description) }}
+          {{ form_errors(form.description) }}
+        </div>
+
+        <div class="admin-form-field--full">
+          {{ form_label(form.image) }}
+          {{ form_widget(form.image) }}
+          {{ form_errors(form.image) }}
+        </div>
       </div>
 
       <div class="admin-form-actions">

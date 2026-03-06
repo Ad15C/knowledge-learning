@@ -139,11 +139,11 @@ class ThemeRepository extends ServiceEntityRepository
         ?string $q = null,
         string $status = 'all',
         string $sort = 'created_desc',
-        bool $onlyActiveCursus = true
+        bool $onlyActiveCursus = true,
+        bool $requireCursus = false
     ): array {
         $qb = $this->createQueryBuilder('t')->distinct();
 
-        // Join cursus (optionnel : pour afficher la liste des cursus sous le thème)
         if ($onlyActiveCursus) {
             $qb->leftJoin('t.cursus', 'c', 'WITH', 'c.isActive = true');
         } else {
@@ -151,7 +151,10 @@ class ThemeRepository extends ServiceEntityRepository
         }
         $qb->addSelect('c');
 
-        // Flag visibilité front : theme actif + EXISTS(cursus actif avec leçon active)
+        if ($requireCursus) {
+            $qb->andWhere('c.id IS NOT NULL');
+        }
+
         $qb->addSelect(
             "CASE WHEN (t.isActive = true AND EXISTS (
                 SELECT 1
@@ -163,7 +166,7 @@ class ThemeRepository extends ServiceEntityRepository
 
         if ($q) {
             $qb->andWhere('LOWER(t.name) LIKE :q')
-               ->setParameter('q', '%'.mb_strtolower(trim($q)).'%');
+            ->setParameter('q', '%'.mb_strtolower(trim($q)).'%');
         }
 
         if ($status === 'active') {
