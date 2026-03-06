@@ -96,14 +96,9 @@ class AdminLessonEditTest extends WebTestCase
 
     private function getSelectOptionLabels(Crawler $crawler, string $selectName): array
     {
-        $labels = [];
-
-        $crawler->filter(sprintf('select[name="%s"] option', $selectName))
-            ->each(function (Crawler $opt) use (&$labels) {
-                $labels[] = trim($opt->text());
-            });
-
-        return $labels;
+        return $crawler
+            ->filter(sprintf('select[name="%s"] option', $selectName))
+            ->each(fn (Crawler $opt) => trim($opt->text()));
     }
 
     private function getSelectedOptionValue(Crawler $crawler, string $selectName): ?string
@@ -128,7 +123,6 @@ class AdminLessonEditTest extends WebTestCase
             'the value you selected is not a valid choice',
             'is not a valid choice',
             'selected choice is invalid',
-
             "cette valeur n'est pas valide",
             "cette valeur n’est pas valide",
             'le choix sélectionné est invalide',
@@ -137,7 +131,7 @@ class AdminLessonEditTest extends WebTestCase
             "la valeur sélectionnée n’est pas valide",
             "la valeur sélectionnée n'est pas un choix valide",
             "la valeur sélectionnée n’est pas un choix valide",
-            'n’est pas un choix valide',
+            "n’est pas un choix valide",
             "n'est pas un choix valide",
             'choix invalide',
             'valeur invalide',
@@ -152,31 +146,65 @@ class AdminLessonEditTest extends WebTestCase
         return false;
     }
 
-    // -------------------------------------------------
-    // GET OK
-    // -------------------------------------------------
-
     public function testEditGetOk(): void
     {
         $this->loginAsAdmin();
 
         $lesson = $this->getAnyLesson();
+        $lesson->setTitle('Titre avant edit');
+        $lesson->setPrice('42.50');
+        $lesson->setFiche('Fiche avant edit');
+        $lesson->setVideoUrl('https://example.test/video');
+        $lesson->setImage('/img-lesson.jpg');
+        $lesson->setIsActive(true);
+        $this->em->flush();
+
+        $id = $lesson->getId();
+        self::assertNotNull($id);
+
+        $crawler = $this->client->request('GET', sprintf('https://localhost/admin/lesson/%d/edit', $id));
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorTextContains('h1.admin-page-title', 'Modifier : Titre avant edit');
+        self::assertSelectorExists('.admin-page-header');
+        self::assertSelectorExists('a.btn.btn-secondary[href="/admin/lesson"]');
+
+        self::assertSelectorExists('form');
+        self::assertSelectorExists('input[name="lesson[title]"]');
+        self::assertSelectorExists('select[name="lesson[cursus]"]');
+        self::assertSelectorExists('input[name="lesson[price]"]');
+        self::assertSelectorExists('textarea[name="lesson[fiche]"]');
+        self::assertSelectorExists('input[name="lesson[videoUrl]"]');
+        self::assertSelectorExists('input[name="lesson[image]"]');
+        self::assertGreaterThan(0, $crawler->selectButton('Enregistrer')->count());
+
+        $form = $crawler->filter('form')->first()->form();
+        self::assertSame('Titre avant edit', $form['lesson[title]']->getValue());
+        self::assertStringContainsString('42', (string) $form['lesson[price]']->getValue());
+        self::assertSame('Fiche avant edit', $form['lesson[fiche]']->getValue());
+        self::assertSame('https://example.test/video', $form['lesson[videoUrl]']->getValue());
+        self::assertSame('/img-lesson.jpg', $form['lesson[image]']->getValue());
+
+        self::assertSelectorExists('a.btn.btn-danger');
+        self::assertSelectorTextContains('a.btn.btn-danger', 'Désactiver');
+    }
+
+    public function testEditGetDoesNotShowDisableButtonWhenLessonIsInactive(): void
+    {
+        $this->loginAsAdmin();
+
+        $lesson = $this->getAnyLesson();
+        $lesson->setIsActive(false);
+        $this->em->flush();
+
         $id = $lesson->getId();
         self::assertNotNull($id);
 
         $this->client->request('GET', sprintf('https://localhost/admin/lesson/%d/edit', $id));
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorExists('form');
-        self::assertSelectorExists('input[name="lesson[title]"]');
-        self::assertSelectorExists('select[name="lesson[cursus]"]');
-        self::assertSelectorExists('input[name="lesson[price]"]');
-        self::assertGreaterThan(0, $this->client->getCrawler()->selectButton('Enregistrer')->count());
+        self::assertSelectorNotExists('a.btn.btn-danger');
     }
-
-    // -------------------------------------------------
-    // Cas important : le cursus courant est archivé
-    // -------------------------------------------------
 
     public function testEditGetIncludesCurrentArchivedCursusAndDoesNotListOtherArchivedCursus(): void
     {
@@ -217,10 +245,6 @@ class AdminLessonEditTest extends WebTestCase
         $selectedValue = $this->getSelectedOptionValue($crawler, 'lesson[cursus]');
         self::assertSame((string) $currentId, (string) $selectedValue, 'Current cursus should be selected by default.');
     }
-
-    // -------------------------------------------------
-    // POST OK : édition simple
-    // -------------------------------------------------
 
     public function testEditPostOkWithCurrentArchivedCursusKeepsItAndUpdatesFields(): void
     {
@@ -264,18 +288,16 @@ class AdminLessonEditTest extends WebTestCase
         self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Leçon modifiée.');
 
         $this->em->clear();
+
         /** @var Lesson|null $updated */
         $updated = $this->em->getRepository(Lesson::class)->find($lessonId);
         self::assertNotNull($updated);
 
         self::assertSame($newTitle, $updated->getTitle());
-        self::assertSame((string) $currentId, (string) $updated->getCursus()?->getId(), 'Cursus should remain the current (archived) one.');
+        self::assertSame((string) $currentId, (string) $updated->getCursus()?->getId());
         self::assertEquals(99.90, (float) $updated->getPrice());
+        self::assertSame('Fiche edit', $updated->getFiche());
     }
-
-    // -------------------------------------------------
-    // POST OK : déplacer la leçon vers un cursus actif
-    // -------------------------------------------------
 
     public function testEditPostCanMoveLessonToAnotherActiveCursus(): void
     {
@@ -313,15 +335,12 @@ class AdminLessonEditTest extends WebTestCase
 
         $this->em->clear();
         $updated = $this->em->getRepository(Lesson::class)->find($lessonId);
+
         self::assertNotNull($updated);
         self::assertSame((string) $targetId, (string) $updated->getCursus()?->getId());
         self::assertSame($newTitle, $updated->getTitle());
         self::assertEquals(12.34, (float) $updated->getPrice());
     }
-
-    // -------------------------------------------------
-    // Sécurité formulaire
-    // -------------------------------------------------
 
     public function testEditPostRejectsOtherArchivedCursusId(): void
     {
@@ -365,15 +384,15 @@ class AdminLessonEditTest extends WebTestCase
         $content = (string) $this->client->getResponse()->getContent();
         self::assertTrue(
             $this->responseHasInvalidChoiceMessage($content),
-            'Expected an "invalid choice" validation error when posting an archived cursus not equal to the current one.'
+            'Expected an invalid choice validation error when posting an archived cursus not equal to the current one.'
         );
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Lesson::class)->find($lessonId);
-        self::assertNotNull($reloaded);
 
-        self::assertSame($originalTitle, $reloaded->getTitle(), 'Lesson should not be modified when form is invalid.');
-        self::assertNotSame((string) $otherArchivedId, (string) $reloaded->getCursus()?->getId(), 'Lesson cursus should not be set to invalid archived cursus.');
+        self::assertNotNull($reloaded);
+        self::assertSame($originalTitle, $reloaded->getTitle());
+        self::assertNotSame((string) $otherArchivedId, (string) $reloaded->getCursus()?->getId());
     }
 
     public function testEditAnonymousIsRedirectedToLogin(): void
@@ -384,11 +403,7 @@ class AdminLessonEditTest extends WebTestCase
 
         $this->client->request('GET', sprintf('https://localhost/admin/lesson/%d/edit', $lessonId));
 
-        self::assertTrue(
-            $this->client->getResponse()->isRedirection(),
-            'Anonymous user should be redirected.'
-        );
-
+        self::assertTrue($this->client->getResponse()->isRedirection());
         self::assertStringContainsString('/login', (string) $this->client->getResponse()->headers->get('Location'));
     }
 

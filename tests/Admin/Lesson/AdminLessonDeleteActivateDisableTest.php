@@ -58,6 +58,7 @@ class AdminLessonDeleteActivateDisableTest extends WebTestCase
         $lesson = $this->em->getRepository(Lesson::class)->findOneBy([]);
         self::assertNotNull($lesson, 'No lesson found in fixtures.');
         self::assertNotNull($lesson->getId(), 'Fixture lesson must have an id.');
+
         return $lesson;
     }
 
@@ -79,7 +80,10 @@ class AdminLessonDeleteActivateDisableTest extends WebTestCase
         $crawler = $this->client->request('GET', sprintf('https://localhost/admin/lesson/%d/delete', $lessonId));
         self::assertResponseIsSuccessful();
 
-        $tokenNode = $crawler->filter('input[name="_token"]');
+        $form = $crawler->filter(sprintf('form[action="/admin/lesson/%d/disable"]', $lessonId));
+        self::assertGreaterThan(0, $form->count(), 'Disable form not found on delete page.');
+
+        $tokenNode = $form->filter('input[name="_token"]');
         self::assertGreaterThan(0, $tokenNode->count(), 'CSRF token input not found on delete page.');
 
         $token = (string) $tokenNode->attr('value');
@@ -93,8 +97,6 @@ class AdminLessonDeleteActivateDisableTest extends WebTestCase
         $crawler = $this->client->request('GET', 'https://localhost/admin/lesson');
         self::assertResponseIsSuccessful();
 
-        // Form de restauration dans index.html.twig :
-        // <form method="post" action="/admin/lesson/{id}/activate"> <input type="hidden" name="_token" value="...">
         $formNode = $crawler->filter(sprintf('form[action="/admin/lesson/%d/activate"]', $lessonId));
         self::assertGreaterThan(0, $formNode->count(), 'Activate form not found on index page for this lesson.');
 
@@ -110,28 +112,36 @@ class AdminLessonDeleteActivateDisableTest extends WebTestCase
     private function assertAnonymousRedirectsToLogin(): void
     {
         self::assertTrue($this->client->getResponse()->isRedirection(), 'Anonymous should be redirected.');
+
         $location = (string) $this->client->getResponse()->headers->get('Location');
         self::assertStringContainsString('/login', $location, 'Expected redirect to /login.');
     }
-
-    // -------------------------------------------------
-    // GET /delete
-    // -------------------------------------------------
 
     public function testDeleteConfirmGetOkAsAdmin(): void
     {
         $this->loginAsAdmin();
 
         $lesson = $this->getAnyLesson();
+        $lesson->setTitle('Leçon test suppression');
+        $lesson->setPrice('49.90');
+        $this->em->flush();
+
         $lessonId = (int) $lesson->getId();
 
         $this->client->request('GET', sprintf('https://localhost/admin/lesson/%d/delete', $lessonId));
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorTextContains('h1', 'Archiver une leçon');
-        self::assertSelectorExists('form[action="/admin/lesson/'.$lessonId.'/disable"]');
+        self::assertSelectorTextContains('h1.admin-page-title', 'Désactiver une leçon');
+        self::assertSelectorTextContains('.lesson-detail-title', 'Leçon test suppression');
+        self::assertSelectorExists('form[action="/admin/lesson/' . $lessonId . '/disable"]');
         self::assertSelectorExists('input[name="_token"]');
-        self::assertSelectorTextContains('button', 'Confirmer l’archivage');
+        self::assertSelectorTextContains('button.btn.btn-danger', 'Confirmer la désactivation');
+        self::assertSelectorExists('a.btn.btn-secondary[href="/admin/lesson"]');
+        self::assertSelectorTextContains('.admin-alert.admin-alert-danger', 'Cette leçon sera désactivée');
+
+        $content = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('Cursus', $content);
+        self::assertStringContainsString('Prix', $content);
     }
 
     public function testDeleteConfirmGetRedirectsWhenAnonymous(): void
@@ -153,10 +163,6 @@ class AdminLessonDeleteActivateDisableTest extends WebTestCase
         $this->client->request('GET', sprintf('https://localhost/admin/lesson/%d/delete', $lessonId));
         self::assertResponseStatusCodeSame(403);
     }
-
-    // -------------------------------------------------
-    // POST /disable
-    // -------------------------------------------------
 
     public function testDisableSetsIsActiveFalseAndRedirectsWithValidCsrf(): void
     {
@@ -180,6 +186,7 @@ class AdminLessonDeleteActivateDisableTest extends WebTestCase
         self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Leçon archivée.');
 
         $this->em->clear();
+
         /** @var Lesson|null $reloaded */
         $reloaded = $this->em->getRepository(Lesson::class)->find($lessonId);
         self::assertNotNull($reloaded);
@@ -232,10 +239,6 @@ class AdminLessonDeleteActivateDisableTest extends WebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
-    // -------------------------------------------------
-    // POST /activate
-    // -------------------------------------------------
-
     public function testActivateSetsIsActiveTrueAndRedirectsWithValidCsrf(): void
     {
         $this->loginAsAdmin();
@@ -244,7 +247,6 @@ class AdminLessonDeleteActivateDisableTest extends WebTestCase
         $lesson = $this->setLessonActive($lesson, false);
         $lessonId = (int) $lesson->getId();
 
-        // Le token est rendu dans le formulaire de restauration sur /admin/lesson
         $csrf = $this->extractActivateCsrfFromIndexPage($lessonId);
 
         $this->client->request('POST', sprintf('https://localhost/admin/lesson/%d/activate', $lessonId), [
@@ -313,6 +315,9 @@ class AdminLessonDeleteActivateDisableTest extends WebTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        $this->em->close();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

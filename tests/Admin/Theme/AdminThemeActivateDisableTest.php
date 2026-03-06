@@ -44,19 +44,37 @@ class AdminThemeActivateDisableTest extends WebTestCase
         $this->client->loginUser($admin);
     }
 
+    private function loginAsUser(): void
+    {
+        $user = $this->em->getRepository(User::class)
+            ->findOneBy(['email' => TestUserFixtures::USER_EMAIL]);
+
+        self::assertNotNull($user, 'User fixture not found.');
+        $this->client->loginUser($user);
+    }
+
+    private function getThemeByName(string $name): Theme
+    {
+        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => $name]);
+        self::assertNotNull($theme, sprintf('Theme "%s" not found.', $name));
+
+        return $theme;
+    }
+
     private function extractCsrfTokenFromCrawler(Crawler $crawler, string $formSelector = 'form'): string
     {
-        $tokenNode = $crawler->filter($formSelector.' input[name="_token"]')->first();
+        $tokenNode = $crawler->filter($formSelector . ' input[name="_token"]')->first();
         self::assertGreaterThan(0, $tokenNode->count(), 'CSRF token input not found.');
+
         $token = (string) $tokenNode->attr('value');
         self::assertNotEmpty($token, 'CSRF token value is empty.');
+
         return $token;
     }
 
     private function getDisableTokenForTheme(int $themeId): string
     {
-        // Token disable présent sur la page GET /delete
-        $crawler = $this->client->request('GET', 'https://localhost/admin/themes/'.$themeId.'/delete');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/themes/' . $themeId . '/delete');
         self::assertResponseIsSuccessful();
 
         $formSelector = sprintf('form[action="/admin/themes/%d/disable"][method="post"]', $themeId);
@@ -67,7 +85,6 @@ class AdminThemeActivateDisableTest extends WebTestCase
 
     private function getActivateTokenForThemeFromArchivedList(int $themeId): string
     {
-        // Token activate présent sur la page listant les archivés
         $crawler = $this->client->request('GET', 'https://localhost/admin/themes?status=archived');
         self::assertResponseIsSuccessful();
 
@@ -81,10 +98,9 @@ class AdminThemeActivateDisableTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Informatique']);
-        self::assertNotNull($theme);
+        $theme = $this->getThemeByName('Informatique');
 
-        $this->client->request('POST', 'https://localhost/admin/themes/'.$theme->getId().'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/themes/' . $theme->getId() . '/disable', [
             '_token' => 'bad',
         ]);
 
@@ -95,16 +111,14 @@ class AdminThemeActivateDisableTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Informatique']);
-        self::assertNotNull($theme);
-
+        $theme = $this->getThemeByName('Informatique');
         $theme->setIsActive(true);
         $this->em->flush();
 
         $id = $theme->getId();
         $token = $this->getDisableTokenForTheme($id);
 
-        $this->client->request('POST', 'https://localhost/admin/themes/'.$id.'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/themes/' . $id . '/disable', [
             '_token' => $token,
         ]);
 
@@ -118,6 +132,7 @@ class AdminThemeActivateDisableTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Theme::class)->find($id);
+
         self::assertNotNull($reloaded);
         self::assertFalse($reloaded->isActive());
     }
@@ -126,16 +141,14 @@ class AdminThemeActivateDisableTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Informatique']);
-        self::assertNotNull($theme);
-
+        $theme = $this->getThemeByName('Informatique');
         $theme->setIsActive(false);
         $this->em->flush();
 
         $id = $theme->getId();
         $token = $this->getDisableTokenForTheme($id);
 
-        $this->client->request('POST', 'https://localhost/admin/themes/'.$id.'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/themes/' . $id . '/disable', [
             '_token' => $token,
         ]);
 
@@ -149,6 +162,7 @@ class AdminThemeActivateDisableTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Theme::class)->find($id);
+
         self::assertNotNull($reloaded);
         self::assertFalse($reloaded->isActive());
     }
@@ -157,10 +171,9 @@ class AdminThemeActivateDisableTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Jardinage']);
-        self::assertNotNull($theme);
+        $theme = $this->getThemeByName('Jardinage');
 
-        $this->client->request('POST', 'https://localhost/admin/themes/'.$theme->getId().'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/themes/' . $theme->getId() . '/activate', [
             '_token' => 'bad',
         ]);
 
@@ -171,17 +184,14 @@ class AdminThemeActivateDisableTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Jardinage']);
-        self::assertNotNull($theme);
-
-        // On veut activer un thème archivé => on force false pour qu'il apparaisse dans status=archived
+        $theme = $this->getThemeByName('Jardinage');
         $theme->setIsActive(false);
         $this->em->flush();
 
         $id = $theme->getId();
         $token = $this->getActivateTokenForThemeFromArchivedList($id);
 
-        $this->client->request('POST', 'https://localhost/admin/themes/'.$id.'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/themes/' . $id . '/activate', [
             '_token' => $token,
         ]);
 
@@ -195,6 +205,7 @@ class AdminThemeActivateDisableTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Theme::class)->find($id);
+
         self::assertNotNull($reloaded);
         self::assertTrue($reloaded->isActive());
     }
@@ -203,28 +214,20 @@ class AdminThemeActivateDisableTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Jardinage']);
-        self::assertNotNull($theme);
-
+        $theme = $this->getThemeByName('Jardinage');
         $id = $theme->getId();
 
-        // On veut tester "activer alors que déjà actif"
-        $theme->setIsActive(true);
-        $this->em->flush();
-
-        // Astuce : on passe temporairement en archived pour récupérer le token depuis l'UI,
-        // puis on repasse en active AVANT l'appel POST.
         $theme->setIsActive(false);
         $this->em->flush();
 
         $token = $this->getActivateTokenForThemeFromArchivedList($id);
 
-        // Revenir à actif => le POST /activate devient idempotent
         $theme = $this->em->getRepository(Theme::class)->find($id);
+        self::assertNotNull($theme);
         $theme->setIsActive(true);
         $this->em->flush();
 
-        $this->client->request('POST', 'https://localhost/admin/themes/'.$id.'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/themes/' . $id . '/activate', [
             '_token' => $token,
         ]);
 
@@ -238,7 +241,65 @@ class AdminThemeActivateDisableTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Theme::class)->find($id);
+
         self::assertNotNull($reloaded);
         self::assertTrue($reloaded->isActive());
+    }
+
+    public function testDisableRedirectsToLoginWhenAnonymous(): void
+    {
+        $theme = $this->getThemeByName('Informatique');
+
+        $this->client->request('POST', 'https://localhost/admin/themes/' . $theme->getId() . '/disable', [
+            '_token' => 'whatever',
+        ]);
+
+        self::assertResponseRedirects('/login');
+    }
+
+    public function testActivateRedirectsToLoginWhenAnonymous(): void
+    {
+        $theme = $this->getThemeByName('Jardinage');
+
+        $this->client->request('POST', 'https://localhost/admin/themes/' . $theme->getId() . '/activate', [
+            '_token' => 'whatever',
+        ]);
+
+        self::assertResponseRedirects('/login');
+    }
+
+    public function testDisableForbiddenForRoleUser(): void
+    {
+        $this->loginAsUser();
+
+        $theme = $this->getThemeByName('Informatique');
+
+        $this->client->request('POST', 'https://localhost/admin/themes/' . $theme->getId() . '/disable', [
+            '_token' => 'whatever',
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testActivateForbiddenForRoleUser(): void
+    {
+        $this->loginAsUser();
+
+        $theme = $this->getThemeByName('Jardinage');
+
+        $this->client->request('POST', 'https://localhost/admin/themes/' . $theme->getId() . '/activate', [
+            '_token' => 'whatever',
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

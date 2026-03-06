@@ -47,7 +47,6 @@ class AdminPurchasesControllerTest extends WebTestCase
             PurchaseFixtures::class,
         ]);
 
-        // Purchase dédiée au test de changement de statut
         $user = $this->getUser();
 
         $purchase = new Purchase();
@@ -56,7 +55,7 @@ class AdminPurchasesControllerTest extends WebTestCase
         $this->em->persist($purchase);
         $this->em->flush();
 
-        self::assertNotNull($purchase->getId(), 'Purchase ID should be generated.');
+        self::assertNotNull($purchase->getId());
         $this->purchaseId = (int) $purchase->getId();
     }
 
@@ -80,12 +79,12 @@ class AdminPurchasesControllerTest extends WebTestCase
 
     private function loginAsAdmin(): void
     {
-        $this->client->loginUser($this->getAdmin());
+        $this->client->loginUser($this->getAdmin(), 'main');
     }
 
     private function loginAsUser(): void
     {
-        $this->client->loginUser($this->getUser());
+        $this->client->loginUser($this->getUser(), 'main');
     }
 
     private function assertAnonymousRedirectsToLogin(): void
@@ -105,9 +104,6 @@ class AdminPurchasesControllerTest extends WebTestCase
         return $purchase;
     }
 
-    /**
-     * Récupère le CSRF token depuis la page show.
-     */
     private function fetchCsrfTokenFromShowPage(int $purchaseId): string
     {
         $crawler = $this->client->request('GET', '/admin/purchases/' . $purchaseId);
@@ -122,14 +118,10 @@ class AdminPurchasesControllerTest extends WebTestCase
         );
 
         $token = (string) $tokenNode->first()->attr('value');
-        self::assertNotSame('', $token, 'CSRF token value should not be empty.');
+        self::assertNotSame('', $token);
 
         return $token;
     }
-
-    // ---------------------------
-    // ROUTES
-    // ---------------------------
 
     public function testAdminPurchaseRoutesAreCorrect(): void
     {
@@ -153,10 +145,6 @@ class AdminPurchasesControllerTest extends WebTestCase
         self::assertSame('\d+', $routes->get('admin_purchase_update_status')->getRequirement('id'));
     }
 
-    // ---------------------------
-    // SECURITY
-    // ---------------------------
-
     public function testIndexAccessibleForAdmin(): void
     {
         $this->loginAsAdmin();
@@ -177,6 +165,43 @@ class AdminPurchasesControllerTest extends WebTestCase
     {
         $this->client->request('GET', '/admin/purchases');
         $this->assertAnonymousRedirectsToLogin();
+    }
+
+    public function testIndexAcceptsValidFilters(): void
+    {
+        $this->loginAsAdmin();
+
+        $user = $this->getUser();
+
+        $this->client->request('GET', '/admin/purchases', [
+            'q' => 'test',
+            'status' => Purchase::STATUS_PAID,
+            'user' => (string) $user->getId(),
+            'dateFrom' => '2026-01-01',
+            'dateTo' => '2026-01-31',
+            'sort' => 'total',
+            'dir' => 'ASC',
+            'page' => '2',
+        ]);
+
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testIndexIgnoresInvalidStatusSortDirAndDates(): void
+    {
+        $this->loginAsAdmin();
+
+        $this->client->request('GET', '/admin/purchases', [
+            'status' => 'not_allowed',
+            'sort' => 'hack',
+            'dir' => 'SIDEWAYS',
+            'dateFrom' => '2026-2-01',
+            'dateTo' => 'invalid-date',
+            'page' => '-5',
+        ]);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('body');
     }
 
     public function testShowAccessibleForAdmin(): void
@@ -201,73 +226,182 @@ class AdminPurchasesControllerTest extends WebTestCase
         $this->assertAnonymousRedirectsToLogin();
     }
 
-    // ---------------------------
-    // UPDATE STATUS
-    // ---------------------------
+    public function testShowReturns404WhenPurchaseDoesNotExist(): void
+    {
+        $this->loginAsAdmin();
 
-    public function testUpdateStatusAccessibleForAdminAndChangesStatus(): void
+        $this->client->request('GET', '/admin/purchases/999999');
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testUpdateStatusAccessibleForAdminAndChangesCartToPaid(): void
     {
         $this->loginAsAdmin();
 
         $token = $this->fetchCsrfTokenFromShowPage($this->purchaseId);
-        $url = '/admin/purchases/' . $this->purchaseId . '/status';
 
-        $this->client->request('POST', $url, [
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
             '_token' => $token,
             'status' => Purchase::STATUS_PAID,
         ]);
 
-        self::assertTrue($this->client->getResponse()->isRedirection(), 'Should redirect back to show.');
+        self::assertResponseRedirects('/admin/purchases/' . $this->purchaseId);
 
         $purchase = $this->reloadPurchase();
         self::assertSame(Purchase::STATUS_PAID, $purchase->getStatus());
-        self::assertNotNull($purchase->getPaidAt(), 'paidAt should be set when marking as paid.');
+        self::assertNotNull($purchase->getPaidAt());
     }
 
-    public function testUpdateStatusForbiddenForRoleUser(): void
+    public function testUpdateStatusAccessibleForAdminAndChangesCartToPending(): void
     {
-        $this->loginAsUser();
+        $this->loginAsAdmin();
 
-        $url = '/admin/purchases/' . $this->purchaseId . '/status';
+        $purchase = $this->reloadPurchase();
+        $purchase->setPaidAt(new \DateTimeImmutable());
+        $this->em->flush();
 
-        $this->client->request('POST', $url, [
-            '_token' => 'fake',
+        $token = $this->fetchCsrfTokenFromShowPage($this->purchaseId);
+
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
+            '_token' => $token,
+            'status' => Purchase::STATUS_PENDING,
+        ]);
+
+        self::assertResponseRedirects('/admin/purchases/' . $this->purchaseId);
+
+        $reloaded = $this->reloadPurchase();
+        self::assertSame(Purchase::STATUS_PENDING, $reloaded->getStatus());
+        self::assertNull($reloaded->getPaidAt());
+    }
+
+    public function testUpdateStatusAccessibleForAdminAndChangesCartToCanceled(): void
+    {
+        $this->loginAsAdmin();
+
+        $token = $this->fetchCsrfTokenFromShowPage($this->purchaseId);
+
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
+            '_token' => $token,
+            'status' => Purchase::STATUS_CANCELED,
+        ]);
+
+        self::assertResponseRedirects('/admin/purchases/' . $this->purchaseId);
+
+        $reloaded = $this->reloadPurchase();
+        self::assertSame(Purchase::STATUS_CANCELED, $reloaded->getStatus());
+    }
+
+    public function testUpdateStatusPendingToPaidSetsPaidAt(): void
+    {
+        $this->loginAsAdmin();
+
+        $purchase = $this->reloadPurchase();
+        $purchase->markPending();
+        $purchase->setPaidAt(null);
+        $this->em->flush();
+
+        $token = $this->fetchCsrfTokenFromShowPage($this->purchaseId);
+
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
+            '_token' => $token,
             'status' => Purchase::STATUS_PAID,
         ]);
 
-        self::assertResponseStatusCodeSame(403);
+        self::assertResponseRedirects('/admin/purchases/' . $this->purchaseId);
+
+        $reloaded = $this->reloadPurchase();
+        self::assertSame(Purchase::STATUS_PAID, $reloaded->getStatus());
+        self::assertNotNull($reloaded->getPaidAt());
     }
 
-    public function testUpdateStatusRedirectsWhenAnonymous(): void
+    public function testUpdateStatusPendingToCanceledKeepsPaidAtNull(): void
     {
-        $url = '/admin/purchases/' . $this->purchaseId . '/status';
+        $this->loginAsAdmin();
 
-        $this->client->request('POST', $url, [
-            '_token' => 'fake',
-            'status' => Purchase::STATUS_PAID,
+        $purchase = $this->reloadPurchase();
+        $purchase->markPending();
+        $purchase->setPaidAt(null);
+        $this->em->flush();
+
+        $token = $this->fetchCsrfTokenFromShowPage($this->purchaseId);
+
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
+            '_token' => $token,
+            'status' => Purchase::STATUS_CANCELED,
         ]);
 
-        $this->assertAnonymousRedirectsToLogin();
+        self::assertResponseRedirects('/admin/purchases/' . $this->purchaseId);
+
+        $reloaded = $this->reloadPurchase();
+        self::assertSame(Purchase::STATUS_CANCELED, $reloaded->getStatus());
+        self::assertNull($reloaded->getPaidAt());
+    }
+
+    public function testUpdateStatusPaidToCanceledRemovesPaidAt(): void
+    {
+        $this->loginAsAdmin();
+
+        $purchase = $this->reloadPurchase();
+        $purchase->markPaid(new \DateTimeImmutable());
+        $this->em->flush();
+
+        $token = $this->fetchCsrfTokenFromShowPage($this->purchaseId);
+
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
+            '_token' => $token,
+            'status' => Purchase::STATUS_CANCELED,
+        ]);
+
+        self::assertResponseRedirects('/admin/purchases/' . $this->purchaseId);
+
+        $reloaded = $this->reloadPurchase();
+        self::assertSame(Purchase::STATUS_CANCELED, $reloaded->getStatus());
+        self::assertNull($reloaded->getPaidAt());
+    }
+
+    public function testUpdateStatusSameStatusDoesNothing(): void
+    {
+        $this->loginAsAdmin();
+
+        $purchase = $this->reloadPurchase();
+        $purchase->markPending();
+        $purchase->setPaidAt(null);
+        $this->em->flush();
+
+        $token = $this->fetchCsrfTokenFromShowPage($this->purchaseId);
+
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
+            '_token' => $token,
+            'status' => Purchase::STATUS_PENDING,
+        ]);
+
+        self::assertResponseRedirects('/admin/purchases/' . $this->purchaseId);
+
+        $reloaded = $this->reloadPurchase();
+        self::assertSame(Purchase::STATUS_PENDING, $reloaded->getStatus());
+        self::assertNull($reloaded->getPaidAt());
     }
 
     public function testUpdateStatusRejectsInvalidStatus(): void
     {
         $this->loginAsAdmin();
 
-        $before = $this->reloadPurchase()->getStatus();
+        $before = $this->reloadPurchase();
+        $beforeStatus = $before->getStatus();
+        $beforePaidAt = $before->getPaidAt();
 
         $token = $this->fetchCsrfTokenFromShowPage($this->purchaseId);
-        $url = '/admin/purchases/' . $this->purchaseId . '/status';
 
-        $this->client->request('POST', $url, [
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
             '_token' => $token,
             'status' => 'invalid_status_value',
         ]);
 
-        self::assertTrue($this->client->getResponse()->isRedirection());
+        self::assertResponseRedirects('/admin/purchases/' . $this->purchaseId);
 
-        $after = $this->reloadPurchase()->getStatus();
-        self::assertSame($before, $after, 'Status should not change when invalid status is posted.');
+        $after = $this->reloadPurchase();
+        self::assertSame($beforeStatus, $after->getStatus());
+        self::assertEquals($beforePaidAt, $after->getPaidAt());
     }
 
     public function testUpdateStatusRejectsForbiddenTransition(): void
@@ -279,22 +413,82 @@ class AdminPurchasesControllerTest extends WebTestCase
         $this->em->flush();
 
         $token = $this->fetchCsrfTokenFromShowPage($this->purchaseId);
-        $url = '/admin/purchases/' . $this->purchaseId . '/status';
 
-        $this->client->request('POST', $url, [
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
             '_token' => $token,
             'status' => Purchase::STATUS_CART,
         ]);
 
-        self::assertTrue($this->client->getResponse()->isRedirection());
+        self::assertResponseRedirects('/admin/purchases/' . $this->purchaseId);
 
         $reloaded = $this->reloadPurchase();
-        self::assertSame(Purchase::STATUS_PAID, $reloaded->getStatus(), 'Forbidden transition should not change status.');
+        self::assertSame(Purchase::STATUS_PAID, $reloaded->getStatus());
+        self::assertNotNull($reloaded->getPaidAt());
+    }
+
+    public function testUpdateStatusRejectsInvalidCsrf(): void
+    {
+        $this->loginAsAdmin();
+
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
+            '_token' => 'bad-token',
+            'status' => Purchase::STATUS_PAID,
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testUpdateStatusRejectsMissingCsrf(): void
+    {
+        $this->loginAsAdmin();
+
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
+            'status' => Purchase::STATUS_PAID,
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testUpdateStatusReturns404WhenPurchaseDoesNotExist(): void
+    {
+        $this->loginAsAdmin();
+
+        $this->client->request('POST', '/admin/purchases/999999/status', [
+            '_token' => 'whatever',
+            'status' => Purchase::STATUS_PAID,
+        ]);
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testUpdateStatusForbiddenForRoleUser(): void
+    {
+        $this->loginAsUser();
+
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
+            '_token' => 'fake',
+            'status' => Purchase::STATUS_PAID,
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testUpdateStatusRedirectsWhenAnonymous(): void
+    {
+        $this->client->request('POST', '/admin/purchases/' . $this->purchaseId . '/status', [
+            '_token' => 'fake',
+            'status' => Purchase::STATUS_PAID,
+        ]);
+
+        $this->assertAnonymousRedirectsToLogin();
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
-        $this->em->close();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

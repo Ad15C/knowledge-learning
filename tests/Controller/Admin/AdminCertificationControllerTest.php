@@ -57,21 +57,31 @@ class AdminCertificationControllerTest extends WebTestCase
         return $user;
     }
 
-    private function createCertification(): Certification
+    private function getLessonFixture(): Lesson
     {
         $lesson = $this->em->getRepository(Lesson::class)->findOneBy([
             'title' => 'Découverte de l’instrument',
         ]);
+
         self::assertNotNull($lesson, 'Leçon fixture introuvable.');
 
+        return $lesson;
+    }
+
+    private function createCertification(?string $certificateCode = 'CERT_TEST_001'): Certification
+    {
+        $lesson = $this->getLessonFixture();
         $holder = $this->getUser();
 
         $cert = (new Certification())
             ->setUser($holder)
             ->setLesson($lesson)
             ->setType('LESSON')
-            ->setCertificateCode('CERT_TEST_001')
             ->setIssuedAt(new \DateTimeImmutable());
+
+        if ($certificateCode !== null) {
+            $cert->setCertificateCode($certificateCode);
+        }
 
         $this->em->persist($cert);
         $this->em->flush();
@@ -83,9 +93,7 @@ class AdminCertificationControllerTest extends WebTestCase
     {
         $this->client->request('GET', 'https://localhost/admin/certifications/1/download');
 
-        self::assertTrue($this->client->getResponse()->isRedirection());
-        $location = (string) $this->client->getResponse()->headers->get('Location');
-        self::assertStringContainsString('/login', $location);
+        self::assertResponseRedirects('/login');
     }
 
     public function testDownloadAsUserIsForbidden(): void
@@ -101,7 +109,7 @@ class AdminCertificationControllerTest extends WebTestCase
     public function testDownloadAsAdminReturnsPdf(): void
     {
         $admin = $this->getAdmin();
-        $cert = $this->createCertification();
+        $cert = $this->createCertification('CERT_TEST_001');
 
         $this->client->loginUser($admin, 'main');
         $this->client->request('GET', 'https://localhost/admin/certifications/' . $cert->getId() . '/download');
@@ -110,7 +118,10 @@ class AdminCertificationControllerTest extends WebTestCase
 
         $response = $this->client->getResponse();
 
-        self::assertTrue($response->headers->contains('Content-Type', 'application/pdf'));
+        self::assertTrue(
+            $response->headers->contains('Content-Type', 'application/pdf'),
+            'Le Content-Type devrait être application/pdf.'
+        );
 
         $disposition = (string) $response->headers->get('Content-Disposition');
         self::assertStringContainsString('attachment;', $disposition);
@@ -120,6 +131,23 @@ class AdminCertificationControllerTest extends WebTestCase
         self::assertNotEmpty($content);
         self::assertStringStartsWith('%PDF', $content);
     }
+
+    public function testDownloadUsesSanitizedFilename(): void
+    {
+        $admin = $this->getAdmin();
+        $cert = $this->createCertification('CERT TEST:/001?#OK');
+
+        $this->client->loginUser($admin, 'main');
+        $this->client->request('GET', 'https://localhost/admin/certifications/' . $cert->getId() . '/download');
+
+        self::assertResponseIsSuccessful();
+
+        $disposition = (string) $this->client->getResponse()->headers->get('Content-Disposition');
+
+        self::assertStringContainsString('attachment;', $disposition);
+        self::assertStringContainsString('certificat-CERT-TEST--001--OK.pdf', $disposition);
+    }
+
 
     public function testDownloadNotFoundReturns404(): void
     {

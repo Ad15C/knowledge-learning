@@ -8,7 +8,7 @@
     <div>
         <h1 class="admin-page-title">Leçons</h1>
         <p class="admin-page-subtitle">
-            Créer, modifier, archiver / restaurer des leçons.
+            Créer, modifier, désactiver / réactiver des leçons.
         </p>
     </div>
 
@@ -17,7 +17,6 @@
     </a>
 </div>
 
-{# Filtres #}
 <form method="get" class="admin-filters">
     <div class="admin-filters-row">
 
@@ -31,7 +30,7 @@
             <option value="">Tous les thèmes</option>
             {% for theme in themes %}
                 <option value="{{ theme.id }}"
-                    {{ (filters.theme ?? null) == theme.id ? 'selected' }}>
+                    {{ (filters.theme ?? null) == theme.id ? 'selected' : '' }}>
                     {{ theme.name }}
                 </option>
             {% endfor %}
@@ -41,7 +40,7 @@
             <option value="">Tous les cursus</option>
             {% for c in cursus_list %}
                 <option value="{{ c.id }}"
-                    {{ (filters.cursus ?? null) == c.id ? 'selected' }}>
+                    {{ (filters.cursus ?? null) == c.id ? 'selected' : '' }}>
                     {{ c.name }}
                 </option>
             {% endfor %}
@@ -49,38 +48,38 @@
 
         <select name="status" class="admin-filter-select">
             <option value="all"
-                {{ (filters.status ?? 'all') == 'all' ? 'selected' }}>
+                {{ (filters.status ?? 'all') == 'all' ? 'selected' : '' }}>
                 Toutes
             </option>
             <option value="active"
-                {{ (filters.status ?? 'all') == 'active' ? 'selected' }}>
+                {{ (filters.status ?? 'all') == 'active' ? 'selected' : '' }}>
                 Actives
             </option>
             <option value="archived"
-                {{ (filters.status ?? 'all') == 'archived' ? 'selected' }}>
+                {{ (filters.status ?? 'all') == 'archived' ? 'selected' : '' }}>
                 Archivées
             </option>
         </select>
 
         <select name="sort" class="admin-filter-select">
             <option value="id_desc"
-                {{ (filters.sort ?? 'id_desc') == 'id_desc' ? 'selected' }}>
+                {{ (filters.sort ?? 'id_desc') == 'id_desc' ? 'selected' : '' }}>
                 Plus récents
             </option>
             <option value="title_asc"
-                {{ (filters.sort ?? '') == 'title_asc' ? 'selected' }}>
+                {{ (filters.sort ?? '') == 'title_asc' ? 'selected' : '' }}>
                 Titre A → Z
             </option>
             <option value="title_desc"
-                {{ (filters.sort ?? '') == 'title_desc' ? 'selected' }}>
+                {{ (filters.sort ?? '') == 'title_desc' ? 'selected' : '' }}>
                 Titre Z → A
             </option>
             <option value="price_asc"
-                {{ (filters.sort ?? '') == 'price_asc' ? 'selected' }}>
+                {{ (filters.sort ?? '') == 'price_asc' ? 'selected' : '' }}>
                 Prix croissant
             </option>
             <option value="price_desc"
-                {{ (filters.sort ?? '') == 'price_desc' ? 'selected' }}>
+                {{ (filters.sort ?? '') == 'price_desc' ? 'selected' : '' }}>
                 Prix décroissant
             </option>
         </select>
@@ -149,21 +148,20 @@
 
                 {% if lesson.isActive %}
                     <a href="{{ path('admin_lesson_delete', {'id': lesson.id}) }}"
-                       class="btn btn-archive">
-                        Archiver
+                       class="btn btn-warning">
+                        Désactiver
                     </a>
                 {% else %}
                     <form method="post"
                           action="{{ path('admin_lesson_activate', {'id': lesson.id}) }}"
-                          class="inline-form"
-                          onsubmit="return confirm('Confirmer la restauration ?');">
+                          class="inline-form">
 
                         <input type="hidden"
                                name="_token"
                                value="{{ csrf_token('lesson_activate' ~ lesson.id) }}">
 
                         <button class="btn btn-restore" type="submit">
-                            Restaurer
+                            Activer
                         </button>
                     </form>
                 {% endif %}
@@ -179,6 +177,6 @@
 
 <a href="{{ path('admin_dashboard') }}" class="btn-back">
     ← Retour au dashboard admin
-    </a>
+</a>
 
 {% endblock %}
