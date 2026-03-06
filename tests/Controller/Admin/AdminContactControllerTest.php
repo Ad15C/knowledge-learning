@@ -437,7 +437,7 @@ class AdminContactControllerTest extends WebTestCase
     }
 
     // -------------------------
-    // Filters (subject/status/q)
+    // Filters (subject/status/q/email)
     // -------------------------
 
     public function testIndexFiltersBySubjectStatusAndSearchQ(): void
@@ -484,6 +484,36 @@ class AdminContactControllerTest extends WebTestCase
         $html = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('payment@test.io', $html);
         self::assertStringNotContainsString('login@test.io', $html);
+    }
+
+    public function testIndexFilterByEmail(): void
+    {
+        $this->loginAsAdmin();
+
+        $this->createContact('alpha.client@test.io', 'Alpha Client', 'payment');
+        $this->createContact('beta.client@test.io', 'Beta Client', 'login');
+
+        $this->client->request('GET', '/admin/contact/?email=beta.client@test.io');
+        self::assertResponseIsSuccessful();
+
+        $html = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('beta.client@test.io', $html);
+        self::assertStringNotContainsString('alpha.client@test.io', $html);
+    }
+
+    public function testIndexFilterByEmailIsMergedWithQ(): void
+    {
+        $this->loginAsAdmin();
+
+        $this->createContact('john.doe@test.io', 'John Doe', 'payment');
+        $this->createContact('jane.doe@test.io', 'Jane Doe', 'payment');
+
+        $this->client->request('GET', '/admin/contact/?q=Jane&email=jane.doe@test.io');
+        self::assertResponseIsSuccessful();
+
+        $html = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('jane.doe@test.io', $html);
+        self::assertStringNotContainsString('john.doe@test.io', $html);
     }
 
     protected function tearDown(): void

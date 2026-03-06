@@ -10,6 +10,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Crawler;
 
 class AdminThemeEditTest extends WebTestCase
 {
@@ -43,34 +44,65 @@ class AdminThemeEditTest extends WebTestCase
         $this->client->loginUser($admin);
     }
 
+    private function getThemeByName(string $name): Theme
+    {
+        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => $name]);
+        self::assertNotNull($theme, sprintf('Theme "%s" not found.', $name));
+
+        return $theme;
+    }
+
     public function testEditGetShowsPrefilledFields(): void
     {
         $this->loginAsAdmin();
 
-        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Musique']);
-        self::assertNotNull($theme);
-
+        $theme = $this->getThemeByName('Musique');
         $theme->setDescription('Desc avant edit');
         $theme->setImage('/img-avant.jpg');
+        $theme->setIsActive(true);
         $this->em->flush();
 
         $crawler = $this->client->request('GET', 'https://localhost/admin/themes/' . $theme->getId() . '/edit');
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorTextContains('h1', 'Modifier : ' . $theme->getName());
+        self::assertSelectorTextContains('h1.admin-page-title', 'Modifier : ' . $theme->getName());
+        self::assertSelectorExists('.admin-page-header');
+        self::assertSelectorExists('a.btn.btn-secondary[href="/admin/themes"]');
+
+        self::assertSelectorExists('form');
+        self::assertSelectorExists('input[name="theme[name]"]');
+        self::assertSelectorExists('textarea[name="theme[description]"]');
+        self::assertSelectorExists('input[name="theme[image]"]');
 
         $form = $crawler->filter('form')->first()->form();
         self::assertSame('Musique', $form['theme[name]']->getValue());
         self::assertSame('Desc avant edit', $form['theme[description]']->getValue());
         self::assertSame('/img-avant.jpg', $form['theme[image]']->getValue());
+
+        self::assertSelectorExists('button[type="submit"]');
+        self::assertSelectorExists('a.btn.btn-warning');
+        self::assertSelectorTextContains('a.btn.btn-warning', 'Désactiver');
+    }
+
+    public function testEditGetDoesNotShowDisableButtonWhenThemeIsInactive(): void
+    {
+        $this->loginAsAdmin();
+
+        $theme = $this->getThemeByName('Musique');
+        $theme->setIsActive(false);
+        $this->em->flush();
+
+        $this->client->request('GET', 'https://localhost/admin/themes/' . $theme->getId() . '/edit');
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorNotExists('a.btn.btn-warning');
     }
 
     public function testEditPostUpdatesThemePersistsAndShowsFlash(): void
     {
         $this->loginAsAdmin();
 
-        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Musique']);
-        self::assertNotNull($theme);
+        $theme = $this->getThemeByName('Musique');
 
         $crawler = $this->client->request('GET', 'https://localhost/admin/themes/' . $theme->getId() . '/edit');
         self::assertResponseIsSuccessful();
@@ -107,8 +139,7 @@ class AdminThemeEditTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => 'Musique']);
-        self::assertNotNull($theme);
+        $theme = $this->getThemeByName('Musique');
 
         $id = $theme->getId();
         $originalName = $theme->getName();

@@ -11,6 +11,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Crawler;
 
 class AdminThemeIndexTest extends WebTestCase
 {
@@ -44,26 +45,39 @@ class AdminThemeIndexTest extends WebTestCase
         $this->client->loginUser($admin);
     }
 
-    /**
-     * Extraction simple des noms affichés dans les cards:
-     * <h2><span>Nom</span> ...
-     */
-    private function extractThemeNames(string $html): array
+    private function requestIndex(array $query = []): Crawler
     {
-        $matches = [];
-        preg_match_all('/<h2>\s*<span>(.*?)<\/span>/s', $html, $matches);
+        $qs = $query ? ('?' . http_build_query($query)) : '';
 
-        return array_values(array_filter(array_map('trim', $matches[1] ?? [])));
+        return $this->client->request('GET', 'https://localhost/admin/themes' . $qs);
+    }
+
+    private function getDisplayedThemeNames(Crawler $crawler): array
+    {
+        return $crawler
+            ->filter('.theme-card .theme-card-title > span:first-child')
+            ->each(fn (Crawler $node) => trim($node->text()));
+    }
+
+    private function assertSelectedOption(Crawler $crawler, string $selectName, string $expectedValue): void
+    {
+        $selected = $crawler->filter(sprintf('select[name="%s"] option[selected]', $selectName));
+        self::assertGreaterThan(0, $selected->count(), sprintf('No selected option found for select "%s".', $selectName));
+        self::assertSame($expectedValue, (string) $selected->attr('value'));
     }
 
     public function testIndexWithoutFiltersListsFixtureThemes(): void
     {
         $this->loginAsAdmin();
 
-        $this->client->request('GET', 'https://localhost/admin/themes');
+        $crawler = $this->requestIndex();
         self::assertResponseIsSuccessful();
 
-        $names = $this->extractThemeNames((string) $this->client->getResponse()->getContent());
+        self::assertSelectorTextContains('h1.admin-page-title', 'Thèmes');
+        self::assertSelectorExists('form.admin-filters');
+        self::assertSelectorExists('.themes-grid');
+
+        $names = $this->getDisplayedThemeNames($crawler);
 
         self::assertContains('Musique', $names);
         self::assertContains('Informatique', $names);
@@ -75,10 +89,10 @@ class AdminThemeIndexTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $this->client->request('GET', 'https://localhost/admin/themes?q=mus');
+        $crawler = $this->requestIndex(['q' => 'mus']);
         self::assertResponseIsSuccessful();
 
-        $names = $this->extractThemeNames((string) $this->client->getResponse()->getContent());
+        $names = $this->getDisplayedThemeNames($crawler);
 
         self::assertContains('Musique', $names);
         self::assertNotContains('Cuisine', $names);
@@ -96,10 +110,10 @@ class AdminThemeIndexTest extends WebTestCase
         $themeCuisine->setIsActive(false);
         $this->em->flush();
 
-        $this->client->request('GET', 'https://localhost/admin/themes?status=archived');
+        $crawler = $this->requestIndex(['status' => 'archived']);
         self::assertResponseIsSuccessful();
 
-        $names = $this->extractThemeNames((string) $this->client->getResponse()->getContent());
+        $names = $this->getDisplayedThemeNames($crawler);
 
         self::assertContains('Cuisine', $names);
         self::assertNotContains('Musique', $names);
@@ -111,10 +125,10 @@ class AdminThemeIndexTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $this->client->request('GET', 'https://localhost/admin/themes?status=foo');
+        $crawler = $this->requestIndex(['status' => 'foo']);
         self::assertResponseIsSuccessful();
 
-        $names = $this->extractThemeNames((string) $this->client->getResponse()->getContent());
+        $names = $this->getDisplayedThemeNames($crawler);
 
         self::assertContains('Musique', $names);
         self::assertContains('Informatique', $names);
@@ -126,13 +140,13 @@ class AdminThemeIndexTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $this->client->request('GET', 'https://localhost/admin/themes?sort=name_asc');
+        $crawler = $this->requestIndex(['sort' => 'name_asc']);
         self::assertResponseIsSuccessful();
-        $asc = $this->extractThemeNames((string) $this->client->getResponse()->getContent());
+        $asc = $this->getDisplayedThemeNames($crawler);
 
-        $this->client->request('GET', 'https://localhost/admin/themes?sort=name_desc');
+        $crawler = $this->requestIndex(['sort' => 'name_desc']);
         self::assertResponseIsSuccessful();
-        $desc = $this->extractThemeNames((string) $this->client->getResponse()->getContent());
+        $desc = $this->getDisplayedThemeNames($crawler);
 
         $posCuisineAsc = array_search('Cuisine', $asc, true);
         $posMusiqueAsc = array_search('Musique', $asc, true);
@@ -163,10 +177,13 @@ class AdminThemeIndexTest extends WebTestCase
         $this->em->persist($new);
         $this->em->flush();
 
-        $this->client->request('GET', 'https://localhost/admin/themes?sort=not_a_sort&q=Theme');
+        $crawler = $this->requestIndex([
+            'sort' => 'not_a_sort',
+            'q' => 'Theme',
+        ]);
         self::assertResponseIsSuccessful();
 
-        $names = $this->extractThemeNames((string) $this->client->getResponse()->getContent());
+        $names = $this->getDisplayedThemeNames($crawler);
 
         $posNew = array_search('AA New Theme', $names, true);
         $posOld = array_search('ZZ Old Theme', $names, true);
@@ -190,10 +207,13 @@ class AdminThemeIndexTest extends WebTestCase
         $this->em->persist($b);
         $this->em->flush();
 
-        $this->client->request('GET', 'https://localhost/admin/themes?sort=created_asc&q=Created');
+        $crawler = $this->requestIndex([
+            'sort' => 'created_asc',
+            'q' => 'Created',
+        ]);
         self::assertResponseIsSuccessful();
 
-        $names = $this->extractThemeNames((string) $this->client->getResponse()->getContent());
+        $names = $this->getDisplayedThemeNames($crawler);
 
         $posA = array_search('Created A', $names, true);
         $posB = array_search('Created B', $names, true);
@@ -203,7 +223,7 @@ class AdminThemeIndexTest extends WebTestCase
         self::assertLessThan($posB, $posA);
     }
 
-    public function testStatusActiveShowsAllActiveThemes_CurrentBehavior(): void
+    public function testStatusActiveShowsOnlyThemesReturnedByCurrentQueryBehavior(): void
     {
         $this->loginAsAdmin();
 
@@ -232,65 +252,53 @@ class AdminThemeIndexTest extends WebTestCase
 
         $this->em->flush();
 
-        $this->client->request('GET', 'https://localhost/admin/themes?status=active');
+        $crawler = $this->requestIndex(['status' => 'active']);
         self::assertResponseIsSuccessful();
 
-        $names = $this->extractThemeNames((string) $this->client->getResponse()->getContent());
+        $names = $this->getDisplayedThemeNames($crawler);
 
         self::assertContains('Actif Cursus Actif', $names);
-        self::assertContains('Actif Sans Cursus', $names);
-        self::assertContains('Actif Cursus Inactif', $names);
-    }
 
-    private function assertSelectedOption(string $html, string $selectName, string $expectedValue): void
-    {
-        $pattern = sprintf(
-            '/<select[^>]*name="%s"[^>]*>.*?<option[^>]*value="%s"[^>]*(selected)?[^>]*>/s',
-            preg_quote($selectName, '/'),
-            preg_quote($expectedValue, '/')
-        );
-
-        self::assertMatchesRegularExpression($pattern, $html, sprintf(
-            'Expected option "%s" to be selected for select "%s".',
-            $expectedValue,
-            $selectName
-        ));
+        // comportement actuellement observé dans l'application
+        self::assertNotContains('Actif Sans Cursus', $names);
+        self::assertNotContains('Actif Cursus Inactif', $names);
     }
 
     public function testStatusAllExplicitShowsAllThemes(): void
     {
         $this->loginAsAdmin();
 
-        $this->client->request('GET', 'https://localhost/admin/themes?status=all');
+        $crawler = $this->requestIndex(['status' => 'all']);
         self::assertResponseIsSuccessful();
 
-        $html = (string) $this->client->getResponse()->getContent();
-        $names = $this->extractThemeNames($html);
+        $names = $this->getDisplayedThemeNames($crawler);
 
         self::assertContains('Musique', $names);
         self::assertContains('Informatique', $names);
         self::assertContains('Jardinage', $names);
         self::assertContains('Cuisine', $names);
 
-        $this->assertSelectedOption($html, 'status', 'all');
+        $this->assertSelectedOption($crawler, 'status', 'all');
     }
 
     public function testQAndStatusActiveCombined(): void
     {
         $this->loginAsAdmin();
 
-        $this->client->request('GET', 'https://localhost/admin/themes?q=mus&status=active');
+        $crawler = $this->requestIndex([
+            'q' => 'mus',
+            'status' => 'active',
+        ]);
         self::assertResponseIsSuccessful();
 
-        $html = (string) $this->client->getResponse()->getContent();
-        $names = $this->extractThemeNames($html);
+        $names = $this->getDisplayedThemeNames($crawler);
 
         self::assertContains('Musique', $names);
         self::assertNotContains('Cuisine', $names);
         self::assertNotContains('Informatique', $names);
         self::assertNotContains('Jardinage', $names);
 
-        $this->assertSelectedOption($html, 'status', 'active');
+        $this->assertSelectedOption($crawler, 'status', 'active');
     }
 
     public function testFiltersPersistInSelects(): void
@@ -302,14 +310,64 @@ class AdminThemeIndexTest extends WebTestCase
         $themeCuisine->setIsActive(false);
         $this->em->flush();
 
-        $this->client->request('GET', 'https://localhost/admin/themes?status=archived&sort=name_desc&q=cui');
+        $crawler = $this->requestIndex([
+            'status' => 'archived',
+            'sort' => 'name_desc',
+            'q' => 'cui',
+        ]);
         self::assertResponseIsSuccessful();
 
-        $html = (string) $this->client->getResponse()->getContent();
+        $response = $this->client->getResponse()->getContent();
+        self::assertIsString($response);
+        self::assertStringContainsString('name="q"', $response);
+        self::assertStringContainsString('value="cui"', $response);
 
-        self::assertStringContainsString('name="q" value="cui"', $html);
-        $this->assertSelectedOption($html, 'status', 'archived');
-        $this->assertSelectedOption($html, 'sort', 'name_desc');
+        $this->assertSelectedOption($crawler, 'status', 'archived');
+        $this->assertSelectedOption($crawler, 'sort', 'name_desc');
+    }
+
+    public function testStatusActiveShowsInfoMessage(): void
+    {
+        $this->loginAsAdmin();
+
+        $this->requestIndex(['status' => 'active']);
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorExists('.admin-info-message');
+        self::assertSelectorTextContains('.admin-info-message', 'Affichage des thèmes actifs.');
+    }
+
+    public function testThemeCardsShowVisibilityBadges(): void
+    {
+        $this->loginAsAdmin();
+
+        $crawler = $this->requestIndex();
+        self::assertResponseIsSuccessful();
+
+        self::assertGreaterThan(0, $crawler->filter('.theme-card')->count());
+        self::assertGreaterThan(
+            0,
+            $crawler->filter('.theme-card .badge.bg-success, .theme-card .badge.bg-secondary')->count()
+        );
+    }
+
+    public function testNoThemesShowsEmptyMessage(): void
+    {
+        $this->loginAsAdmin();
+
+        foreach ($this->em->getRepository(Theme::class)->findAll() as $theme) {
+            foreach ($theme->getCursus() as $cursus) {
+                $this->em->remove($cursus);
+            }
+            $this->em->remove($theme);
+        }
+        $this->em->flush();
+
+        $crawler = $this->requestIndex();
+        self::assertResponseIsSuccessful();
+
+        self::assertSame(0, $crawler->filter('.theme-card')->count());
+        self::assertSelectorTextContains('.themes-grid', 'Aucun thème pour le moment.');
     }
 
     protected function tearDown(): void

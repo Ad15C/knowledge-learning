@@ -47,44 +47,43 @@ class AdminLessonNewTest extends WebTestCase
 
     private function setAllCursusActive(bool $active): void
     {
-        foreach ($this->em->getRepository(Cursus::class)->findAll() as $c) {
-            $c->setIsActive($active);
+        foreach ($this->em->getRepository(Cursus::class)->findAll() as $cursus) {
+            $cursus->setIsActive($active);
         }
+
         $this->em->flush();
         $this->em->clear();
     }
 
     private function getAnyActiveCursus(): Cursus
     {
-        $c = $this->em->getRepository(Cursus::class)->findOneBy(['isActive' => true]);
-        self::assertNotNull($c, 'No active cursus found.');
-        return $c;
+        $cursus = $this->em->getRepository(Cursus::class)->findOneBy(['isActive' => true]);
+        self::assertNotNull($cursus, 'No active cursus found.');
+
+        return $cursus;
     }
 
     private function getAnyInactiveCursus(): Cursus
     {
-        $c = $this->em->getRepository(Cursus::class)->findOneBy(['isActive' => false]);
-        self::assertNotNull($c, 'No inactive cursus found.');
-        return $c;
+        $cursus = $this->em->getRepository(Cursus::class)->findOneBy(['isActive' => false]);
+        self::assertNotNull($cursus, 'No inactive cursus found.');
+
+        return $cursus;
     }
 
     private function getCursusSelectOptionLabels(Crawler $crawler): array
     {
-        $labels = [];
-        $crawler->filter('select[name="lesson[cursus]"] option')->each(function (Crawler $opt) use (&$labels) {
-            $labels[] = trim($opt->text());
-        });
-        return $labels;
+        return $crawler
+            ->filter('select[name="lesson[cursus]"] option')
+            ->each(fn (Crawler $opt) => trim($opt->text()));
     }
 
     private function responseHasNotBlankMessage(string $content, string $customMessage): bool
     {
-        // message custom (Assert\NotBlank)
         if (str_contains($content, $customMessage)) {
             return true;
         }
 
-        // fallback Symfony selon locale/config
         return str_contains($content, 'This value should not be blank')
             || str_contains($content, 'Cette valeur ne doit pas être vide');
     }
@@ -94,7 +93,6 @@ class AdminLessonNewTest extends WebTestCase
         $decoded = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $hay = mb_strtolower($decoded);
 
-        // Variantes typiques (selon langue + thème + version)
         $needles = [
             'this value is not valid',
             'the selected choice is invalid',
@@ -110,24 +108,18 @@ class AdminLessonNewTest extends WebTestCase
             'is not valid',
         ];
 
-        foreach ($needles as $n) {
-            if (str_contains($hay, mb_strtolower($n))) {
+        foreach ($needles as $needle) {
+            if (str_contains($hay, mb_strtolower($needle))) {
                 return true;
             }
         }
 
-        // fallback “très large” : si on détecte qu'il y a une erreur et que ça parle de "valide"
-        // (évite les faux négatifs si le thème change légèrement le texte)
         if (str_contains($hay, 'valide') && (str_contains($hay, 'choix') || str_contains($hay, 'sélection'))) {
             return true;
         }
 
         return false;
     }
-
-    // -------------------------------------------------
-    // GET
-    // -------------------------------------------------
 
     public function testNewGetFormOk(): void
     {
@@ -136,7 +128,11 @@ class AdminLessonNewTest extends WebTestCase
         $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/new');
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorTextContains('h1', 'Créer une leçon');
+        self::assertSelectorTextContains('h1.admin-page-title', 'Créer une leçon');
+        self::assertSelectorExists('.admin-page-header');
+        self::assertSelectorExists('a.btn.btn-secondary[href="/admin/lesson"]');
+
+        self::assertSelectorExists('form');
         self::assertSelectorExists('input[name="lesson[title]"]');
         self::assertSelectorExists('select[name="lesson[cursus]"]');
         self::assertSelectorExists('input[name="lesson[price]"]');
@@ -155,7 +151,6 @@ class AdminLessonNewTest extends WebTestCase
         $all = $this->em->getRepository(Cursus::class)->findAll();
         self::assertNotEmpty($all);
 
-        // 1 inactif, le reste actif
         $all[0]->setIsActive(false);
         for ($i = 1; $i < count($all); $i++) {
             $all[$i]->setIsActive(true);
@@ -181,10 +176,6 @@ class AdminLessonNewTest extends WebTestCase
             'Expected at least one active cursus option besides the placeholder.'
         );
     }
-
-    // -------------------------------------------------
-    // POST valide
-    // -------------------------------------------------
 
     public function testNewPostValidCreatesLessonAndIsActiveTrue(): void
     {
@@ -214,21 +205,19 @@ class AdminLessonNewTest extends WebTestCase
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
 
-        // Flash success robuste
         self::assertSelectorExists('.flash-messages .flash.flash-success');
         self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Leçon créée.');
 
         $this->em->clear();
+        /** @var Lesson|null $created */
         $created = $this->em->getRepository(Lesson::class)->findOneBy(['title' => $uniqueTitle]);
 
         self::assertNotNull($created, 'Lesson should have been created in database.');
         self::assertTrue($created->isActive(), 'Lesson should be active by default.');
         self::assertSame($cursus->getId(), $created->getCursus()?->getId());
+        self::assertEquals(12.50, (float) $created->getPrice());
+        self::assertSame('Fiche test', $created->getFiche());
     }
-
-    // -------------------------------------------------
-    // EDGE : tous cursus archivés => select vide
-    // -------------------------------------------------
 
     public function testNewGetWhenAllCursusArchivedSelectIsEmptyAndNoCrash(): void
     {
@@ -239,6 +228,7 @@ class AdminLessonNewTest extends WebTestCase
         $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/new');
         self::assertResponseIsSuccessful();
 
+        self::assertSelectorTextContains('h1.admin-page-title', 'Créer une leçon');
         self::assertSelectorExists('select[name="lesson[cursus]"]');
 
         $labels = $this->getCursusSelectOptionLabels($crawler);
@@ -247,10 +237,6 @@ class AdminLessonNewTest extends WebTestCase
 
         self::assertGreaterThan(0, $crawler->selectButton('Créer')->count());
     }
-
-    // -------------------------------------------------
-    // EDGE : titre vide => erreur + pas de redirect
-    // -------------------------------------------------
 
     public function testPostWithoutTitleShowsValidationErrorAndDoesNotCreate(): void
     {
@@ -262,10 +248,8 @@ class AdminLessonNewTest extends WebTestCase
         $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/new');
         self::assertResponseIsSuccessful();
 
-        $uniqueTitle = 'Lesson Without Title - ' . uniqid('', true);
-
         $form = $crawler->selectButton('Créer')->form([
-            'lesson[title]' => '', // vide volontairement
+            'lesson[title]' => '',
             'lesson[cursus]' => (string) $cursus->getId(),
             'lesson[price]' => '10.00',
             'lesson[fiche]' => '',
@@ -275,7 +259,6 @@ class AdminLessonNewTest extends WebTestCase
 
         $this->client->submit($form);
 
-        // invalide => pas de redirect
         self::assertResponseStatusCodeSame(200);
 
         $content = (string) $this->client->getResponse()->getContent();
@@ -283,16 +266,7 @@ class AdminLessonNewTest extends WebTestCase
             $this->responseHasNotBlankMessage($content, 'Le titre est obligatoire.'),
             'Expected a validation error about title.'
         );
-
-        // pas de création
-        $this->em->clear();
-        $created = $this->em->getRepository(Lesson::class)->findOneBy(['title' => $uniqueTitle]);
-        self::assertNull($created);
     }
-
-    // -------------------------------------------------
-    // EDGE : prix vide => erreur + pas de redirect
-    // -------------------------------------------------
 
     public function testPostWithoutPriceShowsValidationErrorAndDoesNotCreate(): void
     {
@@ -309,7 +283,7 @@ class AdminLessonNewTest extends WebTestCase
         $form = $crawler->selectButton('Créer')->form([
             'lesson[title]' => $uniqueTitle,
             'lesson[cursus]' => (string) $cursus->getId(),
-            'lesson[price]' => '', // vide volontairement
+            'lesson[price]' => '',
             'lesson[fiche]' => '',
             'lesson[videoUrl]' => '',
             'lesson[image]' => '',
@@ -317,7 +291,6 @@ class AdminLessonNewTest extends WebTestCase
 
         $this->client->submit($form);
 
-        // invalide => pas de redirect
         self::assertResponseStatusCodeSame(200);
 
         $content = (string) $this->client->getResponse()->getContent();
@@ -326,15 +299,10 @@ class AdminLessonNewTest extends WebTestCase
             'Expected a validation error about price.'
         );
 
-        // pas de création
         $this->em->clear();
         $created = $this->em->getRepository(Lesson::class)->findOneBy(['title' => $uniqueTitle]);
         self::assertNull($created);
     }
-
-    // -------------------------------------------------
-    // EDGE : POST “manuel” avec cursus inactif => doit échouer (EntityType)
-    // -------------------------------------------------
 
     public function testPostWithInactiveCursusIdIsRejectedAndDoesNotCreate(): void
     {
@@ -344,7 +312,6 @@ class AdminLessonNewTest extends WebTestCase
         $all = $this->em->getRepository(Cursus::class)->findAll();
         self::assertNotEmpty($all);
 
-        // garantir au moins 1 inactif + 1 actif
         $all[0]->setIsActive(false);
         if (isset($all[1])) {
             $all[1]->setIsActive(true);
@@ -354,7 +321,6 @@ class AdminLessonNewTest extends WebTestCase
 
         $inactive = $this->getAnyInactiveCursus();
 
-        // GET pour récupérer un vrai token CSRF du form
         $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/new');
         self::assertResponseIsSuccessful();
 
@@ -363,12 +329,11 @@ class AdminLessonNewTest extends WebTestCase
 
         $uniqueTitle = 'Lesson Inactive Cursus - ' . uniqid('', true);
 
-        //  POST "manuel" : on bypass DomCrawler choice validation
         $this->client->request('POST', 'https://localhost/admin/lesson/new', [
             'lesson' => [
                 '_token' => $csrf,
                 'title' => $uniqueTitle,
-                'cursus' => (string) $inactive->getId(), // ID inactif => pas dans les choices
+                'cursus' => (string) $inactive->getId(),
                 'price' => '15.00',
                 'fiche' => '',
                 'videoUrl' => '',
@@ -376,7 +341,6 @@ class AdminLessonNewTest extends WebTestCase
             ],
         ]);
 
-        // Le form doit être invalide => on reste sur la page
         self::assertResponseStatusCodeSame(200);
 
         $content = (string) $this->client->getResponse()->getContent();
@@ -385,7 +349,6 @@ class AdminLessonNewTest extends WebTestCase
             'Expected the form to reject an inactive cursus id (invalid choice).'
         );
 
-        // pas de création
         $this->em->clear();
         $created = $this->em->getRepository(Lesson::class)->findOneBy(['title' => $uniqueTitle]);
         self::assertNull($created, 'Lesson should not be created when cursus choice is invalid.');
@@ -394,6 +357,9 @@ class AdminLessonNewTest extends WebTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        $this->em->close();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

@@ -6,7 +6,6 @@ use App\DataFixtures\TestUserFixtures;
 use App\DataFixtures\ThemeFixtures;
 use App\Entity\Cursus;
 use App\Entity\Lesson;
-use App\Entity\Theme;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
@@ -146,6 +145,7 @@ class AdminLessonControllerTest extends WebTestCase
         $this->client->request('POST', 'https://localhost/admin/lesson/' . $lesson->getId() . '/disable', [
             '_token' => 'whatever',
         ]);
+
         self::assertResponseRedirects('/login');
     }
 
@@ -156,6 +156,7 @@ class AdminLessonControllerTest extends WebTestCase
         $this->client->request('POST', 'https://localhost/admin/lesson/' . $lesson->getId() . '/activate', [
             '_token' => 'whatever',
         ]);
+
         self::assertResponseRedirects('/login');
     }
 
@@ -167,6 +168,7 @@ class AdminLessonControllerTest extends WebTestCase
         $this->client->request('POST', 'https://localhost/admin/lesson/' . $lesson->getId() . '/disable', [
             '_token' => 'whatever',
         ]);
+
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -178,6 +180,7 @@ class AdminLessonControllerTest extends WebTestCase
         $this->client->request('POST', 'https://localhost/admin/lesson/' . $lesson->getId() . '/activate', [
             '_token' => 'whatever',
         ]);
+
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -221,6 +224,9 @@ class AdminLessonControllerTest extends WebTestCase
 
         $crawler = $this->requestIndex();
         self::assertResponseIsSuccessful();
+
+        self::assertSelectorTextContains('h1.admin-page-title', 'Leçons');
+        self::assertSelectorExists('form.admin-filters');
         self::assertGreaterThan(0, $crawler->filter('.lesson-card')->count());
     }
 
@@ -232,6 +238,8 @@ class AdminLessonControllerTest extends WebTestCase
 
         $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/new');
         self::assertResponseIsSuccessful();
+
+        self::assertSelectorTextContains('h1.admin-page-title', 'Créer une leçon');
 
         $form = $crawler->selectButton('Créer')->form([
             'lesson[title]' => 'Lesson Test New',
@@ -245,6 +253,11 @@ class AdminLessonControllerTest extends WebTestCase
         $this->client->submit($form);
 
         self::assertResponseRedirects('/admin/lesson');
+
+        $this->client->followRedirect();
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('.flash-messages .flash.flash-success');
+        self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Leçon créée.');
 
         $this->em->clear();
         $created = $this->em->getRepository(Lesson::class)->findOneBy(['title' => 'Lesson Test New']);
@@ -262,7 +275,10 @@ class AdminLessonControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', 'https://localhost/admin/lesson/' . $id . '/delete');
         self::assertResponseIsSuccessful();
 
+        self::assertSelectorTextContains('h1.admin-page-title', 'Désactiver une leçon');
         self::assertSelectorExists('form[action*="/admin/lesson/' . $id . '/disable"]');
+        self::assertSelectorTextContains('button.btn.btn-danger', 'Confirmer la désactivation');
+
         $this->extractHiddenToken($crawler, 'form[action*="/admin/lesson/' . $id . '/disable"]');
     }
 
@@ -287,6 +303,11 @@ class AdminLessonControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/admin/lesson');
 
+        $this->client->followRedirect();
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('.flash-messages .flash.flash-success');
+        self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Leçon archivée.');
+
         $this->em->clear();
         $reloaded = $this->em->getRepository(Lesson::class)->find($id);
         self::assertNotNull($reloaded);
@@ -309,6 +330,7 @@ class AdminLessonControllerTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Lesson::class)->find($id);
+        self::assertNotNull($reloaded);
         self::assertTrue($reloaded->isActive());
     }
 
@@ -330,6 +352,7 @@ class AdminLessonControllerTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Lesson::class)->find($id);
+        self::assertNotNull($reloaded);
         self::assertTrue($reloaded->isActive());
     }
 
@@ -354,6 +377,11 @@ class AdminLessonControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/admin/lesson');
 
+        $this->client->followRedirect();
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('.flash-messages .flash.flash-success');
+        self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Leçon restaurée.');
+
         $this->em->clear();
         $reloaded = $this->em->getRepository(Lesson::class)->find($id);
         self::assertNotNull($reloaded);
@@ -376,6 +404,7 @@ class AdminLessonControllerTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Lesson::class)->find($id);
+        self::assertNotNull($reloaded);
         self::assertFalse($reloaded->isActive());
     }
 
@@ -397,6 +426,7 @@ class AdminLessonControllerTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Lesson::class)->find($id);
+        self::assertNotNull($reloaded);
         self::assertFalse($reloaded->isActive());
     }
 

@@ -5,13 +5,13 @@
   <link rel="stylesheet" href="{{ asset('styles/admin/cursus.css') }}">
 {% endblock %}
 
-{% block title %}Admin - Archiver un cursus{% endblock %}
+{% block title %}Admin - Désactiver un cursus{% endblock %}
 
 {% block dashboard_content %}
 
   <div class="admin-page-header">
     <div>
-      <h1 class="admin-page-title">Archiver un cursus</h1>
+      <h1 class="admin-page-title">Désactiver un cursus</h1>
       <p class="admin-page-subtitle">
         Ce cursus ne sera plus visible côté utilisateurs.
       </p>
@@ -34,20 +34,20 @@
     {% endif %}
 
     <div class="admin-alert admin-alert-danger">
-      ⚠️ Ce cursus va être archivé (désactivé).
+      ⚠️ Ce cursus sera désactivé et ne sera plus visible côté utilisateurs.
       <strong>Les leçons et achats liés ne seront pas supprimés.</strong>
     </div>
 
     <form method="post"
           action="{{ path('admin_cursus_disable', { id: cursus.id }) }}"
           class="inline-form"
-          onsubmit="return confirm('Confirmer l\\'archivage ?');">
+          onsubmit="return confirm('Confirmer la désactivation ?');">
 
       {# IMPORTANT : token dédié à l’action disable #}
       <input type="hidden" name="_token" value="{{ csrf_token('cursus_disable' ~ cursus.id) }}">
 
       <div class="admin-form-actions">
-        <button class="btn btn-danger" type="submit">Confirmer l’archivage</button>
+        <button class="btn btn-danger" type="submit">Confirmer la désactivation</button>
         <a href="{{ path('admin_cursus_index') }}" class="btn btn-secondary">Annuler</a>
       </div>
 

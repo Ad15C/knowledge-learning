@@ -54,13 +54,34 @@ class AdminCursusNewTest extends WebTestCase
         $this->client->loginUser($user);
     }
 
-    // -------------------------
-    // SECURITY
-    // -------------------------
+    private function setAllThemesActive(bool $active): void
+    {
+        foreach ($this->em->getRepository(Theme::class)->findAll() as $theme) {
+            $theme->setIsActive($active);
+        }
+
+        $this->em->flush();
+    }
+
+    private function getThemeByName(string $name): Theme
+    {
+        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => $name]);
+        self::assertNotNull($theme, sprintf('Theme "%s" not found.', $name));
+
+        return $theme;
+    }
+
+    private function getThemeSelectOptionLabels(Crawler $crawler): array
+    {
+        return $crawler
+            ->filter('select[name="cursus[theme]"] option')
+            ->each(fn (Crawler $opt) => trim($opt->text()));
+    }
 
     public function testNewGetRedirectsToLoginWhenNotLoggedIn(): void
     {
         $this->client->request('GET', 'https://localhost/admin/cursus/new');
+
         self::assertResponseRedirects('/login');
     }
 
@@ -81,6 +102,7 @@ class AdminCursusNewTest extends WebTestCase
         $this->loginAsUser();
 
         $this->client->request('GET', 'https://localhost/admin/cursus/new');
+
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -98,42 +120,6 @@ class AdminCursusNewTest extends WebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
-    // -------------------------
-    // HELPERS
-    // -------------------------
-
-    private function setAllThemesActive(bool $active): void
-    {
-        foreach ($this->em->getRepository(Theme::class)->findAll() as $theme) {
-            $theme->setIsActive($active);
-        }
-
-        $this->em->flush();
-    }
-
-    private function getThemeByName(string $name): Theme
-    {
-        $theme = $this->em->getRepository(Theme::class)->findOneBy(['name' => $name]);
-        self::assertNotNull($theme, sprintf('Theme "%s" not found.', $name));
-
-        return $theme;
-    }
-
-    private function getThemeSelectOptionLabels(Crawler $crawler): array
-    {
-        $labels = [];
-
-        $crawler->filter('select[name="cursus[theme]"] option')->each(function (Crawler $opt) use (&$labels) {
-            $labels[] = trim($opt->text());
-        });
-
-        return $labels;
-    }
-
-    // -------------------------
-    // FUNCTIONAL
-    // -------------------------
-
     public function testNewGetWithActiveThemesShowsFormAndEnabledSubmit(): void
     {
         $this->loginAsAdmin();
@@ -143,18 +129,20 @@ class AdminCursusNewTest extends WebTestCase
         $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/new');
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorTextContains('h1', 'Créer un cursus');
+        self::assertSelectorTextContains('h1.admin-page-title', 'Créer un cursus');
+        self::assertSelectorExists('.admin-page-header');
+        self::assertSelectorExists('a.btn.btn-secondary[href="/admin/cursus"]');
         self::assertSelectorNotExists('.admin-alert.admin-alert-danger');
-
-        $btn = $crawler->selectButton('Créer');
-        self::assertGreaterThan(0, $btn->count(), 'Submit button "Créer" not found');
-        self::assertNull($btn->attr('disabled'), 'Submit button should not be disabled when active themes exist');
 
         self::assertSelectorExists('input[name="cursus[name]"]');
         self::assertSelectorExists('select[name="cursus[theme]"]');
         self::assertSelectorExists('input[name="cursus[price]"]');
         self::assertSelectorExists('textarea[name="cursus[description]"]');
         self::assertSelectorExists('input[name="cursus[image]"]');
+
+        $btn = $crawler->selectButton('Créer');
+        self::assertGreaterThan(0, $btn->count(), 'Submit button "Créer" not found');
+        self::assertNull($btn->attr('disabled'), 'Submit button should not be disabled when active themes exist');
     }
 
     public function testThemeSelectContainsOnlyActiveThemes(): void
@@ -162,6 +150,7 @@ class AdminCursusNewTest extends WebTestCase
         $this->loginAsAdmin();
 
         $this->setAllThemesActive(true);
+
         $informatique = $this->getThemeByName('Informatique');
         $informatique->setIsActive(false);
         $this->em->flush();
@@ -186,28 +175,34 @@ class AdminCursusNewTest extends WebTestCase
         $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/new');
         self::assertResponseIsSuccessful();
 
-        $form = $crawler->filter('form')->first()->form();
-        $form['cursus[name]'] = 'Cursus Test New';
-        $form['cursus[theme]'] = (string) $musique->getId();
-        $form['cursus[price]'] = '88.50';
-        $form['cursus[description]'] = 'Description test';
-        $form['cursus[image]'] = '';
+        $form = $crawler->selectButton('Créer')->form([
+            'cursus[name]' => 'Cursus Test New',
+            'cursus[theme]' => (string) $musique->getId(),
+            'cursus[price]' => '88.50',
+            'cursus[description]' => 'Description test',
+            'cursus[image]' => '',
+        ]);
 
         $this->client->submit($form);
 
         self::assertResponseRedirects('/admin/cursus');
+
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
 
         self::assertSelectorExists('.flash-messages .flash.flash-success');
         self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Cursus créé.');
 
+        $this->em->clear();
+
         /** @var Cursus|null $created */
         $created = $this->em->getRepository(Cursus::class)->findOneBy(['name' => 'Cursus Test New']);
+
         self::assertNotNull($created);
         self::assertTrue($created->isActive());
         self::assertSame('Musique', $created->getTheme()?->getName());
         self::assertEquals(88.50, (float) $created->getPrice());
+        self::assertSame('Description test', $created->getDescription());
     }
 
     public function testNewGetWithNoActiveThemesShowsImpossibleMessageAndDisabledSubmit(): void
@@ -219,12 +214,16 @@ class AdminCursusNewTest extends WebTestCase
         $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/new');
         self::assertResponseIsSuccessful();
 
+        self::assertSelectorTextContains('h1.admin-page-title', 'Créer un cursus');
         self::assertSelectorExists('.admin-alert.admin-alert-danger');
         self::assertSelectorTextContains('.admin-alert.admin-alert-danger', 'Aucun thème actif disponible');
+        self::assertSelectorExists('a[href="/admin/themes/new"]');
+        self::assertSelectorExists('a.btn.btn-secondary[href="/admin/themes"]');
 
         $btn = $crawler->selectButton('Créer');
         self::assertGreaterThan(0, $btn->count());
         self::assertNotNull($btn->attr('disabled'));
+        self::assertSame('true', $btn->attr('aria-disabled'));
     }
 
     public function testNewPostManualWhenNoActiveThemesRedirectsToThemeIndexWithFlashError(): void
@@ -248,8 +247,51 @@ class AdminCursusNewTest extends WebTestCase
         self::assertSelectorExists('.flash-messages .flash.flash-error');
         self::assertSelectorTextContains('.flash-messages .flash.flash-error', 'Aucun thème actif disponible');
 
+        $this->em->clear();
+
         $notCreated = $this->em->getRepository(Cursus::class)->findOneBy(['name' => 'Should Not Create']);
         self::assertNull($notCreated);
+    }
+
+    public function testNewPostWithInvalidDataShowsErrorsAndDoesNotPersist(): void
+    {
+        $this->loginAsAdmin();
+
+        $this->setAllThemesActive(true);
+        $musique = $this->getThemeByName('Musique');
+
+        $beforeCount = $this->em->getRepository(Cursus::class)->count([]);
+
+        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/new');
+        self::assertResponseIsSuccessful();
+
+        $form = $crawler->selectButton('Créer')->form([
+            'cursus[name]' => '',
+            'cursus[theme]' => (string) $musique->getId(),
+            'cursus[price]' => '20.00',
+            'cursus[description]' => 'Texte',
+            'cursus[image]' => '',
+        ]);
+
+        $this->client->submit($form);
+
+        self::assertResponseStatusCodeSame(200);
+
+        $content = (string) $this->client->getResponse()->getContent();
+
+        $hasCustom = str_contains($content, 'Le nom est obligatoire.');
+        $hasDefault = str_contains($content, 'This value should not be blank')
+            || str_contains($content, 'Cette valeur ne doit pas être vide');
+
+        self::assertTrue(
+            $hasCustom || $hasDefault,
+            'Expected a validation message in the response content.'
+        );
+
+        $this->em->clear();
+        $afterCount = $this->em->getRepository(Cursus::class)->count([]);
+
+        self::assertSame($beforeCount, $afterCount);
     }
 
     protected function tearDown(): void

@@ -51,6 +51,7 @@ class AdminLessonIndexTest extends WebTestCase
     private function requestIndex(array $query = []): Crawler
     {
         $qs = $query ? ('?' . http_build_query($query)) : '';
+
         return $this->client->request('GET', 'https://localhost/admin/lesson' . $qs);
     }
 
@@ -60,28 +61,22 @@ class AdminLessonIndexTest extends WebTestCase
         $lessons = $this->em->getRepository(Lesson::class)->findAll();
         self::assertNotEmpty($lessons, 'No lessons found (fixtures missing?).');
 
-        // Mix status: 1 archived, le reste active
-        foreach ($lessons as $i => $l) {
-            $l->setIsActive($i !== 0);
+        foreach ($lessons as $i => $lesson) {
+            $lesson->setIsActive($i !== 0);
         }
 
-        // Titres contrôlés (pour q + tri)
-        $lessons[0]->setTitle('AAA - Unique Lesson Search Token');
-        if (isset($lessons[1])) {
-            $lessons[1]->setTitle('MMM - Lesson Title');
-        }
-        if (isset($lessons[2])) {
-            $lessons[2]->setTitle('ZZZ - Lesson Title');
-        }
-
-        // Prix contrôlés (pour tri price)
         if (isset($lessons[0])) {
+            $lessons[0]->setTitle('AAA - Unique Lesson Search Token');
             $lessons[0]->setPrice('99.00');
         }
+
         if (isset($lessons[1])) {
+            $lessons[1]->setTitle('MMM - Lesson Title');
             $lessons[1]->setPrice('5.00');
         }
+
         if (isset($lessons[2])) {
+            $lessons[2]->setTitle('ZZZ - Lesson Title');
             $lessons[2]->setPrice('50.00');
         }
 
@@ -91,31 +86,27 @@ class AdminLessonIndexTest extends WebTestCase
 
     private function getDisplayedLessonTitles(Crawler $crawler): array
     {
-        $titles = [];
-        $crawler->filter('.lesson-card h2.lesson-title > span:first-child')->each(function (Crawler $node) use (&$titles) {
-            $titles[] = trim($node->text());
-        });
-        return $titles;
+        return $crawler
+            ->filter('.lesson-card .lesson-title > span:first-child')
+            ->each(fn (Crawler $node) => trim($node->text()));
     }
 
     private function getAnyCursus(): Cursus
     {
-        $c = $this->em->getRepository(Cursus::class)->findOneBy([]);
-        self::assertNotNull($c, 'No cursus found (fixtures missing?).');
-        return $c;
+        $cursus = $this->em->getRepository(Cursus::class)->findOneBy([]);
+        self::assertNotNull($cursus, 'No cursus found (fixtures missing?).');
+
+        return $cursus;
     }
 
     private function getAnyTheme(): Theme
     {
-        $t = $this->em->getRepository(Theme::class)->findOneBy([]);
-        self::assertNotNull($t, 'No theme found (fixtures missing?).');
-        return $t;
+        $theme = $this->em->getRepository(Theme::class)->findOneBy([]);
+        self::assertNotNull($theme, 'No theme found (fixtures missing?).');
+
+        return $theme;
     }
 
-    /**
-     * Calcule l'ordre attendu EN BASE, avec les mêmes règles que LessonRepository,
-     * sans réutiliser le repo (on construit notre propre QB).
-     */
     private function getExpectedTitlesFromDb(?string $q, string $status, ?int $cursusId, ?int $themeId, string $sort): array
     {
         $qb = $this->em->createQueryBuilder()
@@ -127,7 +118,7 @@ class AdminLessonIndexTest extends WebTestCase
 
         if ($q !== null && $q !== '') {
             $qb->andWhere('LOWER(l.title) LIKE :q')
-               ->setParameter('q', '%' . mb_strtolower(trim($q)) . '%');
+                ->setParameter('q', '%' . mb_strtolower(trim($q)) . '%');
         }
 
         if ($status === 'active') {
@@ -137,56 +128,58 @@ class AdminLessonIndexTest extends WebTestCase
         }
 
         if ($cursusId) {
-            $qb->andWhere('c.id = :cursusId')->setParameter('cursusId', $cursusId);
+            $qb->andWhere('c.id = :cursusId')
+                ->setParameter('cursusId', $cursusId);
         }
 
         if ($themeId) {
-            $qb->andWhere('t.id = :themeId')->setParameter('themeId', $themeId);
+            $qb->andWhere('t.id = :themeId')
+                ->setParameter('themeId', $themeId);
         }
 
         switch ($sort) {
             case 'title_asc':
                 $qb->orderBy('l.title', 'ASC');
                 break;
+
             case 'title_desc':
                 $qb->orderBy('l.title', 'DESC');
                 break;
+
             case 'price_asc':
-                // NULL last (si jamais nullable dans un autre env)
                 $qb->addOrderBy('CASE WHEN l.price IS NULL THEN 1 ELSE 0 END', 'ASC')
-                   ->addOrderBy('l.price', 'ASC');
+                    ->addOrderBy('l.price', 'ASC');
                 break;
+
             case 'price_desc':
                 $qb->addOrderBy('CASE WHEN l.price IS NULL THEN 1 ELSE 0 END', 'ASC')
-                   ->addOrderBy('l.price', 'DESC');
+                    ->addOrderBy('l.price', 'DESC');
                 break;
+
             case 'id_desc':
             default:
                 $qb->orderBy('l.id', 'DESC');
+                break;
         }
 
         /** @var Lesson[] $rows */
         $rows = $qb->getQuery()->getResult();
 
-        return array_map(fn (Lesson $l) => (string) $l->getTitle(), $rows);
+        return array_map(fn (Lesson $lesson) => (string) $lesson->getTitle(), $rows);
     }
-
-    // -------------------------------------------------
-    // BASIC
-    // -------------------------------------------------
 
     public function testIndexPageLoads(): void
     {
         $this->loginAsAdmin();
 
-        $this->requestIndex();
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Leçons');
-    }
+        $crawler = $this->requestIndex();
 
-    // -------------------------------------------------
-    // FILTERS
-    // -------------------------------------------------
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1.admin-page-title', 'Leçons');
+        self::assertSelectorExists('form.admin-filters');
+        self::assertSelectorExists('.lesson-grid');
+        self::assertGreaterThan(0, $crawler->filter('.lesson-card')->count());
+    }
 
     public function testFilterByQueryFiltersOnTitle(): void
     {
@@ -198,8 +191,8 @@ class AdminLessonIndexTest extends WebTestCase
         $titles = $this->getDisplayedLessonTitles($crawler);
         self::assertNotEmpty($titles);
 
-        foreach ($titles as $t) {
-            self::assertStringContainsString('Unique Lesson Search Token', $t);
+        foreach ($titles as $title) {
+            self::assertStringContainsString('Unique Lesson Search Token', $title);
         }
     }
 
@@ -207,34 +200,44 @@ class AdminLessonIndexTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $this->requestIndex(['status' => 'all']);
+        $crawler = $this->requestIndex(['status' => 'all']);
         self::assertResponseIsSuccessful();
 
-        $html = (string) $this->client->getResponse()->getContent();
-        self::assertStringContainsString('badge-archived', $html, 'Expected at least one archived lesson.');
-        self::assertStringContainsString('badge-active', $html, 'Expected at least one active lesson.');
+        self::assertGreaterThan(
+            0,
+            $crawler->filter('.lesson-card .badge-active')->count(),
+            'Expected at least one active lesson.'
+        );
+
+        self::assertGreaterThan(
+            0,
+            $crawler->filter('.lesson-card .badge-archived')->count(),
+            'Expected at least one archived lesson.'
+        );
     }
 
     public function testFilterByStatusActive(): void
     {
         $this->loginAsAdmin();
 
-        $this->requestIndex(['status' => 'active']);
+        $crawler = $this->requestIndex(['status' => 'active']);
         self::assertResponseIsSuccessful();
 
-        $html = (string) $this->client->getResponse()->getContent();
-        self::assertStringNotContainsString('badge-archived', $html);
+        self::assertGreaterThan(0, $crawler->filter('.lesson-card')->count());
+        self::assertSame(0, $crawler->filter('.lesson-card .badge-archived')->count());
+        self::assertGreaterThan(0, $crawler->filter('.lesson-card .badge-active')->count());
     }
 
     public function testFilterByStatusArchived(): void
     {
         $this->loginAsAdmin();
 
-        $this->requestIndex(['status' => 'archived']);
+        $crawler = $this->requestIndex(['status' => 'archived']);
         self::assertResponseIsSuccessful();
 
-        $html = (string) $this->client->getResponse()->getContent();
-        self::assertStringContainsString('badge-archived', $html);
+        self::assertGreaterThan(0, $crawler->filter('.lesson-card')->count());
+        self::assertGreaterThan(0, $crawler->filter('.lesson-card .badge-archived')->count());
+        self::assertSame(0, $crawler->filter('.lesson-card .badge-active')->count());
     }
 
     public function testFilterByCursusId(): void
@@ -247,14 +250,16 @@ class AdminLessonIndexTest extends WebTestCase
         self::assertResponseIsSuccessful();
 
         $titles = $this->getDisplayedLessonTitles($crawler);
+
         if (empty($titles)) {
-            self::assertStringContainsString('Aucune leçon pour le moment', (string) $this->client->getResponse()->getContent());
+            self::assertSelectorTextContains('.lesson-grid', 'Aucune leçon pour le moment.');
             return;
         }
 
         foreach ($titles as $title) {
             /** @var Lesson|null $lesson */
             $lesson = $this->em->getRepository(Lesson::class)->findOneBy(['title' => $title]);
+
             self::assertNotNull($lesson);
             self::assertSame($cursus->getId(), $lesson->getCursus()?->getId());
         }
@@ -272,13 +277,14 @@ class AdminLessonIndexTest extends WebTestCase
         $titles = $this->getDisplayedLessonTitles($crawler);
 
         if (empty($titles)) {
-            self::assertStringContainsString('Aucune leçon pour le moment', (string) $this->client->getResponse()->getContent());
+            self::assertSelectorTextContains('.lesson-grid', 'Aucune leçon pour le moment.');
             return;
         }
 
         foreach ($titles as $title) {
             /** @var Lesson|null $lesson */
             $lesson = $this->em->getRepository(Lesson::class)->findOneBy(['title' => $title]);
+
             self::assertNotNull($lesson);
             self::assertSame($theme->getId(), $lesson->getCursus()?->getTheme()?->getId());
         }
@@ -288,18 +294,12 @@ class AdminLessonIndexTest extends WebTestCase
     {
         $this->loginAsAdmin();
 
-        $this->requestIndex(['theme' => 999999]);
+        $crawler = $this->requestIndex(['theme' => 999999]);
         self::assertResponseIsSuccessful();
 
-        self::assertStringContainsString(
-            'Aucune leçon pour le moment',
-            (string) $this->client->getResponse()->getContent()
-        );
+        self::assertSame(0, $crawler->filter('.lesson-card')->count());
+        self::assertSelectorTextContains('.lesson-grid', 'Aucune leçon pour le moment.');
     }
-
-    // -------------------------------------------------
-    // SORT
-    // -------------------------------------------------
 
     /**
      * @dataProvider sortProvider
@@ -312,7 +312,6 @@ class AdminLessonIndexTest extends WebTestCase
         self::assertResponseIsSuccessful();
 
         $displayed = $this->getDisplayedLessonTitles($crawler);
-
         $expected = $this->getExpectedTitlesFromDb(null, 'all', null, null, $sort);
 
         self::assertSame($expected, $displayed);
@@ -345,6 +344,9 @@ class AdminLessonIndexTest extends WebTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        $this->em->close();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

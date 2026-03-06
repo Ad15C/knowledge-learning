@@ -35,10 +35,6 @@ class AdminCursusDeleteTest extends WebTestCase
         ]);
     }
 
-    // -------------------------
-    // HELPERS
-    // -------------------------
-
     private function loginAsAdmin(): void
     {
         $admin = $this->em->getRepository(User::class)
@@ -61,12 +57,13 @@ class AdminCursusDeleteTest extends WebTestCase
     {
         $cursus = $this->em->getRepository(Cursus::class)->findOneBy([]);
         self::assertNotNull($cursus, 'No cursus found (fixtures missing?).');
+
         return $cursus;
     }
 
     private function extractHiddenToken(Crawler $crawler, string $formSelector, string $inputName = '_token'): string
     {
-        $input = $crawler->filter($formSelector.' input[name="'.$inputName.'"]');
+        $input = $crawler->filter($formSelector . ' input[name="' . $inputName . '"]');
 
         self::assertGreaterThan(
             0,
@@ -80,32 +77,34 @@ class AdminCursusDeleteTest extends WebTestCase
         return $token;
     }
 
-    // -------------------------
-    // SECURITY
-    // -------------------------
-
     public function testDeleteConfirmGetRedirectsToLoginWhenNotLoggedIn(): void
     {
         $cursus = $this->getAnyCursus();
-        $this->client->request('GET', 'https://localhost/admin/cursus/'.$cursus->getId().'/delete');
+
+        $this->client->request('GET', 'https://localhost/admin/cursus/' . $cursus->getId() . '/delete');
+
         self::assertResponseRedirects('/login');
     }
 
     public function testDisablePostRedirectsToLoginWhenNotLoggedIn(): void
     {
         $cursus = $this->getAnyCursus();
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$cursus->getId().'/disable', [
+
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $cursus->getId() . '/disable', [
             '_token' => 'whatever',
         ]);
+
         self::assertResponseRedirects('/login');
     }
 
     public function testActivatePostRedirectsToLoginWhenNotLoggedIn(): void
     {
         $cursus = $this->getAnyCursus();
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$cursus->getId().'/activate', [
+
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $cursus->getId() . '/activate', [
             '_token' => 'whatever',
         ]);
+
         self::assertResponseRedirects('/login');
     }
 
@@ -114,7 +113,8 @@ class AdminCursusDeleteTest extends WebTestCase
         $this->loginAsUser();
         $cursus = $this->getAnyCursus();
 
-        $this->client->request('GET', 'https://localhost/admin/cursus/'.$cursus->getId().'/delete');
+        $this->client->request('GET', 'https://localhost/admin/cursus/' . $cursus->getId() . '/delete');
+
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -123,9 +123,10 @@ class AdminCursusDeleteTest extends WebTestCase
         $this->loginAsUser();
         $cursus = $this->getAnyCursus();
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$cursus->getId().'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $cursus->getId() . '/disable', [
             '_token' => 'whatever',
         ]);
+
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -134,31 +135,55 @@ class AdminCursusDeleteTest extends WebTestCase
         $this->loginAsUser();
         $cursus = $this->getAnyCursus();
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$cursus->getId().'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $cursus->getId() . '/activate', [
             '_token' => 'whatever',
         ]);
+
         self::assertResponseStatusCodeSame(403);
     }
-
-    // -------------------------
-    // FUNCTIONAL
-    // -------------------------
 
     public function testDeleteConfirmPageIsSuccessful(): void
     {
         $this->loginAsAdmin();
 
         $cursus = $this->getAnyCursus();
+        $cursus->setName('Cursus test suppression');
+        $cursus->setDescription('Description de test');
+        $cursus->setPrice(49.90);
+        $this->em->flush();
+
         $id = $cursus->getId();
 
-        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/'.$id.'/delete');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/' . $id . '/delete');
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorTextContains('h1', 'Archiver un cursus');
-        self::assertSelectorExists('form[action*="/admin/cursus/'.$id.'/disable"]');
+        self::assertSelectorTextContains('h1.admin-page-title', 'Désactiver un cursus');
+        self::assertSelectorTextContains('.theme-detail-title', 'Cursus test suppression');
+        self::assertSelectorExists('form[action*="/admin/cursus/' . $id . '/disable"]');
+        self::assertSelectorTextContains('.admin-alert-danger', 'Ce cursus sera désactivé');
+        self::assertSelectorTextContains('button.btn.btn-danger', 'Confirmer la désactivation');
+        self::assertSelectorExists('a.btn.btn-secondary[href="/admin/cursus"]');
 
-        // token disable présent
-        $this->extractHiddenToken($crawler, 'form[action*="/admin/cursus/'.$id.'/disable"]');
+        $content = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('Thème', $content);
+        self::assertStringContainsString('Prix', $content);
+        self::assertStringContainsString('Description de test', $content);
+
+        $this->extractHiddenToken($crawler, 'form[action*="/admin/cursus/' . $id . '/disable"]');
+    }
+
+    public function testDeleteConfirmPageWithoutDescriptionDoesNotCrash(): void
+    {
+        $this->loginAsAdmin();
+
+        $cursus = $this->getAnyCursus();
+        $cursus->setDescription(null);
+        $this->em->flush();
+
+        $this->client->request('GET', 'https://localhost/admin/cursus/' . $cursus->getId() . '/delete');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1.admin-page-title', 'Désactiver un cursus');
     }
 
     public function testDisableWithValidCsrfSetsIsActiveFalse(): void
@@ -171,17 +196,17 @@ class AdminCursusDeleteTest extends WebTestCase
         $cursus->setIsActive(true);
         $this->em->flush();
 
-        // Token depuis la page confirm delete
-        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/'.$id.'/delete');
+        $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/' . $id . '/delete');
         self::assertResponseIsSuccessful();
 
-        $token = $this->extractHiddenToken($crawler, 'form[action*="/admin/cursus/'.$id.'/disable"]');
+        $token = $this->extractHiddenToken($crawler, 'form[action*="/admin/cursus/' . $id . '/disable"]');
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$id.'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $id . '/disable', [
             '_token' => $token,
         ]);
 
         self::assertResponseRedirects('/admin/cursus');
+
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
 
@@ -190,6 +215,7 @@ class AdminCursusDeleteTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Cursus::class)->find($id);
+
         self::assertNotNull($reloaded);
         self::assertFalse($reloaded->isActive());
     }
@@ -201,23 +227,22 @@ class AdminCursusDeleteTest extends WebTestCase
         $cursus = $this->getAnyCursus();
         $id = $cursus->getId();
 
-        // IMPORTANT : on force inactif + on va sur /admin/cursus?status=archived
-        // pour garantir que le form "Restaurer" est présent.
         $cursus->setIsActive(false);
         $this->em->flush();
 
         $crawler = $this->client->request('GET', 'https://localhost/admin/cursus?status=archived');
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorExists('form[action*="/admin/cursus/'.$id.'/activate"]');
+        self::assertSelectorExists('form[action*="/admin/cursus/' . $id . '/activate"]');
 
-        $token = $this->extractHiddenToken($crawler, 'form[action*="/admin/cursus/'.$id.'/activate"]');
+        $token = $this->extractHiddenToken($crawler, 'form[action*="/admin/cursus/' . $id . '/activate"]');
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$id.'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $id . '/activate', [
             '_token' => $token,
         ]);
 
         self::assertResponseRedirects('/admin/cursus');
+
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
 
@@ -226,6 +251,7 @@ class AdminCursusDeleteTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Cursus::class)->find($id);
+
         self::assertNotNull($reloaded);
         self::assertTrue($reloaded->isActive());
     }
@@ -240,7 +266,7 @@ class AdminCursusDeleteTest extends WebTestCase
         $cursus->setIsActive(true);
         $this->em->flush();
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$id.'/disable', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $id . '/disable', [
             '_token' => 'invalid_token',
         ]);
 
@@ -248,6 +274,7 @@ class AdminCursusDeleteTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Cursus::class)->find($id);
+
         self::assertNotNull($reloaded);
         self::assertTrue($reloaded->isActive());
     }
@@ -262,7 +289,7 @@ class AdminCursusDeleteTest extends WebTestCase
         $cursus->setIsActive(false);
         $this->em->flush();
 
-        $this->client->request('POST', 'https://localhost/admin/cursus/'.$id.'/activate', [
+        $this->client->request('POST', 'https://localhost/admin/cursus/' . $id . '/activate', [
             '_token' => 'invalid_token',
         ]);
 
@@ -270,6 +297,7 @@ class AdminCursusDeleteTest extends WebTestCase
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(Cursus::class)->find($id);
+
         self::assertNotNull($reloaded);
         self::assertFalse($reloaded->isActive());
     }
@@ -277,6 +305,9 @@ class AdminCursusDeleteTest extends WebTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        $this->em->close();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

@@ -72,13 +72,9 @@ class AdminCursusEditTest extends WebTestCase
 
     private function getThemeSelectLabels(Crawler $crawler): array
     {
-        $labels = [];
-
-        $crawler->filter('select[name="cursus[theme]"] option')->each(function (Crawler $opt) use (&$labels) {
-            $labels[] = trim($opt->text());
-        });
-
-        return $labels;
+        return $crawler
+            ->filter('select[name="cursus[theme]"] option')
+            ->each(fn (Crawler $opt) => trim($opt->text()));
     }
 
     // -------------------------
@@ -98,7 +94,9 @@ class AdminCursusEditTest extends WebTestCase
         $cursus = $this->getAnyCursus();
 
         $this->client->request('POST', 'https://localhost/admin/cursus/' . $cursus->getId() . '/edit', [
-            'cursus' => ['name' => 'Hack'],
+            'cursus' => [
+                'name' => 'Hack',
+            ],
         ]);
 
         self::assertResponseRedirects('/login');
@@ -119,7 +117,9 @@ class AdminCursusEditTest extends WebTestCase
         $cursus = $this->getAnyCursus();
 
         $this->client->request('POST', 'https://localhost/admin/cursus/' . $cursus->getId() . '/edit', [
-            'cursus' => ['name' => 'Hack'],
+            'cursus' => [
+                'name' => 'Hack',
+            ],
         ]);
 
         self::assertResponseStatusCodeSame(403);
@@ -138,12 +138,16 @@ class AdminCursusEditTest extends WebTestCase
         $cursus->setDescription('Desc avant edit');
         $cursus->setPrice(42.50);
         $cursus->setImage('/img-avant.jpg');
+        $cursus->setIsActive(true);
         $this->em->flush();
 
         $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/' . $cursus->getId() . '/edit');
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorTextContains('h1', 'Modifier : ' . $cursus->getName());
+        self::assertSelectorTextContains('h1.admin-page-title', 'Modifier : Nom avant edit');
+        self::assertSelectorExists('.admin-page-header');
+        self::assertSelectorExists('.admin-form-actions');
+        self::assertSelectorExists('a.btn.btn-secondary[href="/admin/cursus"]');
 
         $form = $crawler->filter('form')->first()->form();
 
@@ -151,6 +155,24 @@ class AdminCursusEditTest extends WebTestCase
         self::assertSame('Desc avant edit', $form['cursus[description]']->getValue());
         self::assertStringContainsString('42', (string) $form['cursus[price]']->getValue());
         self::assertSame('/img-avant.jpg', $form['cursus[image]']->getValue());
+
+        self::assertSelectorExists('button[type="submit"]');
+        self::assertSelectorExists('a.btn.btn-danger');
+        self::assertSelectorTextContains('a.btn.btn-danger', 'Désactiver');
+    }
+
+    public function testEditGetDoesNotShowDisableButtonWhenCursusIsInactive(): void
+    {
+        $this->loginAsAdmin();
+
+        $cursus = $this->getAnyCursus();
+        $cursus->setIsActive(false);
+        $this->em->flush();
+
+        $this->client->request('GET', 'https://localhost/admin/cursus/' . $cursus->getId() . '/edit');
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorNotExists('a.btn.btn-danger');
     }
 
     public function testEditGetThemeSelectContainsActiveThemesAndCurrentThemeEvenIfArchived(): void
@@ -160,14 +182,15 @@ class AdminCursusEditTest extends WebTestCase
         $cursus = $this->getAnyCursus();
 
         $informatique = $this->getThemeByName('Informatique');
+        $musique = $this->getThemeByName('Musique');
+        $jardinage = $this->getThemeByName('Jardinage');
+
         $cursus->setTheme($informatique);
         $this->em->flush();
 
-        $informatique->setIsActive(false);
-        $this->em->flush();
-
-        $musique = $this->getThemeByName('Musique');
-        $musique->setIsActive(true);
+        $informatique->setIsActive(false); // thème courant inactif mais doit rester visible
+        $musique->setIsActive(true);       // thème actif visible
+        $jardinage->setIsActive(false);    // thème inactif non courant, ne doit pas apparaître
         $this->em->flush();
 
         $crawler = $this->client->request('GET', 'https://localhost/admin/cursus/' . $cursus->getId() . '/edit');
@@ -178,6 +201,7 @@ class AdminCursusEditTest extends WebTestCase
         self::assertContains('— Choisir un thème —', $labels);
         self::assertContains('Musique', $labels);
         self::assertContains('Informatique', $labels);
+        self::assertNotContains('Jardinage', $labels);
     }
 
     public function testEditPostUpdatesCursusAndRedirectsWithFlash(): void
@@ -211,6 +235,7 @@ class AdminCursusEditTest extends WebTestCase
         self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Cursus modifié.');
 
         $this->em->clear();
+
         /** @var Cursus|null $reloaded */
         $reloaded = $this->em->getRepository(Cursus::class)->find($id);
 
@@ -235,6 +260,7 @@ class AdminCursusEditTest extends WebTestCase
         $this->em->flush();
 
         $this->em->clear();
+
         /** @var Cursus|null $before */
         $before = $this->em->getRepository(Cursus::class)->find($id);
         self::assertNotNull($before);
@@ -250,7 +276,7 @@ class AdminCursusEditTest extends WebTestCase
             'cursus[image]' => $before->getImage() ?? '',
         ]);
 
-        $crawler = $this->client->submit($form);
+        $this->client->submit($form);
 
         self::assertResponseStatusCodeSame(200);
 
@@ -266,10 +292,12 @@ class AdminCursusEditTest extends WebTestCase
         );
 
         $this->em->clear();
-        /** @var Cursus|null $after */
-        $after = $this->em->getRepository(Cursus::class)->find($id);
-        self::assertNotNull($after);
 
+        /** @var Cursus|null $after */
+        $this->em->clear();
+        $after = $this->em->getRepository(Cursus::class)->find($id);
+
+        self::assertNotNull($after);
         self::assertSame('Nom initial', $after->getName());
         self::assertSame('Desc initiale', $after->getDescription());
         self::assertEquals(10.00, (float) $after->getPrice());
