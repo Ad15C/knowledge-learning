@@ -42,16 +42,20 @@ class RegistrationVerificationLoginDashboardLogoutTest extends WebTestCase
 
         $this->client->submit($form);
         $this->assertResponseRedirects('/login');
-        $this->client->followRedirect();
+
+        $crawler = $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
         /** @var User|null $user */
-        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'test@example.com']);
+        $user = $this->em->getRepository(User::class)->findOneBy([
+            'email' => 'test@example.com',
+        ]);
+
         $this->assertNotNull($user);
         $this->assertFalse($user->isVerified());
         $this->assertNotEmpty($user->getVerificationToken());
 
-        // 2) Login BEFORE verification => should NOT reach dashboard
+        // 2) Login BEFORE verification => accès refusé
         $crawler = $this->client->request('GET', '/login');
         $this->assertResponseIsSuccessful();
 
@@ -62,34 +66,42 @@ class RegistrationVerificationLoginDashboardLogoutTest extends WebTestCase
 
         $this->client->submit($loginForm);
 
-        // Certaines configs redirigent (ex: back to /login)
         if ($this->client->getResponse()->isRedirection()) {
-            $this->client->followRedirect();
+            $crawler = $this->client->followRedirect();
+        } else {
+            $crawler = $this->client->getCrawler();
         }
+
         $this->assertResponseIsSuccessful();
 
-        // On vérifie qu'on n'est PAS sur le dashboard
-        $this->assertStringNotContainsString('/dashboard', (string) $this->client->getRequest()->getPathInfo());
+        // On ne doit pas être sur le dashboard
+        $this->assertNotSame('/dashboard', $this->client->getRequest()->getPathInfo());
 
-        // Et qu'une erreur est affichée (message/flash)
-        // Ton template login affiche: <div class="flash flash-error">...</div> si error
-        $this->assertSelectorExists('.flash-error, .flash.flash-error');
+        // Une erreur de connexion doit être visible
+        $this->assertSelectorExists('.flash-error');
 
-        // 3) Verify email using token
-        $this->client->request('GET', '/verify-email?token=' . urlencode($user->getVerificationToken()));
+        // 3) Verify email with token
+        $token = $user->getVerificationToken();
+        $this->assertNotNull($token);
+
+        $this->client->request('GET', '/verify-email?token=' . urlencode($token));
         $this->assertResponseRedirects('/login');
+
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
         $this->em->clear();
 
         /** @var User|null $verifiedUser */
-        $verifiedUser = $this->em->getRepository(User::class)->findOneBy(['email' => 'test@example.com']);
+        $verifiedUser = $this->em->getRepository(User::class)->findOneBy([
+            'email' => 'test@example.com',
+        ]);
+
         $this->assertNotNull($verifiedUser);
         $this->assertTrue($verifiedUser->isVerified());
         $this->assertNull($verifiedUser->getVerificationToken());
 
-        // 4) Login AFTER verification => should succeed and reach dashboard
+        // 4) Login AFTER verification => succès
         $crawler = $this->client->request('GET', '/login');
         $this->assertResponseIsSuccessful();
 
@@ -99,29 +111,57 @@ class RegistrationVerificationLoginDashboardLogoutTest extends WebTestCase
         ]);
 
         $this->client->submit($loginForm);
-        $this->assertTrue($this->client->getResponse()->isRedirection());
+        $this->assertTrue(
+            $this->client->getResponse()->isRedirection(),
+            'Après vérification, le login doit rediriger.'
+        );
 
-        $this->client->followRedirect();
+        $crawler = $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
-        // Dashboard content check (stable)
-        $this->assertSelectorExists('h1');
-        $this->assertSelectorTextContains('h1', 'Bonjour,');
+        // Vérifications robustes du dashboard
+        $this->assertSame('/dashboard', $this->client->getRequest()->getPathInfo());
+        $this->assertSelectorExists('.dashboard-layout');
+        $this->assertLinkExistsWithText($crawler, 'Mes achats');
+        $this->assertLinkExistsWithText($crawler, 'Mes certificats');
+        $this->assertLinkExistsWithText($crawler, 'Sécurité');
 
-        // 5) Logout => redirect login
+        // 5) Logout
         $this->client->request('GET', '/logout');
-        $this->assertTrue($this->client->getResponse()->isRedirection());
+        $this->assertTrue(
+            $this->client->getResponse()->isRedirection(),
+            'La route /logout doit rediriger.'
+        );
 
-        $this->client->followRedirect();
+        $crawler = $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
-        $this->assertSelectorExists('form'); // page login a un form
 
-        // 6) Dashboard after logout => should redirect to login
+        // Selon ta config firewall, la redirection peut être vers / ou /login
+        // On vérifie surtout que l'utilisateur n'est plus authentifié
+        // et qu'on retrouve un menu visiteur ou un formulaire
+        $this->assertTrue(
+            $crawler->filter('form')->count() > 0
+            || $crawler->filterXPath('//a[contains(normalize-space(.), "Se connecter")]')->count() > 0
+        );
+
+        // 6) Dashboard after logout => accès refusé / redirection login
         $this->client->request('GET', '/dashboard');
-        $this->assertTrue($this->client->getResponse()->isRedirection());
+        $this->assertTrue(
+            $this->client->getResponse()->isRedirection(),
+            'Après logout, /dashboard doit rediriger.'
+        );
 
-        $this->client->followRedirect();
+        $crawler = $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
         $this->assertSelectorExists('form');
+    }
+
+    private function assertLinkExistsWithText($crawler, string $text): void
+    {
+        $this->assertGreaterThan(
+            0,
+            $crawler->filterXPath(sprintf('//a[contains(normalize-space(.), "%s")]', $text))->count(),
+            sprintf('Lien "%s" introuvable', $text)
+        );
     }
 }

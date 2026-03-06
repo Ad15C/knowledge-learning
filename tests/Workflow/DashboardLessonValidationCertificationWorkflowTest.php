@@ -6,12 +6,15 @@ use App\Entity\Certification;
 use App\Entity\Cursus;
 use App\Entity\Lesson;
 use App\Entity\LessonValidated;
+use App\Entity\Purchase;
+use App\Entity\PurchaseItem;
 use App\Entity\Theme;
 use App\Entity\User;
 use App\Tests\DoctrineSchemaTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class DashboardLessonValidationCertificationWorkflowTest extends WebTestCase
 {
@@ -19,6 +22,7 @@ class DashboardLessonValidationCertificationWorkflowTest extends WebTestCase
 
     private KernelBrowser $client;
     private EntityManagerInterface $em;
+    private UrlGeneratorInterface $router;
 
     protected function setUp(): void
     {
@@ -27,34 +31,44 @@ class DashboardLessonValidationCertificationWorkflowTest extends WebTestCase
         $this->client = self::createClient();
         $this->client->disableReboot();
 
-        $this->em = self::getContainer()->get(EntityManagerInterface::class);
+        $container = self::getContainer();
+
+        $this->em = $container->get(EntityManagerInterface::class);
+        $this->router = $container->get('router');
+
         $this->resetDatabaseSchema($this->em);
     }
 
     public function testDashboardToLessonCompleteGeneratesCertification(): void
     {
-        // --- Arrange: user + theme + cursus + lesson
-        $user = new User();
-        $user->setEmail('user@example.com');
-        $user->setFirstName('User');
-        $user->setLastName('Test');
-        $user->setRoles(['ROLE_USER']);
-        $user->setIsVerified(true);
-        // Pas besoin d'un vrai hash si on utilise loginUser()
-        $user->setPassword('irrelevant');
+        // --- Arrange : user + theme + cursus + lesson
+        $user = (new User())
+            ->setEmail('user@example.com')
+            ->setFirstName('User')
+            ->setLastName('Test')
+            ->setRoles([]) // ROLE_USER ajouté automatiquement par getRoles()
+            ->setIsVerified(true)
+            ->setPassword('irrelevant');
 
-        $theme = new Theme();
-        $theme->setName('Theme Dashboard');
+        $theme = (new Theme())
+            ->setName('Theme Dashboard')
+            ->setDescription('Theme de test')
+            ->setIsActive(true);
 
-        $cursus = new Cursus();
-        $cursus->setName('Cursus Dashboard');
-        $cursus->setPrice(10.00);
-        $cursus->setTheme($theme);
+        $cursus = (new Cursus())
+            ->setName('Cursus Dashboard')
+            ->setPrice(10.00)
+            ->setDescription('Cursus de test')
+            ->setTheme($theme)
+            ->setIsActive(true);
 
-        $lesson = new Lesson();
-        $lesson->setTitle('Lesson Dashboard');
-        $lesson->setPrice(0.00);
-        $lesson->setCursus($cursus);
+        $lesson = (new Lesson())
+            ->setTitle('Lesson Dashboard')
+            ->setPrice(0.00)
+            ->setCursus($cursus)
+            ->setFiche('<p>Contenu de test</p>')
+            ->setVideoUrl('https://example.test/video')
+            ->setIsActive(true);
 
         $this->em->persist($theme);
         $this->em->persist($cursus);
@@ -62,16 +76,17 @@ class DashboardLessonValidationCertificationWorkflowTest extends WebTestCase
         $this->em->persist($user);
         $this->em->flush();
 
-        // IMPORTANT: LessonController protégé et vérifie l'accès via PurchaseItem(status=paid)
-        $purchase = new \App\Entity\Purchase();
-        $purchase->setUser($user);
-        $purchase->setStatus('paid');
-        $purchase->setPaidAt(new \DateTimeImmutable());
+        // --- Achat payé donnant accès à la leçon
+        $purchase = (new Purchase())
+            ->setUser($user)
+            ->setStatus(Purchase::STATUS_PAID)
+            ->setPaidAt(new \DateTimeImmutable());
 
-        $item = new \App\Entity\PurchaseItem();
-        $item->setPurchase($purchase);
-        $item->setLesson($lesson);
-        $item->setUnitPrice(0.00);
+        $item = (new PurchaseItem())
+            ->setPurchase($purchase)
+            ->setLesson($lesson)
+            ->setUnitPrice(0.00)
+            ->setQuantity(1);
 
         $purchase->addItem($item);
         $purchase->calculateTotal();
@@ -80,43 +95,54 @@ class DashboardLessonValidationCertificationWorkflowTest extends WebTestCase
         $this->em->persist($item);
         $this->em->flush();
 
-        // --- Login (stable, ne dépend pas du formulaire / champs)
+        // --- Login
         $this->client->loginUser($user);
 
         // --- Dashboard OK
-        $this->client->request('GET', '/dashboard');
+        $this->client->request('GET', $this->router->generate('user_dashboard'));
         $this->assertResponseIsSuccessful();
 
-        // --- Open lesson page (should be accessible)
-        $crawler = $this->client->request('GET', '/lesson/' . $lesson->getId());
+        // --- Open lesson page
+        $crawler = $this->client->request('GET', $this->router->generate('lesson_show', [
+            'id' => $lesson->getId(),
+        ]));
         $this->assertResponseIsSuccessful();
 
-        // --- Récupère le CSRF token depuis le formulaire rendu (robuste + session OK)
-        // Le formulaire Twig:
-        // <input type="hidden" name="_token" value="{{ csrf_token('lesson_complete_' ~ lesson.id) }}">
+        // --- Récupère le CSRF token du formulaire
         $tokenNode = $crawler->filter('form input[name="_token"]');
         $this->assertGreaterThan(
             0,
             $tokenNode->count(),
             'Token CSRF introuvable dans le formulaire de validation de leçon.'
         );
+
         $tokenValue = (string) $tokenNode->attr('value');
         $this->assertNotSame('', $tokenValue, 'Token CSRF vide.');
 
-        // --- Complete lesson (POST) avec CSRF
-        $this->client->request('POST', '/lesson/' . $lesson->getId() . '/complete', [
+        // --- Complete lesson
+        $this->client->request('POST', $this->router->generate('lesson_complete', [
+            'id' => $lesson->getId(),
+        ]), [
             '_token' => $tokenValue,
         ]);
 
-        $this->assertTrue($this->client->getResponse()->isRedirection());
+        $this->assertResponseRedirects(
+            $this->router->generate('lesson_show', ['id' => $lesson->getId()])
+        );
+
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
         // --- Re-fetch & assert in DB
         $this->em->clear();
 
-        $userDb = $this->em->getRepository(User::class)->findOneBy(['email' => 'user@example.com']);
-        $lessonDb = $this->em->getRepository(Lesson::class)->findOneBy(['title' => 'Lesson Dashboard']);
+        $userDb = $this->em->getRepository(User::class)->findOneBy([
+            'email' => 'user@example.com',
+        ]);
+        $lessonDb = $this->em->getRepository(Lesson::class)->findOneBy([
+            'title' => 'Lesson Dashboard',
+        ]);
+
         $this->assertNotNull($userDb);
         $this->assertNotNull($lessonDb);
 
@@ -124,18 +150,25 @@ class DashboardLessonValidationCertificationWorkflowTest extends WebTestCase
             'user' => $userDb,
             'lesson' => $lessonDb,
         ]);
+
         $this->assertNotNull($validated);
+        $this->assertTrue($validated->isCompleted());
+        $this->assertNotNull($validated->getValidatedAt());
 
         $lessonCert = $this->em->getRepository(Certification::class)->findOneBy([
             'user' => $userDb,
             'lesson' => $lessonDb,
             'type' => 'lesson',
         ]);
+
         $this->assertNotNull($lessonCert);
         $this->assertNotEmpty($lessonCert->getCertificateCode());
+        $this->assertNotNull($lessonCert->getIssuedAt());
 
         // --- PDF route
-        $this->client->request('GET', '/dashboard/certification/' . $lessonCert->getId() . '/pdf');
+        $this->client->request('GET', $this->router->generate('app_certification_pdf', [
+            'id' => $lessonCert->getId(),
+        ]));
         $this->assertResponseStatusCodeSame(200);
 
         $contentType = (string) $this->client->getResponse()->headers->get('Content-Type');

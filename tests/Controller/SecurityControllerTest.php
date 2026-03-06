@@ -2,33 +2,42 @@
 
 namespace App\Tests\Controller;
 
-use App\Entity\User;
-use App\Entity\Lesson;
 use App\Entity\Cursus;
+use App\Entity\Lesson;
 use App\Entity\Theme;
+use App\Entity\User;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class SecurityControllerTest extends WebTestCase
 {
-    // -----------------------------
-    // UTILITAIRES
-    // -----------------------------
-    private function createTestUser($client, $email = null, $password = 'Password1!')
-    {
+    private function createUserWithStatus(
+        KernelBrowser $client,
+        bool $isVerified = true,
+        bool $isArchived = false,
+        array $roles = [],
+        ?string $email = null,
+        string $password = 'Password1!'
+    ): User {
         $container = $client->getContainer();
         $passwordHasher = $container->get(UserPasswordHasherInterface::class);
 
         if (!$email) {
-            $email = 'test_' . uniqid() . '@example.com';
+            $email = 'test_' . uniqid('', true) . '@example.com';
         }
 
         $user = new User();
         $user->setEmail($email)
             ->setFirstName('Test')
             ->setLastName('User')
-            ->setPassword($passwordHasher->hashPassword($user, $password))
-            ->setIsVerified(true);
+            ->setIsVerified($isVerified)
+            ->setRoles($roles)
+            ->setPassword($passwordHasher->hashPassword($user, $password));
+
+        if ($isArchived) {
+            $user->setArchivedAt(new \DateTimeImmutable('-1 day'));
+        }
 
         $em = $container->get('doctrine')->getManager();
         $em->persist($user);
@@ -37,8 +46,12 @@ class SecurityControllerTest extends WebTestCase
         return $user;
     }
 
-    private function createTestLesson($client, $title = 'Test Lesson', $lessonPrice = 10.0, $cursusPrice = 100.0): Lesson
-    {
+    private function createTestLesson(
+        KernelBrowser $client,
+        string $title = 'Test Lesson',
+        float $lessonPrice = 10.0,
+        float $cursusPrice = 100.0
+    ): Lesson {
         $em = $client->getContainer()->get('doctrine')->getManager();
 
         $theme = new Theme();
@@ -62,23 +75,48 @@ class SecurityControllerTest extends WebTestCase
         return $lesson;
     }
 
-    // -----------------------------
-    // LOGIN / AUTHENTIFICATION
-    // -----------------------------
+    private function submitLoginForm(
+        KernelBrowser $client,
+        string $email,
+        string $password
+    ): void {
+        $crawler = $client->request('GET', '/login');
+
+        $form = $crawler->filter('#login-submit')->form();
+        $form['_username'] = $email;
+        $form['_password'] = $password;
+
+        $client->submit($form);
+    }
+
+    private function submitLoginFormWithRememberMe(
+        KernelBrowser $client,
+        string $email,
+        string $password
+    ): void {
+        $crawler = $client->request('GET', '/login');
+
+        $form = $crawler->filter('#login-submit')->form();
+        $form['_username'] = $email;
+        $form['_password'] = $password;
+        $form['_remember_me'] = 'on';
+
+        $client->submit($form);
+    }
+
     public function testLoginPageAndAuthentication(): void
     {
         $client = static::createClient();
-        $user = $this->createTestUser($client);
+        $user = $this->createUserWithStatus($client, true, false);
 
         $crawler = $client->request('GET', '/login');
         $this->assertResponseIsSuccessful();
         $this->assertSelectorExists('input[name="_username"]');
         $this->assertSelectorExists('input[name="_password"]');
 
-        $form = $crawler->filter('#login-submit')->form([
-            '_username' => $user->getEmail(),
-            '_password' => 'Password1!',
-        ]);
+        $form = $crawler->filter('#login-submit')->form();
+        $form['_username'] = $user->getEmail();
+        $form['_password'] = 'Password1!';
 
         $client->submit($form);
 
@@ -87,14 +125,7 @@ class SecurityControllerTest extends WebTestCase
         $client->followRedirect();
         $this->assertResponseIsSuccessful();
 
-        $crawler = $client->request('GET', '/login');
-
-        $form = $crawler->filter('#login-submit')->form([
-            '_username' => $user->getEmail(),
-            '_password' => 'WrongPassword!',
-        ]);
-
-        $client->submit($form);
+        $this->submitLoginForm($client, $user->getEmail(), 'WrongPassword!');
 
         $this->assertResponseRedirects('/login');
 
@@ -110,13 +141,32 @@ class SecurityControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
     }
 
-    // -----------------------------
-    // LOGOUT
-    // -----------------------------
+    public function testRememberMeCookieIsCreated(): void
+    {
+        $client = static::createClient();
+        $user = $this->createUserWithStatus($client, true, false);
+
+        $this->submitLoginFormWithRememberMe($client, $user->getEmail(), 'Password1!');
+
+        $this->assertResponseRedirects('/dashboard');
+
+        $cookies = $client->getResponse()->headers->getCookies();
+
+        $found = false;
+        foreach ($cookies as $cookie) {
+            if (\in_array($cookie->getName(), ['REMEMBERME', 'remember_me'], true)) {
+                $found = true;
+                break;
+            }
+        }
+
+        $this->assertTrue($found, 'Le cookie remember-me doit être créé.');
+    }
+
     public function testLogoutDestroysSession(): void
     {
         $client = static::createClient();
-        $user = $this->createTestUser($client);
+        $user = $this->createUserWithStatus($client, true, false);
 
         $client->loginUser($user);
         $client->request('GET', '/dashboard');
@@ -130,9 +180,30 @@ class SecurityControllerTest extends WebTestCase
         $this->assertResponseRedirects('/login');
     }
 
-    // -----------------------------
-    // SÉCURITÉ / ACCÈS PAGES PROTÉGÉES
-    // -----------------------------
+    public function testLogoutDeletesRememberMeCookie(): void
+    {
+        $client = static::createClient();
+        $user = $this->createUserWithStatus($client, true, false);
+
+        $this->submitLoginFormWithRememberMe($client, $user->getEmail(), 'Password1!');
+        $this->assertResponseRedirects('/dashboard');
+
+        $client->request('GET', '/logout');
+        $this->assertResponseRedirects('/login');
+
+        $cookies = $client->getResponse()->headers->getCookies();
+
+        $foundDeletedCookie = false;
+        foreach ($cookies as $cookie) {
+            if (\in_array($cookie->getName(), ['REMEMBERME', 'remember_me'], true) && $cookie->getExpiresTime() <= time()) {
+                $foundDeletedCookie = true;
+                break;
+            }
+        }
+
+        $this->assertTrue($foundDeletedCookie, 'Le cookie remember-me doit être supprimé au logout.');
+    }
+
     public function testProtectedRoutesRequireLogin(): void
     {
         $client = static::createClient();
@@ -158,12 +229,11 @@ class SecurityControllerTest extends WebTestCase
     public function testAuthenticatedUserCanAccessProtectedRoutes(): void
     {
         $client = static::createClient();
-        $user = $this->createTestUser($client);
+        $user = $this->createUserWithStatus($client, true, false);
         $lesson = $this->createTestLesson($client);
 
         $client->loginUser($user);
 
-        // Pages qui doivent répondre directement en 200
         $successfulRoutes = [
             '/dashboard',
             '/dashboard/purchases',
@@ -177,7 +247,6 @@ class SecurityControllerTest extends WebTestCase
             );
         }
 
-        // /lesson/{id} a un comportement spécifique : redirection vers /cursus/{id}
         $client->request('GET', '/lesson/' . $lesson->getId());
         $this->assertTrue(
             $client->getResponse()->isRedirection(),
@@ -193,6 +262,99 @@ class SecurityControllerTest extends WebTestCase
         $client->followRedirect();
         $this->assertResponseIsSuccessful(
             "Après redirection depuis /lesson/{id}, la page cible devrait être accessible."
+        );
+    }
+
+    public function testUnverifiedUserCannotLogin(): void
+    {
+        $client = static::createClient();
+        $user = $this->createUserWithStatus($client, false, false);
+
+        $this->submitLoginForm($client, $user->getEmail(), 'Password1!');
+
+        $this->assertResponseRedirects('/login');
+        $client->followRedirect();
+
+        $this->assertSelectorTextContains(
+            '.flash-error',
+            'Votre compte n’est pas encore vérifié.'
+        );
+    }
+
+    public function testArchivedUserCannotLogin(): void
+    {
+        $client = static::createClient();
+        $user = $this->createUserWithStatus($client, true, true);
+
+        $this->submitLoginForm($client, $user->getEmail(), 'Password1!');
+
+        $this->assertResponseRedirects('/login');
+        $client->followRedirect();
+
+        $this->assertSelectorTextContains(
+            '.flash-error',
+            'Votre compte est archivé. Contactez un administrateur.'
+        );
+    }
+
+    public function testUnverifiedAdminCannotLogin(): void
+    {
+        $client = static::createClient();
+        $user = $this->createUserWithStatus($client, false, false, ['ROLE_ADMIN']);
+
+        $this->submitLoginForm($client, $user->getEmail(), 'Password1!');
+
+        $this->assertResponseRedirects('/login');
+        $client->followRedirect();
+
+        $this->assertSelectorTextContains(
+            '.flash-error',
+            'Votre compte n’est pas encore vérifié.'
+        );
+    }
+
+    public function testArchivedAdminCannotLogin(): void
+    {
+        $client = static::createClient();
+        $user = $this->createUserWithStatus($client, true, true, ['ROLE_ADMIN']);
+
+        $this->submitLoginForm($client, $user->getEmail(), 'Password1!');
+
+        $this->assertResponseRedirects('/login');
+        $client->followRedirect();
+
+        $this->assertSelectorTextContains(
+            '.flash-error',
+            'Votre compte est archivé. Contactez un administrateur.'
+        );
+    }
+
+    public function testAdminPageRequiresAdmin(): void
+    {
+        $client = static::createClient();
+
+        $user = $this->createUserWithStatus($client, true, false);
+
+        $client->loginUser($user);
+
+        $client->request('GET', 'https://localhost/admin');
+
+        $this->assertResponseStatusCodeSame(403);
+    }
+
+    public function testArchivedAndUnverifiedUserCannotLoginWithArchivedMessageFirst(): void
+    {
+        $client = static::createClient();
+        $user = $this->createUserWithStatus($client, false, true);
+
+        $this->submitLoginForm($client, $user->getEmail(), 'Password1!');
+
+        $this->assertResponseRedirects('/login');
+        $client->followRedirect();
+
+        $this->assertSelectorTextContains(
+            '.flash-error',
+            'Votre compte est archivé. Contactez un administrateur.'
         );
     }
 }

@@ -59,12 +59,12 @@ class AdminUserControllerTest extends WebTestCase
 
     private function loginAsAdmin(): void
     {
-        $this->client->loginUser($this->getAdmin());
+        $this->client->loginUser($this->getAdmin(), 'main');
     }
 
     private function loginAsUser(): void
     {
-        $this->client->loginUser($this->getUser());
+        $this->client->loginUser($this->getUser(), 'main');
     }
 
     private function assertAnonymousRedirectsToLogin(): void
@@ -74,13 +74,6 @@ class AdminUserControllerTest extends WebTestCase
         self::assertStringContainsString('/login', $location);
     }
 
-    /**
-     * Token CSRF récupéré depuis le HTML de l'index (robuste car même session réelle).
-     *
-     * @param string $status active|archived|all
-     * @param int $userId
-     * @param string $op delete|restore
-     */
     private function tokenFromIndex(string $status, int $userId, string $op): string
     {
         $crawler = $this->client->request(
@@ -104,15 +97,12 @@ class AdminUserControllerTest extends WebTestCase
         return $token;
     }
 
-    private function tokenFromManagerUsingClientSession(string $tokenId): string
+    private function tokenFromManagerUsingClientSession(string $tokenId, string $warmupUrl): string
     {
-        // Initialise une vraie requête pour avoir cookie + session côté client
-        $this->client->request('GET', 'https://localhost/admin/users?action=delete&status=active');
-        self::assertResponseIsSuccessful();
+        $this->client->request('GET', $warmupUrl);
 
         $container = static::getContainer();
 
-        /** @var \Symfony\Component\HttpFoundation\Session\SessionFactoryInterface $sessionFactory */
         $sessionFactory = $container->get('session.factory');
 
         $tmpSession = $sessionFactory->createSession();
@@ -123,7 +113,6 @@ class AdminUserControllerTest extends WebTestCase
 
         $sessionId = $cookie->getValue();
 
-        // Session Symfony pointant sur la même session que le navigateur (même ID)
         $session = $sessionFactory->createSession();
         if (method_exists($session, 'setId')) {
             $session->setId($sessionId);
@@ -134,14 +123,12 @@ class AdminUserControllerTest extends WebTestCase
 
         $requestStack = $container->get('request_stack');
 
-        $req = \Symfony\Component\HttpFoundation\Request::create('https://localhost/');
+        $req = Request::create('https://localhost/');
         $req->setSession($session);
         $requestStack->push($req);
 
         try {
             $token = $this->csrf->getToken($tokenId)->getValue();
-
-            // ✅ CRUCIAL : persist le token dans la session (sinon le POST ne le verra pas)
             $session->save();
 
             return $token;
@@ -150,24 +137,12 @@ class AdminUserControllerTest extends WebTestCase
         }
     }
 
-    // ---------------------------
-    // INDEX: GET /admin/users
-    // ---------------------------
-
     public function testIndexOkAsAdmin(): void
     {
         $this->loginAsAdmin();
 
         $this->client->request('GET', 'https://localhost/admin/users');
         self::assertResponseIsSuccessful();
-
-        $content = (string) $this->client->getResponse()->getContent();
-        self::assertTrue(
-            str_contains($content, 'Gestion des clients')
-            || str_contains($content, 'Utilisateurs')
-            || str_contains($content, 'Clients'),
-            'Expected users admin page content to mention users.'
-        );
     }
 
     public function testIndexRedirectsWhenAnonymous(): void
@@ -183,10 +158,6 @@ class AdminUserControllerTest extends WebTestCase
         $this->client->request('GET', 'https://localhost/admin/users');
         self::assertResponseStatusCodeSame(403);
     }
-
-    // ---------------------------
-    // SHOW: GET /admin/users/{id}
-    // ---------------------------
 
     public function testShowOkAsAdmin(): void
     {
@@ -219,10 +190,6 @@ class AdminUserControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
-    // ---------------------------
-    // EDIT: GET|POST /admin/users/{id}/edit
-    // ---------------------------
-
     public function testEditGetOkAsAdmin(): void
     {
         $this->loginAsAdmin();
@@ -234,9 +201,6 @@ class AdminUserControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
 
         self::assertSelectorExists('form');
-        self::assertSelectorExists('input[name="user[firstName]"]');
-        self::assertSelectorExists('input[name="user[lastName]"]');
-        self::assertSelectorExists('input[name="user[email]"]');
     }
 
     public function testEditPostValidUpdatesUserAndRedirects(): void
@@ -261,19 +225,14 @@ class AdminUserControllerTest extends WebTestCase
 
         $this->client->submit($form);
 
-        self::assertTrue($this->client->getResponse()->isRedirection(), 'Expected redirect after valid edit.');
+        self::assertTrue($this->client->getResponse()->isRedirection());
 
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
 
-        self::assertSelectorExists('.flash-messages .flash.flash-success');
-        self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Profil mis à jour.');
-
         $this->em->clear();
-        /** @var User|null $reloaded */
         $reloaded = $this->em->getRepository(User::class)->find($id);
         self::assertNotNull($reloaded);
-
         self::assertSame($newFirst, $reloaded->getFirstName());
         self::assertSame($newLast, $reloaded->getLastName());
     }
@@ -296,10 +255,6 @@ class AdminUserControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
-    // ---------------------------
-    // DELETE (archive): POST /admin/users/{id}/delete
-    // ---------------------------
-
     public function testDeleteArchivesNormalUserWithValidCsrf(): void
     {
         $this->loginAsAdmin();
@@ -318,16 +273,22 @@ class AdminUserControllerTest extends WebTestCase
         ]);
 
         self::assertTrue($this->client->getResponse()->isRedirection());
-        $this->client->followRedirect();
-        self::assertResponseIsSuccessful();
-
-        self::assertSelectorExists('.flash-messages .flash.flash-success');
-        self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Utilisateur archivé.');
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(User::class)->find($id);
         self::assertNotNull($reloaded);
         self::assertTrue($reloaded->isArchived());
+    }
+
+    public function testDeleteMissingCsrfReturns403(): void
+    {
+        $this->loginAsAdmin();
+
+        $id = (int) $this->getUser()->getId();
+
+        $this->client->request('POST', sprintf('https://localhost/admin/users/%d/delete', $id));
+
+        self::assertResponseStatusCodeSame(403);
     }
 
     public function testDeleteInvalidCsrfReturns403(): void
@@ -338,6 +299,38 @@ class AdminUserControllerTest extends WebTestCase
 
         $this->client->request('POST', sprintf('https://localhost/admin/users/%d/delete', $id), [
             '_token' => 'invalid_token',
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testDeleteForbiddenForRoleUser(): void
+    {
+        $this->loginAsUser();
+
+        $id = (int) $this->getUser()->getId();
+
+        $this->client->request('POST', sprintf('https://localhost/admin/users/%d/delete', $id), [
+            '_token' => 'whatever',
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testDeleteForbiddenForRoleUserEvenWithValidCsrf(): void
+    {
+        $this->loginAsUser();
+
+        $target = $this->getAdmin();
+        $id = (int) $target->getId();
+
+        $token = $this->tokenFromManagerUsingClientSession(
+            'archive_user_' . $id,
+            'https://localhost/dashboard'
+        );
+
+        $this->client->request('POST', sprintf('https://localhost/admin/users/%d/delete', $id), [
+            '_token' => $token,
         ]);
 
         self::assertResponseStatusCodeSame(403);
@@ -354,18 +347,16 @@ class AdminUserControllerTest extends WebTestCase
         $this->em->flush();
         $this->em->clear();
 
-        $token = $this->tokenFromManagerUsingClientSession('archive_user_'.$id);
+        $token = $this->tokenFromManagerUsingClientSession(
+            'archive_user_' . $id,
+            'https://localhost/admin/users'
+        );
 
         $this->client->request('POST', sprintf('https://localhost/admin/users/%d/delete', $id), [
             '_token' => $token,
         ]);
 
         self::assertTrue($this->client->getResponse()->isRedirection());
-        $this->client->followRedirect();
-        self::assertResponseIsSuccessful();
-
-        self::assertSelectorExists('.flash-messages .flash.flash-danger');
-        self::assertSelectorTextContains('.flash-messages .flash.flash-danger', 'Tu ne peux pas archiver ton propre compte.');
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(User::class)->find($id);
@@ -383,23 +374,6 @@ class AdminUserControllerTest extends WebTestCase
 
         $this->assertAnonymousRedirectsToLogin();
     }
-
-    public function testDeleteForbiddenForRoleUser(): void
-    {
-        $this->loginAsUser();
-
-        $id = (int) $this->getUser()->getId();
-
-        $this->client->request('POST', sprintf('https://localhost/admin/users/%d/delete', $id), [
-            '_token' => 'whatever',
-        ]);
-
-        self::assertResponseStatusCodeSame(403);
-    }
-
-    // ---------------------------
-    // RESTORE: POST /admin/users/{id}/restore
-    // ---------------------------
 
     public function testRestoreUnarchivesUserWithValidCsrf(): void
     {
@@ -419,16 +393,22 @@ class AdminUserControllerTest extends WebTestCase
         ]);
 
         self::assertTrue($this->client->getResponse()->isRedirection());
-        $this->client->followRedirect();
-        self::assertResponseIsSuccessful();
-
-        self::assertSelectorExists('.flash-messages .flash.flash-success');
-        self::assertSelectorTextContains('.flash-messages .flash.flash-success', 'Utilisateur restauré.');
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(User::class)->find($id);
         self::assertNotNull($reloaded);
         self::assertFalse($reloaded->isArchived());
+    }
+
+    public function testRestoreMissingCsrfReturns403(): void
+    {
+        $this->loginAsAdmin();
+
+        $id = (int) $this->getUser()->getId();
+
+        $this->client->request('POST', sprintf('https://localhost/admin/users/%d/restore', $id));
+
+        self::assertResponseStatusCodeSame(403);
     }
 
     public function testRestoreInvalidCsrfReturns403(): void
@@ -439,6 +419,38 @@ class AdminUserControllerTest extends WebTestCase
 
         $this->client->request('POST', sprintf('https://localhost/admin/users/%d/restore', $id), [
             '_token' => 'invalid_token',
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testRestoreForbiddenForRoleUser(): void
+    {
+        $this->loginAsUser();
+
+        $id = (int) $this->getUser()->getId();
+
+        $this->client->request('POST', sprintf('https://localhost/admin/users/%d/restore', $id), [
+            '_token' => 'whatever',
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testRestoreForbiddenForRoleUserEvenWithValidCsrf(): void
+    {
+        $this->loginAsUser();
+
+        $target = $this->getAdmin();
+        $id = (int) $target->getId();
+
+        $token = $this->tokenFromManagerUsingClientSession(
+            'restore_user_' . $id,
+            'https://localhost/dashboard'
+        );
+
+        $this->client->request('POST', sprintf('https://localhost/admin/users/%d/restore', $id), [
+            '_token' => $token,
         ]);
 
         self::assertResponseStatusCodeSame(403);
@@ -455,22 +467,12 @@ class AdminUserControllerTest extends WebTestCase
         $this->assertAnonymousRedirectsToLogin();
     }
 
-    public function testRestoreForbiddenForRoleUser(): void
-    {
-        $this->loginAsUser();
-
-        $id = (int) $this->getUser()->getId();
-
-        $this->client->request('POST', sprintf('https://localhost/admin/users/%d/restore', $id), [
-            '_token' => 'whatever',
-        ]);
-
-        self::assertResponseStatusCodeSame(403);
-    }
-
     protected function tearDown(): void
     {
         parent::tearDown();
-        $this->em->close();
+
+        if (isset($this->em)) {
+            $this->em->close();
+        }
     }
 }

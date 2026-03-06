@@ -5,13 +5,20 @@ namespace App\Tests\Admin;
 use App\DataFixtures\TestUserFixtures;
 use App\Entity\User;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Crawler;
 
 class AdminDashboardUiTest extends WebTestCase
 {
-    private function createClientAndLoginAdmin()
+    private function createClientAndLoginAdmin(): KernelBrowser
     {
-        $client = self::createClient();
+        self::ensureKernelShutdown();
+
+        $client = self::createClient([], [
+            'HTTPS' => 'on',
+        ]);
+
         $container = static::getContainer();
 
         /** @var DatabaseToolCollection $dbTools */
@@ -27,8 +34,12 @@ class AdminDashboardUiTest extends WebTestCase
         return $client;
     }
 
-    private function requestFollowRedirects($client, string $method, string $url, int $max = 7)
-    {
+    private function requestFollowRedirects(
+        KernelBrowser $client,
+        string $method,
+        string $url,
+        int $max = 7
+    ): Crawler {
         $crawler = $client->request($method, $url);
 
         while ($client->getResponse()->isRedirect() && $max-- > 0) {
@@ -42,7 +53,6 @@ class AdminDashboardUiTest extends WebTestCase
     {
         foreach ($needles as $needle) {
             if (str_contains($haystack, $needle)) {
-                $this->assertTrue(true);
                 return;
             }
         }
@@ -73,11 +83,10 @@ class AdminDashboardUiTest extends WebTestCase
 
         $html = $client->getResponse()->getContent() ?? '';
 
-        // ===== Header admin =====
+        // Header admin
         $this->assertStringContainsString('Accueil', $html);
         $this->assertStringContainsString('Dashboard Admin', $html);
 
-        // "Vue d'ensemble" peut apparaître en HTML-escaped (&#039;) ou apostrophe typographique (’)
         $this->assertContainsAny(
             $html,
             ["Vue d&#039;ensemble", "Vue d’ensemble", "Vue d'ensemble"],
@@ -91,7 +100,7 @@ class AdminDashboardUiTest extends WebTestCase
         $this->assertStringContainsString('Commandes', $html);
         $this->assertStringContainsString('Messages contact', $html);
 
-        // ===== Sidebar admin =====
+        // Sidebar admin
         $this->assertStringContainsString('Administration', $html);
         $this->assertContainsAny(
             $html,
@@ -103,7 +112,7 @@ class AdminDashboardUiTest extends WebTestCase
         $this->assertStringContainsString('Commandes & paiements', $html);
         $this->assertStringContainsString('Messagerie', $html);
 
-        // ===== Cards dashboard =====
+        // Cards dashboard
         $this->assertStringContainsString('Utilisateurs', $html);
         $this->assertStringContainsString('Thèmes pédagogiques', $html);
         $this->assertStringContainsString('Parcours (Cursus)', $html);
@@ -111,7 +120,7 @@ class AdminDashboardUiTest extends WebTestCase
         $this->assertStringContainsString('Commandes & paiements', $html);
         $this->assertStringContainsString('Messagerie', $html);
 
-        // ===== Vérifs liens clés =====
+        // Vérifs liens clés
         $this->assertGreaterThan(0, $crawler->filter('a[href*="/admin"]')->count());
         $this->assertGreaterThan(0, $crawler->filter('a[href*="/admin/users"]')->count());
         $this->assertGreaterThan(0, $crawler->filter('a[href*="/admin/themes"]')->count());
