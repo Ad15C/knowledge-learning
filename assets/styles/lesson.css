@@ -25,6 +25,20 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
+.lesson-cover {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.lesson-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
 .lesson-fiche p {
     margin-bottom: 1rem;
     line-height: 1.6;

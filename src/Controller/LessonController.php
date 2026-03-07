@@ -31,11 +31,10 @@ class LessonController extends AbstractController
     {
         $out = [];
 
-        $validated = $this->em->getRepository(LessonValidated::class)
-            ->findBy([
-                'user' => $user,
-                'completed' => true,
-            ]);
+        $validated = $this->em->getRepository(LessonValidated::class)->findBy([
+            'user' => $user,
+            'completed' => true,
+        ]);
 
         foreach ($validated as $validation) {
             $id = $validation->getLesson()?->getId();
@@ -50,6 +49,10 @@ class LessonController extends AbstractController
     #[Route('/lesson/{id}', name: 'lesson_show', methods: ['GET'])]
     public function show(int $id, LessonRepository $lessonRepository): Response
     {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return $this->redirectToRoute('admin_dashboard');
+        }
+
         $lesson = $lessonRepository->findVisibleLesson($id);
 
         if (!$lesson) {
@@ -91,6 +94,10 @@ class LessonController extends AbstractController
         LessonRepository $lessonRepository,
         LessonValidatedService $lessonService
     ): Response {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return $this->redirectToRoute('admin_dashboard');
+        }
+
         $lesson = $lessonRepository->findVisibleLesson($id);
 
         if (!$lesson) {

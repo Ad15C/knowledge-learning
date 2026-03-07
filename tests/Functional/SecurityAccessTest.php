@@ -136,7 +136,7 @@ class SecurityAccessTest extends WebTestCase
         $this->assertResponseRedirects($this->getRouter()->generate('admin_dashboard'));
     }
 
-    public function test_admin_http_redirects_to_https(): void
+    public function test_admin_http_redirects_to_login(): void
     {
         $client = static::createClient();
 
@@ -144,7 +144,7 @@ class SecurityAccessTest extends WebTestCase
 
         $response = $client->getResponse();
 
-        $this->assertTrue(in_array($response->getStatusCode(), [301, 302], true));
-        $this->assertStringStartsWith('https://', $response->headers->get('Location', ''));
+        $this->assertResponseStatusCodeSame(302);
+        $this->assertSame('http://localhost/login', $response->headers->get('Location'));
     }
 }

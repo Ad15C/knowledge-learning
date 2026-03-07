@@ -2,10 +2,11 @@
 
 namespace App\Controller;
 
+use App\Entity\Cursus;
+use App\Entity\Lesson;
 use App\Entity\Purchase;
 use App\Entity\PurchaseItem;
-use App\Entity\Lesson;
-use App\Entity\Cursus;
+use App\Entity\User;
 use App\Repository\PurchaseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,12 +21,36 @@ class PurchaseController extends AbstractController
     public function __construct(
         private EntityManagerInterface $em,
         private PurchaseRepository $purchaseRepo
-    ) {}
+    ) {
+    }
+
+    private function redirectAdminToDashboard(): ?Response
+    {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            $this->addFlash('warning', "Les administrateurs n'ont pas accès aux fonctionnalités d'achat.");
+            return $this->redirectToRoute('admin_dashboard');
+        }
+
+        return null;
+    }
+
+    private function getConnectedUser(): ?User
+    {
+        $user = $this->getUser();
+        return $user instanceof User ? $user : null;
+    }
 
     #[Route('/cart', name: 'cart_show', methods: ['GET'])]
     public function show(): Response
     {
-        $user = $this->getUser();
+        if ($response = $this->redirectAdminToDashboard()) {
+            return $response;
+        }
+
+        $user = $this->getConnectedUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
 
         $purchase = $this->purchaseRepo->findOneBy([
             'user' => $user,
@@ -33,18 +58,25 @@ class PurchaseController extends AbstractController
         ]);
 
         return $this->render('cart/show.html.twig', [
-            'purchase' => $purchase
+            'purchase' => $purchase,
         ]);
     }
 
     #[Route('/cart/add/lesson/{id}', name: 'cart_add_lesson', methods: ['POST'])]
     public function addLesson(Request $request, Lesson $lesson): Response
     {
-        if (!$this->isCsrfTokenValid('cart_add_lesson_'.$lesson->getId(), (string) $request->request->get('_token'))) {
+        if ($response = $this->redirectAdminToDashboard()) {
+            return $response;
+        }
+
+        if (!$this->isCsrfTokenValid('cart_add_lesson_' . $lesson->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $user = $this->getUser();
+        $user = $this->getConnectedUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
 
         $purchase = $this->purchaseRepo->findOneBy([
             'user' => $user,
@@ -82,11 +114,18 @@ class PurchaseController extends AbstractController
     #[Route('/cart/add/cursus/{id}', name: 'cart_add_cursus', methods: ['POST'])]
     public function addCursus(Request $request, Cursus $cursus): Response
     {
-        if (!$this->isCsrfTokenValid('cart_add_cursus_'.$cursus->getId(), (string) $request->request->get('_token'))) {
+        if ($response = $this->redirectAdminToDashboard()) {
+            return $response;
+        }
+
+        if (!$this->isCsrfTokenValid('cart_add_cursus_' . $cursus->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $user = $this->getUser();
+        $user = $this->getConnectedUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
 
         $purchase = $this->purchaseRepo->findOneBy([
             'user' => $user,
@@ -124,15 +163,22 @@ class PurchaseController extends AbstractController
     #[Route('/cart/remove/{type}/{id}', name: 'cart_remove', methods: ['POST'])]
     public function remove(Request $request, string $type, int $id): Response
     {
+        if ($response = $this->redirectAdminToDashboard()) {
+            return $response;
+        }
+
         if (!in_array($type, ['lesson', 'cursus'], true)) {
             throw $this->createNotFoundException();
         }
 
-        if (!$this->isCsrfTokenValid('cart_remove_'.$type.'_'.$id, (string) $request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('cart_remove_' . $type . '_' . $id, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $user = $this->getUser();
+        $user = $this->getConnectedUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
 
         $purchase = $this->purchaseRepo->findOneBy([
             'user' => $user,
@@ -167,11 +213,18 @@ class PurchaseController extends AbstractController
     #[Route('/cart/pay', name: 'cart_pay', methods: ['POST'])]
     public function pay(Request $request): Response
     {
+        if ($response = $this->redirectAdminToDashboard()) {
+            return $response;
+        }
+
         if (!$this->isCsrfTokenValid('cart_pay', (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $user = $this->getUser();
+        $user = $this->getConnectedUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
 
         $purchase = $this->purchaseRepo->findOneBy([
             'user' => $user,
@@ -183,22 +236,27 @@ class PurchaseController extends AbstractController
             return $this->redirectToRoute('cart_show');
         }
 
-        // Simulation : tu peux mettre pending ici si tu veux, puis paid ensuite via webhook
-        // $purchase->markPending();
         $purchase->calculateTotal();
         $purchase->markPaid();
 
         $this->em->flush();
 
         return $this->redirectToRoute('cart_success', [
-            'orderNumber' => $purchase->getOrderNumber()
+            'orderNumber' => $purchase->getOrderNumber(),
         ]);
     }
 
     #[Route('/cart/success/{orderNumber}', name: 'cart_success', methods: ['GET'])]
     public function success(string $orderNumber): Response
     {
-        $user = $this->getUser();
+        if ($response = $this->redirectAdminToDashboard()) {
+            return $response;
+        }
+
+        $user = $this->getConnectedUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
 
         $purchase = $this->purchaseRepo->findOneBy([
             'orderNumber' => $orderNumber,
@@ -211,7 +269,7 @@ class PurchaseController extends AbstractController
         }
 
         return $this->render('cart/success.html.twig', [
-            'purchase' => $purchase
+            'purchase' => $purchase,
         ]);
     }
 }

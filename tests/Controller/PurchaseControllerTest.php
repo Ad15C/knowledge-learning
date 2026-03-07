@@ -26,7 +26,6 @@ class PurchaseControllerTest extends WebTestCase
         $this->client = static::createClient();
         $container = static::getContainer();
 
-        // DB reset + fixtures
         $container->get(DatabaseToolCollection::class)->get()->loadFixtures([
             TestUserFixtures::class,
             ThemeFixtures::class,
@@ -40,6 +39,7 @@ class PurchaseControllerTest extends WebTestCase
     {
         $user = $this->em->getRepository(User::class)->findOneBy(['email' => TestUserFixtures::USER_EMAIL]);
         self::assertNotNull($user);
+
         return $user;
     }
 
@@ -47,6 +47,7 @@ class PurchaseControllerTest extends WebTestCase
     {
         $lesson = $this->em->getRepository(Lesson::class)->findOneBy(['title' => 'Découverte de l’instrument']);
         self::assertNotNull($lesson);
+
         return $lesson;
     }
 
@@ -54,12 +55,10 @@ class PurchaseControllerTest extends WebTestCase
     {
         $cursus = $this->em->getRepository(Cursus::class)->findOneBy(['name' => 'Cursus d’initiation à la guitare']);
         self::assertNotNull($cursus);
+
         return $cursus;
     }
 
-    /**
-     * Récupère la valeur du champ hidden "_token" dans un formulaire ciblé.
-     */
     private function extractCsrfToken(\Symfony\Component\DomCrawler\Crawler $crawler, string $formSelector): string
     {
         $form = $crawler->filter($formSelector);
@@ -81,7 +80,7 @@ class PurchaseControllerTest extends WebTestCase
     public function testCartShowRedirectsWhenAnonymous(): void
     {
         $this->client->request('GET', '/cart');
-        self::assertResponseRedirects(); // login
+        self::assertResponseRedirects();
     }
 
     public function testCartShowEmptyWhenLoggedInAndNoCart(): void
@@ -102,17 +101,13 @@ class PurchaseControllerTest extends WebTestCase
 
         $this->client->loginUser($user);
 
-        // 1) Ouvrir la page cursus qui contient les forms "Ajouter au panier"
-        // Si chez toi la leçon est visible depuis /cursus/{id}
         $cursusId = $lesson->getCursus()->getId();
         $crawler = $this->client->request('GET', '/cursus/' . $cursusId);
         self::assertResponseIsSuccessful();
 
-        // 2) Token du form add lesson
         $formSelector = sprintf('form[action="/cart/add/lesson/%d"]', $lesson->getId());
         $token = $this->extractCsrfToken($crawler, $formSelector);
 
-        // 3) POST add lesson
         $this->client->request('POST', '/cart/add/lesson/' . $lesson->getId(), [
             '_token' => $token,
         ]);
@@ -137,7 +132,6 @@ class PurchaseControllerTest extends WebTestCase
 
         $cursusId = $lesson->getCursus()->getId();
 
-        // First add
         $crawler = $this->client->request('GET', '/cursus/' . $cursusId);
         self::assertResponseIsSuccessful();
         $formSelector = sprintf('form[action="/cart/add/lesson/%d"]', $lesson->getId());
@@ -147,7 +141,6 @@ class PurchaseControllerTest extends WebTestCase
         self::assertResponseRedirects('/cart');
         $this->client->followRedirect();
 
-        // Second add (re-GET to get a fresh token)
         $crawler = $this->client->request('GET', '/cursus/' . $cursusId);
         self::assertResponseIsSuccessful();
         $token2 = $this->extractCsrfToken($crawler, $formSelector);
@@ -168,8 +161,6 @@ class PurchaseControllerTest extends WebTestCase
 
         $this->client->loginUser($user);
 
-        // Ouvrir la page theme ou page cursus qui contient le bouton add cursus
-        // Si ton add cursus est sur /themes/{id} ou une autre page, adapte ici.
         $crawler = $this->client->request('GET', '/themes/' . $cursus->getTheme()->getId());
         self::assertResponseIsSuccessful();
 
@@ -195,7 +186,6 @@ class PurchaseControllerTest extends WebTestCase
 
         $this->client->loginUser($user);
 
-        // Ajoute la leçon pour créer le panier proprement (et éviter d’inventer un token remove)
         $cursusId = $lesson->getCursus()->getId();
         $crawler = $this->client->request('GET', '/cursus/' . $cursusId);
         self::assertResponseIsSuccessful();
@@ -208,7 +198,6 @@ class PurchaseControllerTest extends WebTestCase
         $crawlerCart = $this->client->followRedirect();
         self::assertResponseIsSuccessful();
 
-        // Token remove depuis la page /cart
         $removeFormSelector = sprintf('form[action="/cart/remove/lesson/%d"]', $lesson->getId());
         $removeToken = $this->extractCsrfToken($crawlerCart, $removeFormSelector);
 
@@ -226,10 +215,7 @@ class PurchaseControllerTest extends WebTestCase
     {
         $this->client->loginUser($this->getTestUser());
 
-        // On va sur /cart pour récupérer le token pay (même si panier vide, ton template n’affiche pas forcément le form)
-        // Donc on appelle directement la route avec un token "dummy" => chez toi ça passera pas.
-        // La meilleure assertion : panier vide => le form pay n’existe pas.
-        $crawler = $this->client->request('GET', '/cart');
+        $this->client->request('GET', '/cart');
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('.cart-empty');
         self::assertSelectorNotExists('form[action="/cart/pay"]');
@@ -242,7 +228,6 @@ class PurchaseControllerTest extends WebTestCase
 
         $this->client->loginUser($user);
 
-        // Add lesson from cursus page (token in HTML)
         $cursusId = $lesson->getCursus()->getId();
         $crawler = $this->client->request('GET', '/cursus/' . $cursusId);
         self::assertResponseIsSuccessful();
@@ -255,14 +240,13 @@ class PurchaseControllerTest extends WebTestCase
         $crawlerCart = $this->client->followRedirect();
         self::assertResponseIsSuccessful();
 
-        // Pay token from /cart form
         $payToken = $this->extractCsrfToken($crawlerCart, 'form[action="/cart/pay"]');
 
         $this->client->request('POST', '/cart/pay', [
             '_token' => $payToken,
         ]);
 
-        self::assertResponseRedirects(); // /cart/success/{orderNumber}
+        self::assertResponseRedirects();
         $this->client->followRedirect();
 
         self::assertResponseIsSuccessful();

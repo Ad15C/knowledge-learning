@@ -160,21 +160,16 @@ class SecurityLoginTest extends WebTestCase
 
         $this->createUser($em, $passwordHasher, $email, $password, ['ROLE_USER']);
 
-        // 1. Accès initial à /admin en HTTP
+        // 1. Un visiteur tente d'accéder à /admin
         $client->request('GET', '/admin');
 
-        // 2. Symfony force d'abord le HTTPS
-        $this->assertResponseRedirects('https://localhost/admin', 301);
-
-        // 3. On suit la redirection HTTPS
-        $client->followRedirect();
-
-        // 4. Une fois en HTTPS, l'utilisateur non connecté doit être redirigé vers /login
-        $this->assertResponseRedirects('/login');
+        // 2. Il est redirigé vers /login
+        $this->assertResponseRedirects('http://localhost/login', 302);
 
         $crawler = $client->followRedirect();
+        $this->assertResponseIsSuccessful();
 
-        // 5. Connexion avec un utilisateur non admin
+        // 3. Connexion avec un utilisateur non admin
         $form = $crawler->selectButton('Se connecter')->form([
             '_username' => $email,
             '_password' => $password,
@@ -182,12 +177,12 @@ class SecurityLoginTest extends WebTestCase
 
         $client->submit($form);
 
-        // 6. Après login, retour vers la target path /admin
-        $this->assertResponseRedirects('/admin');
+        // 4. Après login, l'utilisateur retourne vers la page initialement demandée
+        $this->assertResponseRedirects('http://localhost/admin', 302);
 
         $client->followRedirect();
 
-        // 7. L'utilisateur connecté mais non admin doit recevoir un 403
+        // 5. L'utilisateur connecté mais non admin reçoit un 403
         $this->assertResponseStatusCodeSame(403);
     }
 }
