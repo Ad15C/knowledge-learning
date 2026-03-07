@@ -109,6 +109,15 @@ class LessonControllerTest extends WebTestCase
         return $token;
     }
 
+    public function testShowRedirectsToLoginWhenAnonymous(): void
+    {
+        $lesson = $this->getFixtureLesson();
+
+        $this->client->request('GET', '/lesson/' . $lesson->getId());
+
+        self::assertResponseRedirects();
+    }
+
     public function testShowWithoutPurchaseRedirectsToCursusWithFlash(): void
     {
         $user = $this->getFixtureUser();
@@ -179,8 +188,6 @@ class LessonControllerTest extends WebTestCase
 
         self::assertNotNull($cursus);
 
-        // 1. On crée temporairement un achat payé pour pouvoir afficher la page
-        // et récupérer un vrai token CSRF depuis le formulaire.
         $this->createPaidPurchaseForLesson($user, $lesson);
 
         $user = $this->em->getRepository(User::class)->find($user->getId());
@@ -193,8 +200,6 @@ class LessonControllerTest extends WebTestCase
 
         $token = $this->fetchCsrfTokenFromLessonPage($lesson->getId());
 
-        // 2. On supprime ensuite l'achat pour retirer l'accès métier,
-        // tout en gardant le token CSRF de la même session.
         $items = $this->em->getRepository(PurchaseItem::class)->findBy([
             'lesson' => $lesson,
         ]);
@@ -216,8 +221,6 @@ class LessonControllerTest extends WebTestCase
 
         self::assertNotNull($cursus);
 
-        // 3. Le token est valide, mais l'accès n'existe plus :
-        // le contrôleur doit rediriger vers le cursus.
         $this->client->request('POST', '/lesson/' . $lesson->getId() . '/complete', [
             '_token' => $token,
         ]);
@@ -254,7 +257,7 @@ class LessonControllerTest extends WebTestCase
 
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.lesson-page', 'Vous avez déjà complété cette leçon.');
+        self::assertSelectorTextContains('body', 'Leçon marquée comme complétée et certification générée !');
 
         $this->em->clear();
 

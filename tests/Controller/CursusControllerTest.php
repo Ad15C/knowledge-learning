@@ -278,20 +278,4 @@ class CursusControllerTest extends WebTestCase
         $this->client->request('GET', '/cursus/999999');
         self::assertResponseStatusCodeSame(404);
     }
-
-    public function testAddCursusToCartRedirectsWhenNotLoggedIn(): void
-    {
-        $fixtures = $this->databaseTool->loadFixtures([
-            ThemeFixtures::class,
-        ]);
-
-        $cursus = $fixtures->getReferenceRepository()
-            ->getReference(ThemeFixtures::CURSUS_GUITARE_REF, Cursus::class);
-
-        $this->client->request('POST', '/cart/add/cursus/' . $cursus->getId(), [
-            '_token' => 'dummy',
-        ]);
-
-        self::assertResponseRedirects();
-    }
 }

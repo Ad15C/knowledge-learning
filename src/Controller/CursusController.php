@@ -46,6 +46,10 @@ class CursusController extends AbstractController
         CursusRepository $cursusRepository,
         LessonAccessService $access
     ): Response {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return $this->redirectToRoute('admin_dashboard');
+        }
+
         $cursus = $cursusRepository->findVisibleWithVisibleLessons($id);
 
         if (!$cursus) {

@@ -28,7 +28,7 @@ security:
                 check_path: app_login           # route pour le POST de login
                 username_parameter: _username
                 password_parameter: _password          
-                default_target_path: user_dashboard # redirection après login
+                success_handler: App\Security\LoginSuccessHandler
                 enable_csrf: true               # protection CSRF activée
                 csrf_parameter: _csrf_token
                 csrf_token_id: authenticate
@@ -53,7 +53,7 @@ security:
         - { path: ^/dashboard, roles: ROLE_USER }
 
         # Zone admin
-        - { path: ^/admin, roles: ROLE_ADMIN, requires_channel: https }
+        - { path: ^/admin, roles: ROLE_ADMIN }
 
 when@test:
     security:

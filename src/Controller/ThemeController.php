@@ -13,6 +13,10 @@ class ThemeController extends AbstractController
     #[Route('/themes', name: 'themes_index', methods: ['GET'])]
     public function index(Request $request, ThemeRepository $themeRepository): Response
     {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return $this->redirectToRoute('admin_dashboard');
+        }
+
         $filterName = $request->query->get('name');
         $filterMinPrice = $request->query->get('minPrice');
         $filterMaxPrice = $request->query->get('maxPrice');
@@ -39,6 +43,10 @@ class ThemeController extends AbstractController
     #[Route('/themes/{id}', name: 'theme_show', methods: ['GET'])]
     public function show(int $id, ThemeRepository $themeRepository): Response
     {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return $this->redirectToRoute('admin_dashboard');
+        }
+
         $theme = $themeRepository->findVisibleTheme($id);
 
         if (!$theme) {
