@@ -64,33 +64,88 @@ Une interface d’administration permet de gérer :
 # Stack technique
 
 ## Backend
-
-* PHP **8.1+**
 * **Symfony 6.4**
+* **PHP 8.1+**
+
+## Architecture
+* Architecture en couches
+    * **Controller**
+    * **Service**
+    * **Repository**
+    * **Entity**
+    * **Form**
+    * **Security**
+* Utilisation de :
+    * **EventListener / EventSubscriber**
+    * **Command (CLI Symfony)**
+
+Architecture en couches favorisant la séparation des responsabilités, la maintenabilité et l’évolutivité.
+
+## Base de données
+* **MySQL 8**
 * **Doctrine ORM**
 * **Doctrine Migrations**
 
-## Base de données
-
-* **MySQL 8**
+## Securité
+* **Symfony Security Bundle**
+* authentification
+* gestion des rôles (ROLE_USER, ROLE_ADMIN)
+* contrôle d'accès (access_control)
+* Custom AuthenticationSuccessHandler
+* UserChecker personnalisé (vérification état utilisateur)
 
 ## Frontend
-
-* **Twig**
+* **Twig** (templates)
 * **CSS**
-* **Stimulus**
-* **Symfony AssetMapper**
+* **Symfony AssetMapper** (remplace Webpack dans les nouveaux projets)
+
+## Formulaires et Validation
+* **Symfony Form**
+* **Symfony Validator**
+* Validation :
+    * via annotations/contraintes (Assert)
+    * via fichiers YAML (validators.fr.yaml et validators.en.yaml)
+
+## Internationalisation
+* **Symfony Translation** (traduction)
+* **Symfony Intl** (internalisation)
+
+## E-commerce (simulation)
+* Système de panier
+* Gestion des achats (Purchase/PurchaseItem)
+* Simulation de paiement inspirée de *Stripe*
+
+## Documents et médias
+* **Dompdf** (génération de certificats PDF)
+* **LiipImagineBundle** (gestion d'images)
+
+## Communication
+* **Symfony Mailer** (e-mail)
+
+## Logs
+* **Monolog** (intégré via Symfony)
+
+## CLI
+* **Symfony Console**
 
 ## Tests
-
 * **PHPUnit**
-* **Symfony BrowserKit**
-* **Liip Test Fixtures**
+    * Types de tests :
+        * unitaires
+        * fonctionnels
+        * intégration
+        * workflows utilisateurs
 
-## Autres outils
+    * Outils :
+        * **Doctrine Fixtures Bundle** (Fixtures)
+        * **Faker** (génération de données)
+        * **Liip Test Fixtures Bundle**
+        * **DAMA Doctrine Test Bundle**
 
-* **Dompdf** (génération de certificats PDF)
 
+## Dev tools
+* **Symfony Maker Bundle** ( génération de code)
+* **Symfony CLI**
 ---
 
 # Architecture de l'application
