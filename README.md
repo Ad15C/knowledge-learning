@@ -8,23 +8,30 @@
 
 ## Description
 
-**Knowledge Learning** est une plateforme d’apprentissage en ligne développée avec **Symfony 6.4**.
+**Knowledge Learning** est une plateforme e-learning développée avec **Symfony 6.4**
 
-L’application permet aux utilisateurs de suivre des contenus pédagogiques structurés en **thèmes, cursus et leçons**, de suivre leur progression, d’acheter du contenu et d’obtenir des **certifications PDF**.
+Elle permet : 
+-  de suivre des contenus pédagogiques structurés (*thèmes*, *cursus*, *leçons*)
+- de suivre la progression utilisateur
+- d'acheter du contenu
+- d'obtenir des *Certifications PDF*
 
-Une interface d’administration permet de gérer :
+Une interface *administration* permet de gérer l'ensemble de la plateforme.
 
-* les contenus pédagogiques
-* les utilisateurs
-* les achats
-* les messages envoyés via le formulaire de contact
+---
+## Objectif
+
+Ce projet a été conçu dans un objectif pédagogique afin de mettre en pratique :
+- l'architecture Symfony moderne
+- la séparation des responsabilités
+- la gestion d'un workflow utilisateur complet
+- les tests automatisés
 
 ---
 
 # Fonctionnalités
 
 ## Gestion des utilisateurs
-
 * inscription
 * connexion sécurisée
 * vérification email
@@ -33,27 +40,21 @@ Une interface d’administration permet de gérer :
 * archivage de compte
 
 ## Plateforme d'apprentissage
-
-* gestion des **thèmes**
-* gestion des **cursus**
-* gestion des **leçons**
+* gestion du contenu pédagogique (thèmes, cursus, leçons)
 * suivi de progression utilisateur
 * validation des leçons
 
 ## E-commerce
-
 * panier
 * achat de leçons ou de cursus
 * historique des achats
 * gestion des éléments achetés
 
 ## Certifications
-
 * validation des cursus
 * génération automatique de **certificats PDF**
 
 ## Support
-
 * formulaire de **contact utilisateur**
 * consultation des messages côté administration
 * marquage des messages comme lus
@@ -68,13 +69,19 @@ Une interface d’administration permet de gérer :
 * **PHP 8.1+**
 
 ## Architecture
-* Architecture en couches
+* Architecture en *couches* : 
     * **Controller**
     * **Service**
     * **Repository**
     * **Entity**
     * **Form**
     * **Security**
+
+* Organisation *fonctionnelle*
+    * **Learning** — gestion du contenu pédagogique
+    * **E-commerce** — gestion des achats
+    * **Support** — gestion des messages utilisateurs
+
 * Utilisation de :
     * **EventListener / EventSubscriber**
     * **Command (CLI Symfony)**
@@ -86,7 +93,7 @@ Architecture en couches favorisant la séparation des responsabilités, la maint
 * **Doctrine ORM**
 * **Doctrine Migrations**
 
-## Securité
+## Sécurité
 * **Symfony Security Bundle**
 * authentification
 * gestion des rôles (ROLE_USER, ROLE_ADMIN)
@@ -130,36 +137,15 @@ Architecture en couches favorisant la séparation des responsabilités, la maint
 
 ## Tests
 * **PHPUnit**
-    * Types de tests :
-        * unitaires
-        * fonctionnels
-        * intégration
-        * workflows utilisateurs
-
-    * Outils :
-        * **Doctrine Fixtures Bundle** (Fixtures)
-        * **Faker** (génération de données)
-        * **Liip Test Fixtures Bundle**
-        * **DAMA Doctrine Test Bundle**
+* **Doctrine Fixtures Bundle** (Fixtures)
+* **Faker** (génération de données)
+* **Liip Test Fixtures Bundle**
+* **DAMA Doctrine Test Bundle**
 
 
 ## Dev tools
 * **Symfony Maker Bundle** ( génération de code)
 * **Symfony CLI**
----
-
-# Architecture de l'application
-
-L'application est organisée autour de **trois domaines fonctionnels** :
-
-* **Learning** — gestion du contenu pédagogique
-* **E-commerce** — gestion des achats
-* **Support** — gestion des messages utilisateurs
-
-La documentation détaillée est disponible dans le dossier :
-
-docs/
-
 ---
 
 # Installation
@@ -286,3 +272,10 @@ Elle couvre :
 # Licence
 
 Projet propriétaire.
+
+---
+
+## Contact
+
+Pour toute information, vous pouvez me contacter : 
+*ad15canon@gmail.com*
