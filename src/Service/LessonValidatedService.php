@@ -94,10 +94,10 @@ class LessonValidatedService
             'completed' => true,
         ]);
 
-        $validatedIds = array_map(
+        $validatedIds = array_filter(array_map(
             static fn(LessonValidated $lv) => $lv->getLesson()?->getId(),
             $validatedLessons
-        );
+        ));
 
         foreach ($lessons as $lesson) {
             if (!in_array($lesson->getId(), $validatedIds, true)) {

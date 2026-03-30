@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Cursus;
 use App\Entity\Lesson;
+use App\Entity\LessonValidated;
 use App\Entity\Purchase;
 use App\Entity\PurchaseItem;
 use App\Entity\User;
@@ -21,6 +22,18 @@ class LessonAccessService
             return true;
         }
 
+        // 1) Si la leçon a déjà été validée, on autorise l'accès
+        $validated = $this->em->getRepository(LessonValidated::class)->findOneBy([
+            'user' => $user,
+            'lesson' => $lesson,
+            'completed' => true,
+        ]);
+
+        if ($validated !== null) {
+            return true;
+        }
+
+        // 2) Sinon, on vérifie l'achat de la leçon ou du cursus
         $qb = $this->em->getRepository(PurchaseItem::class)->createQueryBuilder('pi');
 
         $qb->join('pi.purchase', 'p')
@@ -53,9 +66,32 @@ class LessonAccessService
                     $all[$lesson->getId()] = true;
                 }
             }
+
             return $all;
         }
 
+        $map = [];
+
+        // 1) Leçons validées = accessibles
+        $validatedLessons = $this->em->getRepository(LessonValidated::class)->createQueryBuilder('lv')
+            ->join('lv.lesson', 'l')
+            ->andWhere('lv.user = :user')
+            ->andWhere('lv.completed = :completed')
+            ->andWhere('l.cursus = :cursus')
+            ->setParameter('user', $user)
+            ->setParameter('completed', true)
+            ->setParameter('cursus', $cursus)
+            ->getQuery()
+            ->getResult();
+
+        foreach ($validatedLessons as $validated) {
+            $lesson = $validated->getLesson();
+            if ($lesson !== null && $lesson->getId() !== null) {
+                $map[$lesson->getId()] = true;
+            }
+        }
+
+        // 2) Si le cursus entier a été acheté, toutes les leçons sont accessibles
         $qbCursus = $this->em->getRepository(PurchaseItem::class)->createQueryBuilder('pi');
         $qbCursus->join('pi.purchase', 'p')
             ->andWhere('p.user = :user')
@@ -67,15 +103,16 @@ class LessonAccessService
             ->setMaxResults(1);
 
         if ($qbCursus->getQuery()->getOneOrNullResult() !== null) {
-            $all = [];
             foreach ($cursus->getLessons() as $lesson) {
                 if ($lesson->getId() !== null) {
-                    $all[$lesson->getId()] = true;
+                    $map[$lesson->getId()] = true;
                 }
             }
-            return $all;
+
+            return $map;
         }
 
+        // 3) Leçons achetées individuellement
         $qb = $this->em->getRepository(PurchaseItem::class)->createQueryBuilder('pi');
         $qb->join('pi.purchase', 'p')
             ->join('pi.lesson', 'l')
@@ -88,7 +125,6 @@ class LessonAccessService
 
         $items = $qb->getQuery()->getResult();
 
-        $map = [];
         foreach ($items as $item) {
             $lesson = $item->getLesson();
             if ($lesson !== null && $lesson->getId() !== null) {
