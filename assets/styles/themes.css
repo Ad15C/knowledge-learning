@@ -64,22 +64,22 @@ border-radius: 8px;
 box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-/* --- BOUTONS (SCOPÉS pour éviter de casser le reste de l’app) --- /
-/ Boutons dans les cartes thèmes/cursus + bouton du filtre */
+/* --- BOUTONS (SCOPÉS pour éviter de casser le reste de l’app) --- */
+/* Boutons dans les cartes thèmes/cursus + bouton du filtre */
 .themes-grid .btn,
 .cursus-grid .btn,
 #filter-form button {
-display: inline-block;
-margin-top: 10px;
-padding: 8px 12px;
-background-color: #0074c7;
-color: #fff;
-border-radius: 5px;
-text-decoration: none;
-font-weight: bold;
-border: none;
-cursor: pointer;
-transition: background 0.2s, transform 0.2s;
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: #0074c7;
+  color: #fff;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
 }
 
 .themes-grid .btn:hover,
