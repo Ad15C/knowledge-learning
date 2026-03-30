@@ -21,6 +21,7 @@
         {% for lesson in cursus.lessons %}
             {% set hasAccess = userHasAccess[lesson.id]|default(false) %}
             {% set hasCompleted = userHasCompleted[lesson.id]|default(false) %}
+            {% set alreadyOwned = hasAccess or hasCompleted %}
 
             <div class="cursus-card lesson-card">
                 {% if lesson.image %}
@@ -41,7 +42,7 @@
                 </div>
 
                 <div class="lesson-actions">
-                    {% if hasAccess %}
+                    {% if alreadyOwned %}
                         <a href="{{ path('lesson_show', { id: lesson.id }) }}" class="btn btn-success">
                             {% if hasCompleted %}
                                 Revoir la leçon
@@ -65,6 +66,7 @@
                     {% endif %}
                 </div>
             </div>
+
         {% else %}
             <p>Aucune leçon disponible pour ce cursus.</p>
         {% endfor %}
