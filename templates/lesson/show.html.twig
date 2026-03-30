@@ -27,8 +27,9 @@
 
     {% set hasAccess = userHasAccess[lesson.id]|default(false) %}
     {% set hasCompleted = userHasCompleted[lesson.id]|default(false) %}
+    {% set canViewLesson = hasAccess or hasCompleted %}
 
-    {% if not hasAccess %}
+    {% if not canViewLesson %}
         <div class="alert alert-danger">
             Vous n’avez pas accès à cette leçon.
         </div>
