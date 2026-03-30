@@ -17,14 +17,23 @@
 }
 
 .dashboard-filters label{
-  font-weight:900;
-  color:#384050;
-  margin:0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  min-width: 180px;
+}
+
+.dashboard-filters label span{
+  font-weight: 700;
+  color: #384050;
+  font-size: 0.95rem;
 }
 
 .dashboard-filters input[type="text"],
 .dashboard-filters input[type="search"],
 .dashboard-filters input[type="date"],
+.dashboard-filters input[type="number"],
 .dashboard-filters select{
   padding:10px 12px;
   min-height:42px;
@@ -33,6 +42,7 @@
   background:#fff;
   color:#384050;
   outline:none;
+  box-sizing: border-box;
 }
 
 .dashboard-filters input:focus,
@@ -41,26 +51,38 @@
   box-shadow: 0 0 0 3px rgba(0,116,199,0.15);
 }
 
+.filter-actions{
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
 .dashboard-filters button,
 .dashboard-filters .btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:42px;
-  padding:10px 14px;
-  border-radius:10px;
-  border:1px solid #0074c7;
-  background:#0074c7;
-  color:#fff;
-  font-weight:900;
-  cursor:pointer;
-  transition:.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 0 20px;
+  min-width: 110px;
+  border-radius: 10px;
+  border: 1px solid #0074c7;
+  background: #0074c7;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
+  box-sizing: border-box;
+  line-height: 1;
 }
 
 .dashboard-filters button:hover,
 .dashboard-filters .btn:hover{
-  background:#00497c;
-  border-color:#00497c;
+  background: #00497c;
+  border-color: #00497c;
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 @media (max-width: 520px){
@@ -68,10 +90,21 @@
     flex-direction:column;
     align-items:stretch;
   }
+
   .dashboard-filters input,
   .dashboard-filters select,
   .dashboard-filters button,
   .dashboard-filters .btn{
     width:100%;
+  }
+
+   .dashboard-filters label{
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .filter-actions{
+    width: 100%;
+    flex-direction: column;
   }
 }
