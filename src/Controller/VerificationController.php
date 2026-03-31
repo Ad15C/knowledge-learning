@@ -40,6 +40,8 @@ class VerificationController extends AbstractController
         $em->flush();
 
         $this->addFlash('success', 'Compte vérifié. Vous pouvez vous connecter.');
+        $request->getSession()->remove('dev_verify_url');
+
         return $this->redirectToRoute('app_login');
     }
 }

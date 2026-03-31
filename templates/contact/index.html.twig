@@ -1,12 +1,18 @@
 {% extends 'base.html.twig' %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/user-shared.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/contact.css') }}">
+{% endblock %}
+
 {% block title %}Contactez-nous{% endblock %}
 
 {% block body %}
 <div class="contact-page">
 
     <h1>Nous contacter</h1>
-    <p>Pour toute question concernant nos formations, votre compte ou vos commandes,
+    <p class="contact-intro">Pour toute question concernant nos formations, votre compte ou vos commandes,
     n’hésitez pas à nous écrire via le formulaire ci-dessous.
     notre équipe vous répondra sous 24 à 48 heures ouvrées.
     </p>

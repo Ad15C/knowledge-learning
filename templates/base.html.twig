@@ -72,6 +72,10 @@
 
         {# --- USER CONNECTÉ (NON ADMIN) --- #}
         {% elseif app.user %}
+            {% set verifyMenu = app.session.get('dev_verify_url') ? {
+                'label': 'Vérifier mon compte',
+                'path': app.session.get('dev_verify_url')
+            } : null %}
 
             {% set userMenu = {
                 'label':'Dashboard User',
@@ -110,16 +114,21 @@
                     'active': route starts with 'cart' ? 'active' : '',
                     'count': cartCount
                 },
-                userMenu,
+                 userMenu,
                 contactMenu,
+                verifyMenu,
                 {
                     'label':'Déconnexion',
                     'path': path('app_logout')
                 }
-            ] %}
+            ]|filter(v => v is not null) %}
 
         {# --- VISITEUR --- #}
         {% else %}
+            {% set verifyMenu = app.session.get('dev_verify_url') ? {
+                'label': 'Lien de vérification',
+                'path': app.session.get('dev_verify_url')
+            } : null %}
 
             {% set menuItems = [
                 {
@@ -141,8 +150,9 @@
                     'label':'Se connecter',
                     'path': path('app_login'),
                     'active': route == 'app_login' ? 'active' : ''
-                }
-            ] %}
+                },
+                verifyMenu
+            ]|filter(v => v is not null) %}
 
         {% endif %}
 

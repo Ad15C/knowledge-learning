@@ -43,10 +43,13 @@ class RegistrationController extends AbstractController
             if (in_array($this->getParameter('kernel.environment'), ['dev', 'test'], true)) {
                 $verifyUrl = $this->generateUrl(
                     'app_verify_email',
-                    ['token' => $user->getVerificationToken()],
+                    [],
                     UrlGeneratorInterface::ABSOLUTE_URL
-                );
-                $this->addFlash('info', 'Lien de vérification (dev) : ' . $verifyUrl);
+                ) . '?token=' . $user->getVerificationToken();
+
+                $request->getSession()->set('dev_verify_url', $verifyUrl);
+
+                $this->addFlash('info', 'Lien de vérification disponible dans la navigation.');
             }
 
             return $this->redirectToRoute('app_login');
