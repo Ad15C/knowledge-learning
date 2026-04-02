@@ -42,8 +42,10 @@
 }
 
 .card-link-detail:hover {
-    color: #00497c;
+    color: white;
     text-decoration: underline;
+    opacity: 0.8;
+    transform: translateX(2px);
 }
 
 /* Bouton retour */
