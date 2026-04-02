@@ -1,5 +1,11 @@
 {% extends 'dashboard/user/_base.html.twig' %}
 
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('styles/user/certification-common.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/user/certification.css') }}">
+{% endblock %}
+
 {% block title %}Mes certificats{% endblock %}
 
 {% block dashboard_content %}

@@ -4,7 +4,7 @@
 
 {% block stylesheets %}
     {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('css/lesson_validated.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/user/lesson_validated.css') }}">
 {% endblock %}
 
 {% block body %}
@@ -56,7 +56,7 @@
 
             {% if certification %}
                 <div class="certification-box">
-                    <h2>Certification obtenue</h2>
+                    <h2>Certificat obtenu</h2>
                     <p><strong>Code :</strong> {{ certification.certificateCode }}</p>
 
                     {% if certification.issuedAt %}

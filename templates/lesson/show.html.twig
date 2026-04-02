@@ -4,7 +4,7 @@
 
 {% block stylesheets %}
     {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('styles/lesson.css') }}">
+    <link rel="stylesheet" href="{{ asset('styles/user/lesson.css') }}">
 {% endblock %}
 
 {% block body %}
@@ -93,12 +93,12 @@
 
             {% if certification %}
                 <section class="lesson-section certification-block">
-                    <h2>Certification</h2>
-                    <p>Une certification a été générée pour cette leçon.</p>
+                    <h2>Certificat</h2>
+                    <p>Un certificat a été généré pour cette leçon.</p>
                     <p><strong>Code :</strong> {{ certification.certificateCode }}</p>
 
                     {% if certification.issuedAt %}
-                        <p><strong>Délivrée le :</strong> {{ certification.issuedAt|date('d/m/Y H:i') }}</p>
+                        <p><strong>Délivré le :</strong> {{ certification.issuedAt|date('d/m/Y H:i') }}</p>
                     {% endif %}
 
                     {% if certification.id is defined %}
