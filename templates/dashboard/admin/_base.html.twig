@@ -25,7 +25,7 @@
 {% endblock %}
 
 {% block sidebar %}
-  <div class="sidebar-header">Administration</div>
+  <div class="sidebar-header">Espace Administrateur</div>
 
   <nav class="sidebar-nav" aria-label="Navigation administration">
 
@@ -38,37 +38,37 @@
     <a href="{{ path('admin_users_index') }}"
        class="sidebar-link {{ route starts with 'admin_users' ? 'active' : '' }}"
        {{ route starts with 'admin_users' ? 'aria-current="page"' : '' }}>
-      Utilisateurs
+      Gestion des Utilisateurs
     </a>
 
     <a href="{{ path('admin_theme_index') }}"
        class="sidebar-link {{ route starts with 'admin_theme' ? 'active' : '' }}"
        {{ route starts with 'admin_theme' ? 'aria-current="page"' : '' }}>
-      Thèmes pédagogiques
+      Gestion des thèmes pédagogiques
     </a>
 
     <a href="{{ path('admin_cursus_index') }}"
        class="sidebar-link {{ route starts with 'admin_cursus' ? 'active' : '' }}"
        {{ route starts with 'admin_cursus' ? 'aria-current="page"' : '' }}>
-      Cursus
+      Gestion des cursus
     </a>
 
     <a href="{{ path('admin_lesson_index') }}"
        class="sidebar-link {{ route starts with 'admin_lesson' ? 'active' : '' }}"
        {{ route starts with 'admin_lesson' ? 'aria-current="page"' : '' }}>
-      Leçons
+      Gestion des leçons
     </a>
 
     <a href="{{ path('admin_purchase_index') }}"
        class="sidebar-link {{ route starts with 'admin_purchase' ? 'active' : '' }}"
        {{ route starts with 'admin_purchase' ? 'aria-current="page"' : '' }}>
-      Commandes & paiements
+      Gestion des commandes et des paiements
     </a>
 
     <a href="{{ path('admin_contact_index') }}"
        class="sidebar-link {{ route starts with 'admin_contact' ? 'active' : '' }}"
        {{ route starts with 'admin_contact' ? 'aria-current="page"' : '' }}>
-      Messagerie
+      Gestion de la messagerie
     </a>
 
   </nav>

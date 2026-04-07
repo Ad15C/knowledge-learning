@@ -4,131 +4,164 @@
 
 {% block dashboard_content %}
 
-  <div class="admin-purchase-page">
-    <div class="container-fluid py-4">
+<div class="admin-purchase-page">
+  <div class="admin-page-shell">
 
-      <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
-          <h1 class="h3 mb-0">Commandes</h1>
-          <div class="text-muted">Total : <strong>{{ total }}</strong></div>
-        </div>
+    <div class="admin-page-top">
+      <div>
+        <h1 class="h3 mb-1">Commandes</h1>
+        <p class="admin-page-subtitle mb-0">
+          Dans cette section, vous pouvez consulter l’ensemble des commandes et des paiements effectués par les utilisateurs.
+        </p>
       </div>
 
-      {# ===================== FILTRES ===================== #}
-      <form method="get" class="card mb-3">
-        <div class="card-body">
-          <div class="row g-3 align-items-end">
+      <div class="admin-stat-chip">
+        Total : <strong>{{ total }}</strong>
+      </div>
+    </div>
 
-            <div class="col-12 col-md-4">
-              <label class="form-label" for="purchase_q">Recherche</label>
-              <input
-                id="purchase_q"
-                type="text"
-                name="q"
-                class="form-control"
-                value="{{ q }}"
-                placeholder="N° commande, email, prénom, nom…"
-              >
-            </div>
-
-            <div class="col-6 col-md-2">
-              <label class="form-label" for="purchase_status">Statut</label>
-              <select id="purchase_status" name="status" class="form-select">
-                {% for s in allowedStatus %}
-                  <option value="{{ s }}" {{ s == status ? 'selected' : '' }}>
-                    {{ s == 'all' ? 'Tous' : s }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="col-6 col-md-3">
-              <label class="form-label" for="purchase_user">Utilisateur</label>
-              <select id="purchase_user" name="user" class="form-select">
-                <option value="">Tous</option>
-                {% for u in users %}
-                  <option value="{{ u.id }}" {{ userId and u.id == userId ? 'selected' : '' }}>
-                    {{ (u.lastName ?? '') ~ ' ' ~ (u.firstName ?? '') }}
-                    {% if u.email is defined and u.email %} — {{ u.email }}{% endif %}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="col-6 col-md-2">
-              <label class="form-label" for="purchase_dateFrom">Du</label>
-              <input id="purchase_dateFrom" type="date" name="dateFrom" class="form-control" value="{{ dateFrom }}">
-            </div>
-
-            <div class="col-6 col-md-2">
-              <label class="form-label" for="purchase_dateTo">Au</label>
-              <input id="purchase_dateTo" type="date" name="dateTo" class="form-control" value="{{ dateTo }}">
-            </div>
-
-            {# conserver tri/page #}
-            <input type="hidden" name="sort" value="{{ sort }}">
-            <input type="hidden" name="dir" value="{{ dir }}">
-
-            <div class="col-12 col-md-3 d-flex gap-2">
-              <button class="btn btn-primary w-100" type="submit">Appliquer</button>
-              <a class="btn btn-secondary w-100" href="{{ path('admin_purchase_index') }}">Réinitialiser</a>
-            </div>
-
-          </div>
+    {# ===================== FILTRES ===================== #}
+    <form method="get" class="card admin-card admin-filters-card mb-4">
+      <div class="card-body">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">Filtres de recherche</h2>
+          <p class="admin-card-text">
+            Affinez l’affichage des commandes selon plusieurs critères.
+          </p>
         </div>
-      </form>
 
-      {# ===================== TABLE + TRI ===================== #}
-      {% set queryBase = {
-        q: q,
-        status: status,
-        user: userId,
-        dateFrom: dateFrom,
-        dateTo: dateTo
-      } %}
+        <div class="admin-filters-row">
 
-      {% macro sort_link(label, key, currentSort, currentDir, queryBase) %}
-        {% set nextDir = (currentSort == key and currentDir == 'ASC') ? 'DESC' : 'ASC' %}
-        {% set arrow = '' %}
-        {% if currentSort == key %}
-          {% set arrow = currentDir == 'ASC' ? ' ↑' : ' ↓' %}
-        {% endif %}
-        <a class="text-decoration-none"
-           href="{{ path('admin_purchase_index', queryBase|merge({ sort: key, dir: nextDir, page: 1 })) }}">
-          {{ label }}{{ arrow }}
-        </a>
-      {% endmacro %}
+          <div class="admin-filter-group admin-filter-group--search">
+            <label class="form-label" for="purchase_q">Recherche</label>
+            <input
+              id="purchase_q"
+              type="text"
+              name="q"
+              class="form-control"
+              value="{{ q }}"
+              placeholder="N° commande, email, prénom, nom…"
+            >
+          </div>
 
-      <div class="card">
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-striped table-hover mb-0 align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th style="width: 160px;">
-                    {{ _self.sort_link('Commande', 'createdAt', sort, dir, queryBase) }}
-                  </th>
-                  <th>
-                    {{ _self.sort_link('Utilisateur', 'user', sort, dir, queryBase) }}
-                  </th>
-                  <th style="width: 150px;">
-                    {{ _self.sort_link('Statut', 'status', sort, dir, queryBase) }}
-                  </th>
-                  <th class="text-end" style="width: 140px;">
-                    {{ _self.sort_link('Total', 'total', sort, dir, queryBase) }}
-                  </th>
-                  <th style="width: 170px;">
-                    {{ _self.sort_link('Créée le', 'createdAt', sort, dir, queryBase) }}
-                  </th>
-                  <th style="width: 170px;">
-                    {{ _self.sort_link('Payée le', 'paidAt', sort, dir, queryBase) }}
-                  </th>
-                  <th class="text-center" style="width: 90px;">Articles</th>
-                  <th class="text-end" style="width: 120px;">Actions</th>
-                </tr>
-              </thead>
+           <div class="admin-filter-group">
+            <label class="form-label" for="purchase_status">Statut</label>
+            <select id="purchase_status" name="status" class="form-select">
+              {% for s in allowedStatus %}
+                <option value="{{ s }}" {{ s == status ? 'selected' : '' }}>
+                  {{ s == 'all' ? 'Tous' : s }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
 
-              <tbody>
+           <div class="admin-filter-group">
+            <label class="form-label" for="purchase_user">Utilisateur</label>
+            <select id="purchase_user" name="user" class="form-select">
+              <option value="">Tous</option>
+              {% for u in users %}
+                <option value="{{ u.id }}" {{ userId and u.id == userId ? 'selected' : '' }}>
+                  {{ (u.lastName ?? '') ~ ' ' ~ (u.firstName ?? '') }}
+                  {% if u.email is defined and u.email %} — {{ u.email }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+           <div class="admin-filter-group admin-filter-group--date">
+            <label class="form-label" for="purchase_dateFrom">Du</label>
+            <input
+              id="purchase_dateFrom"
+              type="date"
+              name="dateFrom"
+              class="form-control"
+              value="{{ dateFrom }}"
+            >
+          </div>
+
+           <div class="admin-filter-group admin-filter-group--date">
+            <label class="form-label" for="purchase_dateTo">Au</label>
+            <input
+              id="purchase_dateTo"
+              type="date"
+              name="dateTo"
+              class="form-control"
+              value="{{ dateTo }}"
+            >
+          </div>
+
+          {# conserver tri/page #}
+          <input type="hidden" name="sort" value="{{ sort }}">
+          <input type="hidden" name="dir" value="{{ dir }}">
+
+          <div class="admin-filter-actions">
+            <button class="btn btn-primary" type="submit">Appliquer</button>
+            <a class="btn btn-secondary" href="{{ path('admin_purchase_index') }}">Réinitialiser</a>
+          </div>
+
+        </div>
+      </div>
+    </form>
+
+    {# ===================== TABLE + TRI ===================== #}
+    {% set queryBase = {
+      q: q,
+      status: status,
+      user: userId,
+      dateFrom: dateFrom,
+      dateTo: dateTo
+    } %}
+
+    {% macro sort_link(label, key, currentSort, currentDir, queryBase) %}
+      {% set nextDir = (currentSort == key and currentDir == 'ASC') ? 'DESC' : 'ASC' %}
+      {% set arrow = '' %}
+      {% if currentSort == key %}
+        {% set arrow = currentDir == 'ASC' ? ' ↑' : ' ↓' %}
+      {% endif %}
+      <a class="text-decoration-none"
+         href="{{ path('admin_purchase_index', queryBase|merge({ sort: key, dir: nextDir, page: 1 })) }}">
+        {{ label }}{{ arrow }}
+      </a>
+    {% endmacro %}
+
+    <div class="card admin-card">
+      <div class="card-body p-0">
+
+        <div class="admin-card-header px-4 pt-4 pb-0">
+          <h2 class="admin-card-title">Liste des commandes</h2>
+          <p class="admin-card-text">
+            Consultez le détail de chaque commande et son statut.
+          </p>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-striped table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 160px;">
+                  {{ _self.sort_link('Commande', 'createdAt', sort, dir, queryBase) }}
+                </th>
+                <th>
+                  {{ _self.sort_link('Utilisateur', 'user', sort, dir, queryBase) }}
+                </th>
+                <th style="width: 150px;">
+                  {{ _self.sort_link('Statut', 'status', sort, dir, queryBase) }}
+                </th>
+                <th class="text-end" style="width: 140px;">
+                  {{ _self.sort_link('Total', 'total', sort, dir, queryBase) }}
+                </th>
+                <th style="width: 170px;">
+                  {{ _self.sort_link('Créée le', 'createdAt', sort, dir, queryBase) }}
+                </th>
+                <th style="width: 170px;">
+                  {{ _self.sort_link('Payée le', 'paidAt', sort, dir, queryBase) }}
+                </th>
+                <th class="text-center" style="width: 90px;">Articles</th>
+                <th class="text-end" style="width: 120px;">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
               {% if purchases is empty %}
                 <tr>
                   <td colspan="8" class="text-center text-muted py-4">
@@ -188,7 +221,7 @@
                     </td>
 
                     <td class="text-end">
-                      <a class="btn btn-sm btn-outline-primary"
+                      <a class="btn btn-sm btn-secondary"
                          href="{{ path('admin_purchase_show', { id: p.id }) }}">
                         Voir
                       </a>
@@ -196,74 +229,78 @@
                   </tr>
                 {% endfor %}
               {% endif %}
-              </tbody>
-            </table>
-          </div>
+            </tbody>
+          </table>
         </div>
+
       </div>
-
-      {# ===================== PAGINATION ===================== #}
-      {% if pages > 1 %}
-        <nav class="mt-3" aria-label="Pagination commandes">
-          <ul class="pagination justify-content-center mb-0">
-
-            {% set prev = page - 1 %}
-            <li class="page-item {{ page <= 1 ? 'disabled' : '' }}">
-              <a class="page-link"
-                 href="{{ path('admin_purchase_index', queryBase|merge({ sort: sort, dir: dir, page: prev })) }}">
-                Précédent
-              </a>
-            </li>
-
-            {% set start = page - 2 %}
-            {% set end = page + 2 %}
-            {% if start < 1 %}{% set start = 1 %}{% endif %}
-            {% if end > pages %}{% set end = pages %}{% endif %}
-
-            {% if start > 1 %}
-              <li class="page-item">
-                <a class="page-link"
-                   href="{{ path('admin_purchase_index', queryBase|merge({ sort: sort, dir: dir, page: 1 })) }}">1</a>
-              </li>
-              {% if start > 2 %}
-                <li class="page-item disabled"><span class="page-link">…</span></li>
-              {% endif %}
-            {% endif %}
-
-            {% for i in start..end %}
-              <li class="page-item {{ i == page ? 'active' : '' }}">
-                <a class="page-link"
-                   href="{{ path('admin_purchase_index', queryBase|merge({ sort: sort, dir: dir, page: i })) }}">
-                  {{ i }}
-                </a>
-              </li>
-            {% endfor %}
-
-            {% if end < pages %}
-              {% if end < pages - 1 %}
-                <li class="page-item disabled"><span class="page-link">…</span></li>
-              {% endif %}
-              <li class="page-item">
-                <a class="page-link"
-                   href="{{ path('admin_purchase_index', queryBase|merge({ sort: sort, dir: dir, page: pages })) }}">
-                  {{ pages }}
-                </a>
-              </li>
-            {% endif %}
-
-            {% set next = page + 1 %}
-            <li class="page-item {{ page >= pages ? 'disabled' : '' }}">
-              <a class="page-link"
-                 href="{{ path('admin_purchase_index', queryBase|merge({ sort: sort, dir: dir, page: next })) }}">
-                Suivant
-              </a>
-            </li>
-          </ul>
-        </nav>
-      {% endif %}
-
-      <a href="{{ path('admin_dashboard') }}" class="btn-back">← Retour au dashboard admin</a>
     </div>
+
+    {# ===================== PAGINATION ===================== #}
+    {% if pages > 1 %}
+      <nav class="mt-3" aria-label="Pagination commandes">
+        <ul class="pagination justify-content-center mb-0">
+
+          {% set prev = page - 1 %}
+          <li class="page-item {{ page <= 1 ? 'disabled' : '' }}">
+            <a class="page-link"
+               href="{{ path('admin_purchase_index', queryBase|merge({ sort: sort, dir: dir, page: prev })) }}">
+              Précédent
+            </a>
+          </li>
+
+          {% set start = page - 2 %}
+          {% set end = page + 2 %}
+          {% if start < 1 %}{% set start = 1 %}{% endif %}
+          {% if end > pages %}{% set end = pages %}{% endif %}
+
+          {% if start > 1 %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="{{ path('admin_purchase_index', queryBase|merge({ sort: sort, dir: dir, page: 1 })) }}">
+                1
+              </a>
+            </li>
+            {% if start > 2 %}
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+          {% endif %}
+
+          {% for i in start..end %}
+            <li class="page-item {{ i == page ? 'active' : '' }}">
+              <a class="page-link"
+                 href="{{ path('admin_purchase_index', queryBase|merge({ sort: sort, dir: dir, page: i })) }}">
+                {{ i }}
+              </a>
+            </li>
+          {% endfor %}
+
+          {% if end < pages %}
+            {% if end < pages - 1 %}
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="{{ path('admin_purchase_index', queryBase|merge({ sort: sort, dir: dir, page: pages })) }}">
+                {{ pages }}
+              </a>
+            </li>
+          {% endif %}
+
+          {% set next = page + 1 %}
+          <li class="page-item {{ page >= pages ? 'disabled' : '' }}">
+            <a class="page-link"
+               href="{{ path('admin_purchase_index', queryBase|merge({ sort: sort, dir: dir, page: next })) }}">
+              Suivant
+            </a>
+          </li>
+        </ul>
+      </nav>
+    {% endif %}
+
+    <a href="{{ path('admin_dashboard') }}" class="btn-back">← Retour au dashboard admin</a>
+
   </div>
+</div>
 
 {% endblock %}
