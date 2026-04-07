@@ -55,7 +55,7 @@ class LessonType extends AbstractType
                 ],
             ])
             ->add('fiche', TextareaType::class, [
-                'label' => 'Fiche',
+                'label' => 'Contenu de la leçon',
                 'required' => false,
             ])
             ->add('videoUrl', TextType::class, [
