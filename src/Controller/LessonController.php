@@ -65,7 +65,7 @@ class LessonController extends AbstractController
         }
 
         if (!$this->access->userCanAccessLesson($user, $lesson)) {
-            $this->addFlash('danger', "Tu n'as pas accès à cette leçon.");
+            $this->addFlash('danger', "Vous ne pouvez pas accéder à cette leçon pour le moment.");
             return $this->redirectToRoute('cursus_show', [
                 'id' => $lesson->getCursus()?->getId(),
             ]);
@@ -117,7 +117,7 @@ class LessonController extends AbstractController
         }
 
         if (!$this->access->userCanAccessLesson($user, $lesson)) {
-            $this->addFlash('danger', "Tu n'as pas accès à cette leçon.");
+            $this->addFlash('danger', "Vous ne pouvez pas accéder à cette leçon pour le moment.");
             return $this->redirectToRoute('cursus_show', [
                 'id' => $lesson->getCursus()?->getId(),
             ]);
@@ -125,7 +125,7 @@ class LessonController extends AbstractController
 
         $lessonService->validateLesson($user, $lesson);
 
-        $this->addFlash('success', 'Leçon marquée comme complétée et certification générée !');
+        $this->addFlash('success', 'Félicitations ! Vous avez validé cette leçon. Votre certificat est désormais disponible.');
 
         return $this->redirectToRoute('lesson_show', [
             'id' => $lesson->getId(),
