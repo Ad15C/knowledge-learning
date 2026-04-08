@@ -9,8 +9,8 @@
 
 {% block dashboard_content %}
 
-  <h1>Bonjour, {{ user.firstName }} {{ user.lastName }} !</h1>
-  <p class="dashboard-subtitle">Voici un aperçu de votre activité</p>
+  <h1>Bonjour, {{ user.firstName }} {{ user.lastName }}.</h1>
+  <p class="dashboard-subtitle"> Ravi de vous revoir ! Voici un aperçu de votre activité récente.</p>
   <div class="dashboard-cards">
 
     <!-- Progression -->
@@ -19,10 +19,10 @@
       <p>Niveau actuel : <strong>{{ status }}</strong></p>
 
       <div class="progress-bar">
-        <div class="progress-fill" style="width: {{ progressPercent }}%"></div>
+        <span class="progress-fill" style="width: {{ progressPercent|default(0) }}%;"></span>
       </div>
 
-      <small>Progression vers {{ nextStatus }} : {{ progressPercent }}%</small>
+      <small>Progression vers {{ nextStatus }} : {{ progressPercent|default(0) }}%</small>
     </div>
 
     <!-- Mes achats -->
