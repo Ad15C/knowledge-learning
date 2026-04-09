@@ -185,11 +185,27 @@
     setTimeout(() => {
       document.querySelectorAll('.flash').forEach(flash => flash.remove());
     }, 4000);
+
+    // Bouton retour en haut
+    const scrollTopBtn = document.getElementById('scrollTopBtn');
+
+    window.addEventListener('scroll', () => {
+      scrollTopBtn.style.display = window.scrollY > 200 ? 'block' : 'none';
+    });
+
+    scrollTopBtn.addEventListener('click', () => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
   });
 </script>
 
 {% block javascripts %}
 {% endblock %}
-
+<button id="scrollTopBtn" title="Retour en haut">
+    <img src="{{ asset('images/fleche-32.png') }}" alt="Retour en haut">
+</button>
 </body>
 </html>

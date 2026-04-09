@@ -1,16 +1,57 @@
 /* =======================
    BODY
 ======================= */
+html, body {
+    height: 100%;
+}
+
 body {
     font-family: "Comic Sans MS", cursive, sans-serif;
     background-color: #f1f8fc;
     color: #384050;
     margin: 0;
     padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 body.admin main{
   padding: 0;
+}
+
+#scrollTopBtn {
+    display: none;
+    position: fixed;
+    right: 25px;
+    bottom: 100px;
+    z-index: 1100;
+
+    width: auto;      /* 🔥 important */
+    height: auto;     /* 🔥 important */
+
+    border: none;
+    background: none; /* 🔥 enlève le fond */
+    box-shadow: none; /* 🔥 enlève l’ombre */
+    border-radius: 50%; /* 🔥 enlève le cercle */
+
+    padding: 0;
+    cursor: pointer;
+
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+}
+
+#scrollTopBtn:hover {
+    transform: translateY(-3px);
+}
+
+#scrollTopBtn img {
+    width: 32px;
+    height: 32px;
+    display: block;
+    margin: auto;
+    pointer-events: none;
 }
 
 /* =======================
@@ -159,7 +200,6 @@ footer {
     color: white;
     padding: 20px;
     text-align: center;
-    margin-top: 40px;
 }
 
 /* =======================
@@ -167,6 +207,7 @@ footer {
 ======================= */
 main {
     padding: 30px;
+    flex: 1;
 }
 
 /* =======================
