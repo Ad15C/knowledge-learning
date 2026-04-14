@@ -10,16 +10,21 @@
 {% block body %}
 <div class="lesson-page">
     <div class="lesson-header">
-        <h1>{{ lesson.title }}</h1>
+        <h1 class="lesson-title">{{ lesson.title }}</h1>
 
         {% if lesson.cursus %}
             <p class="lesson-meta">
-                Cursus :
-                <a href="{{ path('cursus_show', { id: lesson.cursus.id }) }}">
-                    {{ lesson.cursus.name }}
-                </a>
+                <span class="lesson-cursus">
+                    Cursus :
+                    <a href="{{ path('cursus_show', { id: lesson.cursus.id }) }}">
+                        {{ lesson.cursus.name }}
+                    </a>
+                </span>
+                
                 {% if lesson.cursus.theme %}
-                    — Thème : {{ lesson.cursus.theme.name }}
+                    <span class="lesson-theme">
+                        Thème : {{ lesson.cursus.theme.name }}
+                    </span>
                 {% endif %}
             </p>
         {% endif %}
@@ -116,13 +121,13 @@
         </div>
     {% endif %}
 
-    <div class="mt-4">
+    <div class="lesson-header">
         {% if lesson.cursus %}
-            <a href="{{ path('cursus_show', { id: lesson.cursus.id }) }}" class="btn btn-secondary">
+            <a href="{{ path('cursus_show', { id: lesson.cursus.id }) }}" class="back-link">
                 ← Retour au cursus
             </a>
         {% else %}
-            <a href="{{ path('themes_index') }}" class="btn btn-secondary">
+            <a href="{{ path('themes_index') }}" class="lesson-back-link">
                 ← Retour aux thèmes
             </a>
         {% endif %}

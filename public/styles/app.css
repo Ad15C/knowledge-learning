@@ -1,43 +1,86 @@
 /* =======================
-   BODY
+   GLOBAL / BODY
 ======================= */
+:root {
+    --color-bg: #f1f8fc;
+    --color-text: #384050;
+    --color-primary: #0074c7;
+    --color-primary-dark: #00497c;
+    --color-white: #ffffff;
+
+    --border-soft: rgba(0, 116, 199, 0.18);
+    --shadow-soft: 0 10px 22px rgba(0, 73, 124, 0.06);
+    --shadow-medium: 0 8px 20px rgba(0, 0, 0, 0.15);
+
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 18px;
+
+    --space-xs: 8px;
+    --space-sm: 12px;
+    --space-md: 16px;
+    --space-lg: 20px;
+    --space-xl: 24px;
+    --space-2xl: 30px;
+
+    --container-padding: 30px;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 html, body {
     height: 100%;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: "Comic Sans MS", cursive, sans-serif;
-    background-color: #f1f8fc;
-    color: #384050;
+    background-color: var(--color-bg);
+    color: var(--color-text);
     margin: 0;
     padding: 0;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
 }
 
 body.admin main{
   padding: 0;
 }
 
+/* =======================
+   MAIN
+======================= */
+main {
+    flex: 1;
+    padding: var(--container-padding);
+}
+
+/* =======================
+   SCROLL TOP BUTTON
+======================= */
 #scrollTopBtn {
     display: none;
     position: fixed;
-    right: 25px;
+    right: 20px;
     bottom: 100px;
     z-index: 1100;
-
-    width: auto;      /* 🔥 important */
-    height: auto;     /* 🔥 important */
-
+    width: auto;      
+    height: auto;     
     border: none;
-    background: none; /* 🔥 enlève le fond */
-    box-shadow: none; /* 🔥 enlève l’ombre */
-    border-radius: 50%; /* 🔥 enlève le cercle */
-
+    background: none; 
+    border-radius: 50%; 
     padding: 0;
     cursor: pointer;
-
     box-shadow: 0 6px 15px rgba(0,0,0,0.2);
     transition: all 0.2s ease;
 }
@@ -63,8 +106,8 @@ body.admin main{
     align-items: center;
     gap: 16px;
     padding: 15px 20px;
-    background-color: #f1f8fc;
-    border-bottom: 2px solid #0074c7;
+    background-color: var(--color-bg);
+    border-bottom: 2px solid var(--color-primary);
 }
 
 .logo img {
@@ -79,8 +122,9 @@ body.admin main{
     display: none;
     font-size: 28px;
     cursor: pointer;
-    color: #00497c;
+    color: var(--color-primary-dark);
     user-select: none;
+    line-height: 1;
 }
 
 /* =======================
@@ -94,6 +138,9 @@ body.admin main{
     list-style: none;
     margin: 0;
     padding: 0;
+}
+
+.main-nav > ul {
     display: flex;
     gap: 25px;
     align-items: center;
@@ -106,19 +153,20 @@ body.admin main{
 
 .main-nav a {
     text-decoration: none;
-    color: #00497c;
-    font-weight: 500;
+    color: var(--color-primary-dark);
+    font-weight: 600;
     padding: 10px 5px;
     position: relative;
     transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    min-height: 44px;
 }
 
 /* Hover */
 .main-nav a:hover {
-    color: #0074c7;
+    color: var(--color-primary);
 }
 
 /* Active underline */
@@ -129,7 +177,7 @@ body.admin main{
     height: 3px;
     bottom: -6px;
     left: 0;
-    background-color: #0074c7;
+    background-color: var(--color-primary);
     border-radius: 2px;
 }
 
@@ -143,11 +191,12 @@ body.admin main{
     left: 0;
     display: flex;
     flex-direction: column;
-    background-color: #f1f8fc;
+    background-color: var(--color-bg);
     min-width: 260px;
+    max-width: min(90vw, 320px);
     padding: 12px 0;
-    border-radius: 8px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-medium);
     opacity: 0;
     transform: translateY(10px);
     pointer-events: none;
@@ -164,15 +213,15 @@ body.admin main{
 
 .has-submenu > ul li a {
     padding: 12px 18px;
-    color: #00497c;
+    color: var(--color-primary-dark);
     transition: all 0.2s;
     white-space: nowrap;
     display: block;
 }
 
 .has-submenu > ul li a:hover {
-    color: #f1f8fc;
-    background-color: #0074c7;
+    color: var(--color-white);
+    background-color: var(--color-primary);
     border-radius: 6px;
 }
 
@@ -183,31 +232,13 @@ body.admin main{
 ======================= */
 .menu-badge,
 .cart-badge {
-    background-color: #0074c7;
+    background-color: var(--color-primary);
     color: #fff;
     font-size: 0.8em;
     font-weight: bold;
     padding: 2px 7px;
     border-radius: 12px;
     line-height: 1;
-}
-
-/* =======================
-   FOOTER
-======================= */
-footer {
-    background-color: #384050;
-    color: white;
-    padding: 20px;
-    text-align: center;
-}
-
-/* =======================
-   MAIN CONTENT
-======================= */
-main {
-    padding: 30px;
-    flex: 1;
 }
 
 /* =======================
@@ -221,6 +252,7 @@ main {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    max-width: min(92vw, 520px);
 }
 
 .flash {
@@ -228,7 +260,7 @@ main {
     border-radius: 6px;
     color: #fff;
     font-weight: 500;
-    min-width: 250px;
+    width: 100%;
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     opacity: 0;
     transform: translateY(-20px);
@@ -240,20 +272,85 @@ main {
 .flash-warning { background-color: #ffc107; color: #212529; }
 .flash-info    { background-color: #17a2b8; }
 
-@keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeOut { to { opacity: 0; transform: translateY(-20px); } }
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
 
 /* =======================
-   RESPONSIVE TABLET + MOBILE
+   GLOBAL BUTTONS / LINKS
 ======================= */
 
-/* Tablette / Mobile */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    margin: 14px 0 20px;
+    padding: 10px 18px;
+    background-color: #eaf4fb;
+    color: var(--color-primary-dark);
+    border: 1px solid rgba(0, 116, 199, 0.28);
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 700;
+    line-height: 1;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0, 73, 124, 0.05);
+}
+
+.back-link:hover,
+.back-link:focus {
+    background-color: #dceefa;
+    border-color: var(--color-primary);
+    color: var(--color-primary-dark);
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(0, 73, 124, 0.08);
+}
+
+.back-link:focus-visible {
+    outline: 3px solid rgba(0, 116, 199, 0.18);
+    outline-offset: 2px;
+}
+
+/* =======================
+   FOOTER
+======================= */
+footer {
+    background-color: var(--color-text);
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+/* =======================
+   BREAKPOINTS - RESPONSIVE 
+======================= */
+
+/* <= 1200px - grand écran */
+@media (max-width: 1200px) {
+    :root {
+        --container-padding: 24px;
+    }
+}
+
+/* <= 992px - laptop/ tablette paysage */
 @media (max-width: 992px) {
     .menu-toggle {
         display: block;
     }
 
-    /* Le UL devient un panneau dropdown */
     .main-nav > ul {
         position: absolute;
         right: 0;
@@ -262,7 +359,7 @@ main {
         display: none;
         flex-direction: column;
         gap: 0;
-        background-color: #f1f8fc;
+        background-color: var(--color-bg);
         border: 1px solid rgba(0, 116, 199, 0.25);
         border-radius: 12px;
         padding: 10px 0;
@@ -281,10 +378,9 @@ main {
     .main-nav > ul > li > a {
         width: 100%;
         padding: 14px 18px;
-        justify-content: space-between; /* label à gauche, caret/badge à droite */
+        justify-content: space-between;
     }
 
-    /* Sous-menu : statique (pas absolute) */
     .has-submenu > ul {
         position: static;
         opacity: 1;
@@ -294,11 +390,12 @@ main {
         box-shadow: none;
         border-radius: 0;
         min-width: 100%;
+        max-width: 100%;
         padding: 0 0 10px 0;
         margin: 0;
+        background: transparent;
     }
 
-    /* Affiché seulement quand <li class="open"> */
     .has-submenu.open > ul {
         display: flex;
         flex-direction: column;
@@ -306,26 +403,17 @@ main {
 
     .has-submenu > ul li a {
         padding: 12px 24px;
-        white-space: normal;
     }
 
-    /* underline active sur mobile: évite que ça dépasse visuellement */
     .main-nav a.active::after {
         display: none;
     }
 
-    /* Flash messages plus petits */
     .flash-messages {
         top: 12px;
         right: 12px;
         left: 12px;
-        align-items: flex-end;
-    }
-
-    .flash {
-        min-width: auto;
-        width: 100%;
-        max-width: 520px;
+        max-width: none;
     }
 
     main {
@@ -333,34 +421,79 @@ main {
     }
 }
 
-/* Mobile étroit */
-@media (max-width: 480px) {
+/* <= 768px - tablette */
+@media (max-width: 768px) {
     .main-header {
-        padding: 12px 14px;
-    }
-
-    .logo img {
-        height: 50px;
-    }
-
-    .main-nav > ul {
-        width: 92vw;
-    }
-
-    .main-nav > ul > li > a {
         padding: 14px 16px;
     }
 
-    .has-submenu.open > ul {
-        display: flex;
-        flex-direction: column;
+    .logo img {
+        height: 54px;
+    }
+
+    #scrollTopBtn {
+        right: 14px;
+        bottom: 80px;
+    }
+
+    #scrollTopBtn img {
+        width: 28px;
+        height: 28px;
+    }
+}
+
+/* <= 640px - grand mobile */
+@media (max-width: 640px) {
+    main {
+        padding: 18px 14px;
+    }
+
+    .main-nav > ul {
+        width: 100%;
+        max-width: 100%;
+        right: 0;
+    }
+}
+
+/* <= 520px - mobile */
+@media (max-width: 520px) {
+    .main-header {
+        gap: 12px;
+    }
+
+    .logo img {
+        height: 48px;
+    }
+
+    .main-nav > ul > li > a {
+        padding: 13px 16px;
     }
 
     .has-submenu > ul li a {
         padding: 12px 20px;
     }
 
+    .flash {
+        padding: 12px 14px;
+        font-size: 0.95rem;
+    }
+
+    .back-link {
+        width: 100%;
+    }
+}
+
+/* <= 480px - vraiment petit mobile*/
+@media (max-width: 480px) {
+    .main-header {
+        padding: 12px 14px;
+    }
+
     main {
-        padding: 16px;
+        padding: 16px 12px;
+    }
+
+    .menu-toggle {
+        font-size: 26px;
     }
 }

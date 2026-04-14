@@ -4,41 +4,56 @@
 
 /* Conteneur du formulaire */
 .login-container {
-    max-width: 400px;
-    margin: 50px auto;
-    padding: 30px;
-    background: #fff;
-    border: 2px solid #0074c7;
+    max-width: 420px;
+    width: 100%;
+    margin: 40px auto;
+    padding: 30px 25px;
+    background: var(--color-white);
+    border: 1px solid var(--color-primary);
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-soft);
     text-align: center;
     font-family: "Comic Sans MS", cursive, sans-serif;
 }
 
 /* Titre */
 .login-container h1 {
-    color: #0074c7;
-    margin-bottom: 20px;
+    color: var(--color-primary);
+    margin: 0 0 20px;
+    font-size: 1.9rem;
 }
 
 /* Champs de saisie */
-.login-container input[type="email"],
-.login-container input[type="password"] {
-    width: 100%;
-    padding: 10px 12px;
-    margin: 8px 0;
-    border: 1px solid #0074c7;
-    border-radius: 5px;
-    box-sizing: border-box;
-    font-size: 1em;
-}
-
 .login-container label {
     display: block;
     margin-top: 10px;
-    font-size: 0.9em;
-    color: #384050;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text);
     text-align: left;
+}
+
+.login-container input[type="email"],
+.login-container input[type="password"] {
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 14px;
+    margin: 0 0 8px;
+    border: 1px solid rgba(0, 116, 199, 0.25);
+    border-radius: 10px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    color: var(--color-text);
+    background: var(--color-white);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-container input[type="email"]:focus,
+.login-container input[type="password"]:focus {
+    border-color: rgba(0, 116, 199, 0.65);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 116, 199, 0.15);
 }
 
 /* Checkbox */
@@ -46,44 +61,74 @@
     margin-right: 8px;
 }
 
+.login-container .checkbox-container,
+.login-container .remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    text-align: left;
+}
+
+.login-container .checkbox-container label,
+.login-container .remember-me label {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 500;
+}
+
 /* Bouton de connexion */
 .login-container button {
-    display: inline-block;
-    margin-top: 15px;
-    padding: 10px 15px;
-    background-color: #0074c7;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    font-weight: bold;
-    font-size: 1em;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.2s;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     width: 100%;
+    min-height: 44px;
+    margin-top: 18px;
+    padding: 12px 16px;
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    border: 1px solid var(--color-primary);
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .login-container button:hover {
-    background-color: #00497c;
-    transform: translateY(-2px);
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+    transform: translateY(-1px);
 }
 
 /* Lien Retour à l'accueil */
 .login-container .btn-back {
-    display: inline-block;
-    margin-top: 15px;
-    padding: 10px 15px;
-    color: #fff;
-    font-weight: bold;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 12px;
+    padding: 12px 16px;
+    background-color: #eaf4fb;
+    color: var(--color-primary-dark);
+    border: 1px solid rgba(0, 116, 199, 0.3);
+    border-radius: 10px;
+    font-weight: 700;
     text-decoration: none;
-    border-radius: 5px;
-    transition: color 0.2s, background 0.2s;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
-.login-container .btn-back:hover {
-    color: #f1f8fc;
-    background-color: #0074c7;
+.login-container .btn-back:hover,
+.login-container .btn-back:focus {
+    background-color: #d8ebf8;
+    color: var(--color-primary-dark);
+    border-color: var(--color-primary);
+    transform: translateY(-1px);
     text-decoration: none;
 }
+
 
 /* Flash messages dans le formulaire */
 .login-container .flash {
@@ -93,24 +138,30 @@
 /* =======================
    RESPONSIVE
 ======================= */
-@media (max-width: 576px) {
+@media (max-width: 640px) {
     .login-container {
-        margin: 30px 15px;
-        padding: 20px;
+        margin: 24px 14px;
+        padding: 22px 18px;
     }
 
     .login-container h1 {
-        font-size: 1.5em;
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-container {
+        padding: 20px 14px;
     }
 
-    .login-container button,
-    .login-container .btn-back {
-        padding: 12px;
-        font-size: 1em;
+    .login-container h1 {
+        font-size: 1.45rem;
     }
 
     .login-container input[type="email"],
-    .login-container input[type="password"] {
-        font-size: 0.95em;
+    .login-container input[type="password"],
+    .login-container button,
+    .login-container .btn-back {
+        font-size: 0.95rem;
     }
 }

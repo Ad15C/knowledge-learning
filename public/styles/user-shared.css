@@ -5,15 +5,14 @@
 .dashboard-filters{
   margin: 14px 0 20px;
   padding: 14px 16px;
-  background:#fff;
-  border:1px solid rgba(0,116,199,0.18);
-  border-radius:14px;
+  background: #fff;
+  border: 1px solid rgba(0,116,199,0.18);
+  border-radius: 14px;
   box-shadow: 0 10px 22px rgba(0,73,124,0.06);
-
-  display:flex;
-  flex-wrap:wrap;
-  gap:14px 16px;        /* espace horizontal + vertical */
-  align-items:flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 16px;        /* espace horizontal + vertical */
+  align-items: flex-end;
 }
 
 .dashboard-filters label{
@@ -22,6 +21,7 @@
   gap: 6px;
   margin: 0;
   min-width: 180px;
+  flex: 1 1 180px;
 }
 
 .dashboard-filters label span{
@@ -35,13 +35,14 @@
 .dashboard-filters input[type="date"],
 .dashboard-filters input[type="number"],
 .dashboard-filters select{
-  padding:10px 12px;
-  min-height:42px;
-  border-radius:10px;
-  border:1px solid rgba(0,116,199,0.25);
-  background:#fff;
-  color:#384050;
-  outline:none;
+  width: 100%;
+  padding: 10px 12px;
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,116,199,0.25);
+  background: #fff;
+  color: #384050;
+  outline: none;
   box-sizing: border-box;
 }
 
@@ -55,6 +56,7 @@
   display: flex;
   gap: 10px;
   align-items: flex-end;
+  flex-wrap: wrap;
 }
 
 .dashboard-filters button,
@@ -63,7 +65,7 @@
   align-items: center;
   justify-content: center;
   height: 42px;
-  padding: 0 20px;
+  padding: 10px 20px;
   min-width: 110px;
   border-radius: 10px;
   border: 1px solid #0074c7;
@@ -85,26 +87,43 @@
   transform: translateY(-1px);
 }
 
-@media (max-width: 520px){
-  .dashboard-filters{
-    flex-direction:column;
-    align-items:stretch;
-  }
+/* Breakpoint -  Responsive */
+/* tablette */
+@media (max-width: 768px) {
+    .dashboard-filters {
+        padding: 14px;
+        gap: 12px;
+    }
 
-  .dashboard-filters input,
-  .dashboard-filters select,
-  .dashboard-filters button,
-  .dashboard-filters .btn{
-    width:100%;
-  }
+    .dashboard-filters label {
+        min-width: calc(50% - 8px);
+        flex: 1 1 calc(50% - 8px);
+    }
+}
 
-   .dashboard-filters label{
-    width: 100%;
-    min-width: 100%;
-  }
+/* mobile */
+@media (max-width: 520px) {
+    .dashboard-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
 
-  .filter-actions{
-    width: 100%;
-    flex-direction: column;
-  }
+    .dashboard-filters label {
+        width: 100%;
+        min-width: 100%;
+        flex: 1 1 100%;
+    }
+
+    .dashboard-filters input,
+    .dashboard-filters select,
+    .dashboard-filters button,
+    .dashboard-filters .btn {
+        width: 100%;
+    }
+
+    .filter-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
 }

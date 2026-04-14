@@ -74,11 +74,11 @@
 
     <div class="mt-3">
         {% if cursus.theme %}
-            <a href="{{ path('theme_show', { id: cursus.theme.id }) }}" class="btn-back">
+            <a href="{{ path('theme_show', { id: cursus.theme.id }) }}" class="back-link">
                 ← Retour au thème "{{ cursus.theme.name }}"
             </a>
         {% else %}
-            <a href="{{ path('themes_index') }}" class="btn-back">
+            <a href="{{ path('themes_index') }}" class="back-link">
                 ← Retour aux thèmes
             </a>
         {% endif %}

@@ -5,31 +5,32 @@
 .cart-success-wrapper{
   display:flex;
   justify-content:center;
-  padding:40px 20px;
-  background:#f4f6f8;
-  min-height:80vh;
+  padding: 40px 20px;
+  background: var(--color-bg);
+  min-height: 80vh;
 }
 
-.cart-success{
-  max-width:900px;
-  width:100%;
-  display:flex;
-  flex-direction:column;
-  gap:20px;
+.cart-success {
+  max-width: 900px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.cart-success-card{
-  background:#fff;
-  border-radius:12px;
-  padding:20px 25px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.08);
-  display:flex;
-  flex-direction:column;
-  gap:15px;
+.cart-success-card {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: 22px 25px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .order-number{
-  color:#0074c7;
+  color: var(--color-primary);
   font-weight:900;
   margin-bottom:10px;
 }
@@ -38,56 +39,69 @@
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:10px 12px;
-  border-radius:8px;
-  background:#fdfdfd;
-  border:1px solid #d6e4f0;
-  transition:.2s ease;
+  gap: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fdfdfd;
+  border: 1px solid #d6e4f0;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.cart-success-row:hover{
-  background:#e8f1fb;
-  box-shadow:0 2px 6px rgba(0,116,199,0.1);
+.cart-success-row:hover {
+  background: #e8f1fb;
+  box-shadow: 0 6px 14px rgba(0, 116, 199, 0.08);
+  transform: translateY(-1px);
 }
 
-.cart-success-info{
-  display:flex;
-  flex-direction:column;
+.cart-success-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.item-name{
-  font-weight:700;
-  color:#00497c;
+.item-name {
+  font-weight: 700;
+  color: var(--color-primary-dark);
 }
 
-.item-badge{
-  font-size:.7rem;
-  font-weight:900;
-  padding:2px 6px;
-  border-radius:6px;
-  text-transform:uppercase;
-  margin-bottom:4px;
-  display:inline-block;
+.item-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  display: inline-block;
 }
 
-.lesson-badge{ background:#0074c7; color:#fff; }
-.cursus-badge{ background:#00a676; color:#fff; }
-
-.cart-success-link{
-  font-size:.85rem;
-  color:#0074c7;
-  text-decoration:none;
-  font-weight:900;
-  border-bottom:1px dotted #0074c7;
-  transition:.2s ease;
+.lesson-badge {
+  background: var(--color-primary);
+  color: var(--color-white);
 }
 
-.cart-success-link:hover{
-  color:#00497c;
-  border-bottom:1px solid #00497c;
+.cursus-badge {
+  background: #00a676;
+  color: var(--color-white);
 }
 
-.cart-success-link .arrow{ margin-left:4px; font-weight:900; }
+.cart-success-link {
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 800;
+  border-bottom: 1px dotted var(--color-primary);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.cart-success-link:hover {
+  color: var(--color-primary-dark);
+  border-bottom: 1px solid var(--color-primary-dark);
+}
+
+.cart-success-link .arrow {
+  margin-left: 4px;
+  font-weight: 900;
+}
 
 .cursus-lessons{
   list-style:none;
@@ -98,22 +112,30 @@
   gap:8px;
 }
 
-.no-lessons{ font-size:.85rem; color:#888; }
-
-.cart-link-back{
-  display:inline-block;
-  margin-top:20px;
-  font-size:.9rem;
-  color:#0074c7;
-  text-decoration:none;
-  font-weight:900;
+.no-lessons {
+  font-size: 0.85rem;
+  color: #888;
 }
-.cart-link-back:hover{ color:#00497c; text-decoration:underline; }
 
-@media (max-width:600px){
-  .cart-success-row{
-    flex-direction:column;
-    align-items:flex-start;
-    gap:6px;
-  }
+/* Responsive */
+
+@media (max-width: 768px) {
+    .cart-success-wrapper {
+        padding: 24px 14px;
+    }
+
+    .cart-success-card {
+        padding: 18px 16px;
+    }
+
+    .cart-success-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 520px) {
+    .cart-link-back {
+        width: 100%;
+    }
 }
