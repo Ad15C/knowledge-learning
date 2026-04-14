@@ -1,33 +1,80 @@
+/* =======================
+   PAGE LEÇON
+======================= */
+
+/* HEADER / RETOUR */
+.lesson-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+/* le bloc meta devient vertical */
+.lesson-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.95rem;
+    color: #6b7280;
+    margin: 10px 0 30px 0;
+}
+
+/* lien cursus */
+.lesson-cursus {
+    font-weight: 600;
+}
+
+.lesson-theme {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.lesson-meta a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.lesson-meta a:hover {
+    text-decoration: underline;
+}
+
+/* Click */
+.lesson-back-link:active {
+    transform: translateY(0);
+}
+
 .lesson-page {
     max-width: 800px;
     margin: 0 auto;
-    padding: 20px;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 24px;
+    background: var(--color-white);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
 }
 
 .lesson-title {
     font-size: 2rem;
-    color: #00497c;
-    margin-bottom: 15px;
+    color: var(--color-primary-dark);
+    margin: 0 0 18px;
     text-align: center;
+    line-height: 1.25;
 }
 
-.lesson-image-wrapper {
+.lesson-image-wrapper,
+.lesson-cover {
     text-align: center;
     margin-bottom: 20px;
 }
 
 .lesson-image-small {
+    width: 100%;
     max-width: 250px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.lesson-cover {
-    text-align: center;
-    margin-bottom: 20px;
+    height: auto;
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .lesson-image {
@@ -35,28 +82,51 @@
     max-width: 100%;
     height: auto;
     margin: 0 auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .lesson-fiche p {
     margin-bottom: 1rem;
-    line-height: 1.6;
-    color: #384050;
+    line-height: 1.7;
+    color: var(--color-text);
+}
+
+.lesson-fiche img,
+.lesson-fiche iframe,
+.lesson-fiche video,
+.lesson-fiche table {
+    max-width: 100%;
+}
+
+/* utile pour éviter qu’un tableau déborde */
+.lesson-fiche table {
+    display: block;
+    overflow-x: auto;
 }
 
 .lesson-video {
     text-align: center;
-    margin: 20px 0;
+    margin: 24px 0;
 }
 
+.lesson-video iframe,
+.lesson-video video {
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--radius-md);
+}
+
+/* Boutons petits */
 .btn-sm {
-    padding: 6px 12px;
+    padding: 8px 12px;
     font-size: 0.9rem;
+    min-height: 38px;
 }
 
+/* États */
 .lesson-validated {
-    font-weight: bold;
+    font-weight: 700;
     color: #28a745;
 }
 
@@ -65,8 +135,45 @@
     color: #dc3545;
 }
 
-@media (max-width: 576px) {
+/* =======================
+   RESPONSIVE
+======================= */
+@media (max-width: 768px) {
+    .lesson-header {
+        margin-bottom: 20px;
+    }
+
+    .lesson-page {
+        padding: 20px 16px;
+    }
+
+    .lesson-title {
+        font-size: 1.7rem;
+    }
+}
+
+@media (max-width: 520px) {
+    .lesson-header {
+        margin-bottom: 18px;
+    }
+
+    .lesson-back-link {
+        width: 100%;
+    }
+
+    .lesson-page {
+        padding: 18px 14px;
+    }
+
+    .lesson-title {
+        font-size: 1.45rem;
+    }
+
     .lesson-image-small {
         max-width: 100%;
+    }
+
+    .btn-sm {
+        width: 100%;
     }
 }

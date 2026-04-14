@@ -1,40 +1,57 @@
-/* ====== Common styles for certifications ====== */
-body {
-    font-family: "Comic Sans MS", cursive, sans-serif;
-    color: #384050;
-}
+/* =========================
+   COMMON STYLES FOR CERTIFICATIONS
+========================= */
 
 /* Encadré blanc commun */
 .card-white {
-    background-color: #fff;
-    border: 1px solid #d6e4f0;
-    border-radius: 8px;
+    background-color: var(--color-white);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
     padding: 20px;
-    transition: all 0.2s ease;
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
+.card-white:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(0, 73, 124, 0.1);
+}
+
+
 /* Boutons et liens premium */
-.btn, .btn-back, .card-link-detail {
-    display: inline-block;
-    font-weight: bold;
+.btn,
+.btn-back,
+.card-link-detail {
     text-decoration: none;
     transition: all 0.2s ease;
 }
 
+/* Bouton principal */
 .btn {
-    padding: 10px 15px;
-    border-radius: 6px;
-    background-color: #0074c7;
-    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    background-color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    color: var(--color-white);
+    font-weight: 700;
 }
 
-.btn:hover, .btn-back:hover, .card-link-detail:hover {
-    background-color: #00497c;
-    transform: translateY(-2px);
-    color: #fff;
+.btn:hover,
+.btn:focus {
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+    color: var(--color-white);
+    transform: translateY(-1px);
 }
 
 /* Titres et textes */
-h1, h2 {
-    color: #00497c;
+.certification-page h1,
+.certification-page h2,
+.certificate h1,
+.certificate h2 {
+    color: var(--color-primary);
 }

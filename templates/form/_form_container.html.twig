@@ -1,7 +1,9 @@
 <div class="form-page-wrapper">
   <div class="form-container">
     {% if back_path is defined %}
-      <a href="{{ back_path }}" class="btn-back">← Retour</a>
+      <div class="form-back-wrapper">
+        <a href="{{ back_path }}" class="back-link">← Retour</a>
+      </div>
     {% endif %}
 
     {% if title is defined %}

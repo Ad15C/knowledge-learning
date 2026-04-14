@@ -7,8 +7,8 @@
 <div class="admin-purchase-page">
   <div class="admin-page-shell">
 
-    <div class="d-flex align-items-start justify-content-between mb-3">
-      <div>
+    <div class="admin-purchase-topbar">
+      <div class="admin-purchase-heading">
         <h1 class="h3 mb-1">Commande {{ purchase.orderNumber }}</h1>
         <div class="text-muted">
           <span class="me-2">#{{ purchase.id }}</span>
@@ -19,8 +19,7 @@
         </div>
       </div>
 
-      <div class="d-flex gap-2 align-items-start">
-        {# transitions UI alignées sur le controller #}
+      <div class="admin-purchase-topbar-actions">
         {% set transitions = {
           'cart': ['pending','paid','canceled'],
           'pending': ['paid','canceled'],
@@ -32,10 +31,10 @@
 
         <form method="post"
               action="{{ path('admin_purchase_update_status', {id: purchase.id}) }}"
-              class="d-flex gap-2 align-items-end">
+              class="admin-purchase-status-form">
           <input type="hidden" name="_token" value="{{ csrf_token('purchase_status_' ~ purchase.id) }}">
 
-          <div>
+          <div class="admin-purchase-status-field">
             <label class="form-label mb-1" for="status">Statut</label>
             <select id="status" name="status" class="form-select">
               <option value="{{ current }}" selected>{{ current }}</option>
@@ -51,7 +50,10 @@
           </button>
         </form>
 
-        <a class="btn btn-outline-secondary" href="{{ path('admin_purchase_index') }}">← Retour à la liste</a>
+        <a class="btn btn-outline-secondary admin-purchase-list-link"
+           href="{{ path('admin_purchase_index') }}">
+          ← Retour à la liste des commandes
+        </a>
       </div>
     </div>
 
@@ -234,11 +236,11 @@
       </div>
 
     </div>
-  </div>
 
-  <a href="{{ path('admin_dashboard') }}" class="btn-back">
-    ← Retour au dashboard admin
-  </a>
+    <a href="{{ path('admin_dashboard') }}" class="back-link">
+      ← Retour à l'espace administrateur
+    </a>
+  </div>
 </div>
 
 {% endblock %}

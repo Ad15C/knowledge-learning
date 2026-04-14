@@ -1,32 +1,40 @@
+/* =======================
+   PAGE LEÇON VALIDÉE
+======================= */
+
 .lesson-validated-container {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 75vh;
-    padding: 20px;
-    background-color: #f1f8fc;
+    padding: 24px;
+    background-color: var(--color-bg);
 }
 
 .lesson-validated-card {
-    background-color: #fff;
-    border-radius: 12px;
+    background-color: var(--color-white);
+    border-radius: var(--radius-xl);
     padding: 35px 25px;
     max-width: 600px;
     width: 100%;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-soft);
     text-align: center;
 }
 
+
 .lesson-validated-card h1 {
-    font-size: 2em;
-    color: #00497c;
-    margin-bottom: 15px;
+    font-size: 2rem;
+    color: var(--color-primary-dark);
+    margin: 0 0 15px;
+    line-height: 1.25;
 }
 
 .lesson-validated-card p {
-    font-size: 1.1em;
-    color: #384050;
+    font-size: 1.05rem;
+    color: var(--color-text);
     margin-bottom: 20px;
+    line-height: 1.6;
 }
 
 /* Cercle de progression */
@@ -57,7 +65,7 @@
 }
 
 .progress-circle circle.progress {
-    stroke: #0074c7;
+    stroke: var(--color-primary);
     stroke-linecap: round;
     stroke-dasharray: 0;
     stroke-dashoffset: 0;
@@ -69,61 +77,92 @@
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 1.2em;
-    color: #00497c;
-    font-weight: bold;
+    color: var(--color-primary-dark);
+    font-weight: 700;
 }
 
 .progress-text {
     font-size: 0.95em;
-    color: #384050;
+    color: var(--color-text);
     margin-bottom: 20px;
 }
 
+
+/* Boutons */
 /* Boutons */
 .lesson-validated-card .btn {
-    display: inline-block;
-    padding: 12px 25px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 12px 22px;
     margin-top: 10px;
-    font-size: 1em;
-    border-radius: 8px;
+    font-size: 1rem;
+    border-radius: 10px;
     text-decoration: none;
-    transition: background-color 0.3s ease;
+    font-weight: 700;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.lesson-validated-card .btn:hover {
+    transform: translateY(-1px);
 }
 
 .btn-primary {
-    background-color: #0074c7;
-    color: #fff;
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    border: 1px solid var(--color-primary);
 }
 
 .btn-primary:hover {
-    background-color: #00497c;
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
 }
 
 .btn-secondary {
     background-color: #e2e8f0;
-    color: #384050;
+    color: var(--color-text);
+    border: 1px solid #d4dbe3;
 }
 
 .btn-secondary:hover {
     background-color: #cbd5e1;
 }
 
-/* Responsive */
+/* =======================
+   RESPONSIVE
+======================= */
 @media (max-width: 768px) {
+    .lesson-validated-container {
+        padding: 16px;
+    }
+
     .lesson-validated-card {
-        padding: 25px 15px;
+        padding: 25px 16px;
     }
 
     .lesson-validated-card h1 {
-        font-size: 1.8em;
+        font-size: 1.7rem;
     }
 
     .lesson-validated-card p {
-        font-size: 1em;
+        font-size: 1rem;
     }
 
     .lesson-validated-card .btn {
         width: 100%;
         padding: 12px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .lesson-validated-card h1 {
+        font-size: 1.45rem;
+    }
+
+    .progress-circle,
+    .progress-circle svg {
+        width: 104px;
+        height: 104px;
     }
 }

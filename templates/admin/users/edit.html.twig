@@ -5,20 +5,20 @@
   <link rel="stylesheet" href="{{ asset('styles/admin/users.css') }}">
 {% endblock %}
 
-{% block title %}Admin - Modifier un client{% endblock %}
+{% block title %}Admin - Modifier un utilisateur{% endblock %}
 
 {% block dashboard_content %}
   <div class="admin-users-edit">
     <div class="admin-page-header">
       <div>
-        <h1 class="admin-page-title">Modifier un client</h1>
+        <h1 class="admin-page-title">Modifier un utilisateur</h1>
         <p class="admin-page-subtitle">Dans cette section, vous pouvez modifier les informations d’un utilisateur,
         telles que ses données personnelles, son rôle ou son statut.</p>
       </div>
 
       <a href="{{ path('admin_users_index', { action: 'edit', status: status|default('active') }) }}"
          class="btn btn-secondary">
-        ← Retour liste
+        ← Retour à la liste des utilisateurs
       </a>
     </div>
 
