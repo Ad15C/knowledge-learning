@@ -120,6 +120,7 @@ main {
 ======================= */
 .menu-toggle {
     display: none;
+    margin-left: auto;
     font-size: 28px;
     cursor: pointer;
     color: var(--color-primary-dark);
@@ -131,6 +132,7 @@ main {
    MAIN NAV (DESKTOP DEFAULT)
 ======================= */
 .main-nav {
+    margin-left: auto;
     position: relative;
 }
 
@@ -347,13 +349,30 @@ footer {
 
 /* <= 992px - laptop/ tablette paysage */
 @media (max-width: 992px) {
+    .main-header {
+        position: relative;
+        z-index: 300;
+        overflow: visible;
+    }
+
     .menu-toggle {
         display: block;
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-left: 0;
+        z-index: 400;
+    }
+    
+    .main-nav {
+        position: static;
+        margin-left: auto;
     }
 
     .main-nav > ul {
         position: absolute;
-        right: 0;
+        right: 20px;
         top: calc(100% + 10px);
         width: min(92vw, 420px);
         display: none;
@@ -364,7 +383,7 @@ footer {
         border-radius: 12px;
         padding: 10px 0;
         box-shadow: 0 12px 28px rgba(0,0,0,0.15);
-        z-index: 200;
+        z-index: 999;
     }
 
     .main-nav > ul.show {
@@ -453,6 +472,11 @@ footer {
         max-width: 100%;
         right: 0;
     }
+
+    .has-submenu.open > ul {
+    display: flex;
+    flex-direction: column;
+}
 }
 
 /* <= 520px - mobile */
