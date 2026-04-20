@@ -33,7 +33,7 @@
         </a>
     </div>
 
-    <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+    <div class="menu-toggle" id="menuToggle" aria-label="Ouvrir le menu">☰</div>
 
     <nav class="main-nav">
         {% set route = app.request.attributes.get('_route') %}
@@ -165,45 +165,57 @@
 <footer>&copy; {{ "now"|date("Y") }} Knowledge Learning - Tous droits réservés</footer>
 
 <script>
-  function toggleMenu() {
-    document.querySelector('.main-nav > ul')?.classList.toggle('show');
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-
-    // Sous-menu : clic uniquement en mobile/tablette
-    document.querySelectorAll('.has-submenu > a').forEach(link => {
-      link.addEventListener('click', (e) => {
-        if (window.innerWidth <= 992) {
-          e.preventDefault();
-          link.parentElement.classList.toggle('open');
-        }
-      });
-    });
-
-    // Auto-suppression des flash
-    setTimeout(() => {
-      document.querySelectorAll('.flash').forEach(flash => flash.remove());
-    }, 4000);
-
-    // Bouton retour en haut
+window.addEventListener('load', () => {
+    const menuToggle = document.getElementById('menuToggle');
+    const mainMenu = document.querySelector('.main-nav > ul');
+    const submenuParents = document.querySelectorAll('.has-submenu');
     const scrollTopBtn = document.getElementById('scrollTopBtn');
 
-    window.addEventListener('scroll', () => {
-      scrollTopBtn.style.display = window.scrollY > 200 ? 'block' : 'none';
+    if (menuToggle && mainMenu) {
+        menuToggle.addEventListener('click', () => {
+            mainMenu.classList.toggle('show');
+        });
+    }
+
+    submenuParents.forEach(item => {
+        const link = item.querySelector('a');
+
+        if (!link) return;
+
+        link.addEventListener('click', (e) => {
+            if (window.innerWidth <= 992 && item.classList.contains('has-submenu')) {
+                const submenu = item.querySelector('ul');
+                if (!submenu) return;
+
+                if (!item.classList.contains('open')) {
+                    e.preventDefault();
+                    item.classList.add('open');
+                }
+            }
+        });
     });
 
-    scrollTopBtn.addEventListener('click', () => {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    });
-  });
+    setTimeout(() => {
+        document.querySelectorAll('.flash').forEach(flash => flash.remove());
+    }, 4000);
+
+    if (scrollTopBtn) {
+        window.addEventListener('scroll', () => {
+            scrollTopBtn.style.display = window.scrollY > 200 ? 'block' : 'none';
+        });
+
+        scrollTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    }
+});
 </script>
 
-{% block javascripts %}
-{% endblock %}
+{% block javascripts %}{% endblock %}
+
 <button id="scrollTopBtn" title="Retour en haut">
     <img src="{{ asset('images/fleche-32.png') }}" alt="Retour en haut">
 </button>

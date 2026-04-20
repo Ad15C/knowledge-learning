@@ -139,6 +139,12 @@
    RESPONSIVE
 ======================= */
 @media (max-width: 640px) {
+     main {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
     .login-container {
         margin: 24px 14px;
         padding: 22px 18px;
