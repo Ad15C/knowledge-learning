@@ -1,6 +1,14 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ cursus.name }}{% endblock %}
+{% block title %}{{ cursus.name }} | Knowledge Learning{% endblock %}
+
+{% block meta_description %}
+Découvrez le cursus {{ cursus.name }}{% if cursus.theme %} du thème {{ cursus.theme.name }}{% endif %}, ses leçons et son contenu pédagogique.
+{% endblock %}
+
+{% block canonical_url %}
+{{ absolute_url(path('cursus_show', { slug: cursus.slug })) }}
+{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -25,7 +33,11 @@
 
             <div class="cursus-card lesson-card">
                 {% if lesson.image %}
-                    <img src="{{ asset(lesson.image) }}" alt="{{ lesson.title }}">
+                    <img
+                    src="{{ asset(lesson.image) }}" 
+                    alt="Leçon {{ lesson.title }}"
+                    loading="lazy"
+                    >
                 {% endif %}
 
                 <h3>{{ lesson.title }}</h3>
@@ -84,4 +96,39 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Accueil",
+      "item": "{{ absolute_url(path('homepage')) }}"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Thèmes",
+      "item": "{{ absolute_url(path('themes_index')) }}"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "{{ cursus.theme.name|e('js') }}",
+      "item": "{{ absolute_url(path('theme_show', { slug: cursus.theme.slug })) }}"
+    },
+    {
+      "@type": "ListItem",
+      "position": 4,
+      "name": "{{ cursus.name|e('js') }}",
+      "item": "{{ absolute_url(path('cursus_show', { slug: cursus.slug })) }}"
+    }
+  ]
+}
+</script>
 {% endblock %}

@@ -2,6 +2,8 @@
 
 {% block title %}Admin - Message #{{ contact.id }}{% endblock %}
 
+{% block robots %}noindex,nofollow{% endblock %}
+
 {% block stylesheets %}
   {{ parent() }}
   <link rel="stylesheet" href="{{ asset('styles/admin/contact.css') }}">

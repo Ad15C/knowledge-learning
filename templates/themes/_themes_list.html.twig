@@ -1,21 +1,71 @@
-<div class="themes-grid">
-    {% for theme in themes %}
-        <div class="theme-card">
-            {% if theme.image %}
-                <img src="{{ asset(theme.image) }}" alt="{{ theme.name }}" class="theme-image">
-            {% endif %}
+{% extends 'base.html.twig' %}
 
-            <h2>{{ theme.name }}</h2>
+{% block title %}Tous les thèmes de formation | Knowledge Learning{% endblock %}
 
-            {% if theme.description %}
-                <p>{{ theme.description }}</p>
-            {% endif %}
+{% block meta_description %}
+Explorez tous nos thèmes de formation : musique, informatique, cuisine, jardinage.
+{% endblock %}
 
-            <a href="{{ path('theme_show', {'slug': theme.slug}) }}" class="btn btn-primary">
-                Découvrir
-            </a>
-        </div>
-    {% else %}
-        <p>Aucun thème disponible.</p>
-    {% endfor %}
+{% block canonical_url %}
+{{ absolute_url(path('themes_index')) }}
+{% endblock %}
+
+{% block body %}
+
+<div class="themes-page">
+    <h1>Nos thèmes de formation</h1>
+        <p>
+        Découvrez nos différents thèmes de formation en ligne : musique, informatique, cuisine et jardinage.
+        Choisissez votre domaine et progressez grâce à nos cursus structurés.
+        </p>
+
+    <div class="themes-grid">
+        {% for theme in themes %}
+            <div class="theme-card">
+
+                {% if theme.image %}
+                    <img 
+                        src="{{ asset(theme.image) }}" 
+                        alt="Formation {{ theme.name }}" 
+                        class="theme-image"
+                        loading="lazy"
+                    >
+                {% endif %}
+
+                <h2>{{ theme.name }}</h2>
+
+                {% if theme.description %}
+                    <p>{{ theme.description }}</p>
+                {% endif %}
+
+                <a href="{{ path('theme_show', {'slug': theme.slug}) }}" class="btn btn-primary">
+                    Découvrir le thème {{ theme.name }}
+                </a>
+            </div>
+
+        {% else %}
+            <p>Aucun thème disponible.</p>
+        {% endfor %}
+    </div>
 </div>
+{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Tous les thèmes de formation",
+  "itemListElement": [
+    {% for theme in themes %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "name": "{{ theme.name|e('js') }}",
+      "url": "{{ absolute_url(path('theme_show', { slug: theme.slug })) }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endblock %}

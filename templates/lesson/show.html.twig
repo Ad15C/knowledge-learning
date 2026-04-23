@@ -1,6 +1,8 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ lesson.title }}{% endblock %}
+{% block title %}{{ lesson.title }} | Knowledge Learning{% endblock %}
+
+{% block robots %}noindex,nofollow{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}

@@ -13,9 +13,27 @@ class ThemeFixtures extends Fixture
 {
     public const THEME_MUSIQUE_REF = 'theme_musique';
     public const CURSUS_GUITARE_REF = 'cursus_guitare';
-
     public const LESSON_GUITAR_1_REF = 'lesson_guitar_1';
     public const LESSON_GUITAR_2_REF = 'lesson_guitar_2';
+
+    private function buildSafeSlug(string $text): string
+    {
+        $text = mb_strtolower($text);
+        $text = str_replace(['à', 'á', 'â', 'ä'], 'a', $text);
+        $text = str_replace(['ç'], 'c', $text);
+        $text = str_replace(['é', 'è', 'ê', 'ë'], 'e', $text);
+        $text = str_replace(['î', 'ï'], 'i', $text);
+        $text = str_replace(['ô', 'ö'], 'o', $text);
+        $text = str_replace(['ù', 'û', 'ü'], 'u', $text);
+        $text = str_replace(['œ'], 'oe', $text);
+        $text = str_replace(['æ'], 'ae', $text);
+        $text = str_replace(['’', "'", '`'], '-', $text);
+        $text = preg_replace('/[^a-z0-9-]/', '-', $text);
+        $text = preg_replace('/-+/', '-', $text);
+        $text = trim($text, '-');
+
+        return $text !== '' ? $text : 'item';
+    }
 
     public function load(ObjectManager $manager): void
     {
@@ -23,178 +41,196 @@ class ThemeFixtures extends Fixture
 
         // === Thème Musique ===
         $theme = new Theme();
-        $theme->setName('Musique')
-            ->setDescription('Apprenez la guitare et le piano')
-            ->setImage('images/themes/musique/cours_musique.jpg');
+        $theme->setName('Musique');
+        $theme->setSlug($this->buildSafeSlug($theme->getName() ?? 'theme'));
+        $theme->setDescription('Apprenez la guitare et le piano');
+        $theme->setImage('images/themes/musique/cours_musique.jpg');
         $manager->persist($theme);
         $this->addReference(self::THEME_MUSIQUE_REF, $theme);
 
-        // Cursus guitare
         $cursusGuitare = new Cursus();
-        $cursusGuitare->setName('Cursus d’initiation à la guitare')
-            ->setPrice(50)
-            ->setTheme($theme)
-            ->setImage('images/themes/musique/cours_guitare.jpg');
+        $cursusGuitare->setName('Cursus d’initiation à la guitare');
+        $cursusGuitare->setSlug($this->buildSafeSlug($cursusGuitare->getName() ?? 'cursus'));
+        $cursusGuitare->setPrice(50);
+        $cursusGuitare->setTheme($theme);
+        $cursusGuitare->setImage('images/themes/musique/cours_guitare.jpg');
         $manager->persist($cursusGuitare);
         $this->addReference(self::CURSUS_GUITARE_REF, $cursusGuitare);
 
-        // Leçons guitare
         $lesson1 = new Lesson();
-        $lesson1->setTitle('Découverte de l’instrument')
-            ->setPrice(26)
-            ->setCursus($cursusGuitare)
-            ->setImage('images/themes/musique/cours_guitare.jpg')
-            ->setFiche($this->generateArticles($faker))
-            ->setVideoUrl('https://youtu.be/example1');
+        $lesson1->setTitle('Découverte de l’instrument');
+        $lesson1->setSlug($this->buildSafeSlug($lesson1->getTitle() ?? 'lesson'));
+        $lesson1->setPrice(26);
+        $lesson1->setCursus($cursusGuitare);
+        $lesson1->setImage('images/themes/musique/cours_guitare.jpg');
+        $lesson1->setFiche($this->generateArticles($faker));
+        $lesson1->setVideoUrl('https://youtu.be/example1');
         $manager->persist($lesson1);
         $this->addReference(self::LESSON_GUITAR_1_REF, $lesson1);
 
         $lesson2 = new Lesson();
-        $lesson2->setTitle('Les accords et les gammes')
-            ->setPrice(26)
-            ->setCursus($cursusGuitare)
-            ->setImage('images/themes/musique/accords_et_gammes.jpg')
-            ->setFiche($this->generateArticles($faker))
-            ->setVideoUrl('https://youtu.be/example2');
+        $lesson2->setTitle('Les accords et les gammes de la guitare');
+        $lesson2->setSlug($this->buildSafeSlug($lesson2->getTitle() ?? 'lesson'));
+        $lesson2->setPrice(26);
+        $lesson2->setCursus($cursusGuitare);
+        $lesson2->setImage('images/themes/musique/accords_et_gammes.jpg');
+        $lesson2->setFiche($this->generateArticles($faker));
+        $lesson2->setVideoUrl('https://youtu.be/example2');
         $manager->persist($lesson2);
         $this->addReference(self::LESSON_GUITAR_2_REF, $lesson2);
 
-        // Cursus piano
         $cursusPiano = new Cursus();
-        $cursusPiano->setName('Cursus d’initiation au piano')
-            ->setPrice(50)
-            ->setTheme($theme)
-            ->setImage('images/themes/musique/cours_piano.jpg');
+        $cursusPiano->setName('Cursus d’initiation au piano');
+        $cursusPiano->setSlug($this->buildSafeSlug($cursusPiano->getName() ?? 'cursus'));
+        $cursusPiano->setPrice(50);
+        $cursusPiano->setTheme($theme);
+        $cursusPiano->setImage('images/themes/musique/cours_piano.jpg');
         $manager->persist($cursusPiano);
 
-        // Leçons piano
         $lesson3 = new Lesson();
-        $lesson3->setTitle('Découverte du piano')
-            ->setPrice(26)
-            ->setCursus($cursusPiano)
-            ->setImage('images/themes/musique/cours_piano.jpg')
-            ->setFiche($this->generateArticles($faker));
+        $lesson3->setTitle('Découverte du piano');
+        $lesson3->setSlug($this->buildSafeSlug($lesson3->getTitle() ?? 'lesson'));
+        $lesson3->setPrice(26);
+        $lesson3->setCursus($cursusPiano);
+        $lesson3->setImage('images/themes/musique/cours_piano.jpg');
+        $lesson3->setFiche($this->generateArticles($faker));
         $manager->persist($lesson3);
 
         $lesson4 = new Lesson();
-        $lesson4->setTitle('Les accords et gammes au piano')
-            ->setPrice(26)
-            ->setCursus($cursusPiano)
-            ->setImage('images/themes/musique/accords_et_gammes.jpg')
-            ->setFiche($this->generateArticles($faker));
+        $lesson4->setTitle('Les accords et gammes au piano');
+        $lesson4->setSlug($this->buildSafeSlug($lesson4->getTitle() ?? 'lesson'));
+        $lesson4->setPrice(26);
+        $lesson4->setCursus($cursusPiano);
+        $lesson4->setImage('images/themes/musique/accords_et_gammes.jpg');
+        $lesson4->setFiche($this->generateArticles($faker));
         $manager->persist($lesson4);
 
         // === Thème Informatique ===
-        $themeInfo = new Theme();
-        $themeInfo->setName('Informatique')
-            ->setDescription('Initiez-vous au développement web')
-            ->setImage('images/themes/informatique/cours_developpement_web.jpg');
-        $manager->persist($themeInfo);
+        $themeInformatique = new Theme();
+        $themeInformatique->setName('Informatique');
+        $themeInformatique->setSlug($this->buildSafeSlug($themeInformatique->getName() ?? 'theme'));
+        $themeInformatique->setDescription('Initiez-vous au développement web');
+        $themeInformatique->setImage('images/themes/informatique/cours_developpement_web.jpg');
+        $manager->persist($themeInformatique);
 
         $cursusWeb = new Cursus();
-        $cursusWeb->setName('Cursus d’initiation au développement web')
-            ->setPrice(60)
-            ->setTheme($themeInfo)
-            ->setImage('images/themes/informatique/cours_developpement_web.jpg');
+        $cursusWeb->setName('Cursus d’initiation au développement web');
+        $cursusWeb->setSlug($this->buildSafeSlug($cursusWeb->getName() ?? 'cursus'));
+        $cursusWeb->setPrice(60);
+        $cursusWeb->setTheme($themeInformatique);
+        $cursusWeb->setImage('images/themes/informatique/cours_developpement_web.jpg');
         $manager->persist($cursusWeb);
 
         $lesson5 = new Lesson();
-        $lesson5->setTitle('Les langages HTML et CSS')
-            ->setPrice(32)
-            ->setCursus($cursusWeb)
-            ->setImage('images/themes/informatique/les_langages_html_css.jpg')
-            ->setFiche($this->generateArticles($faker));
+        $lesson5->setTitle('Les langages HTML et CSS');
+        $lesson5->setSlug($this->buildSafeSlug($lesson5->getTitle() ?? 'lesson'));
+        $lesson5->setPrice(32);
+        $lesson5->setCursus($cursusWeb);
+        $lesson5->setImage('images/themes/informatique/les_langages_html_css.jpg');
+        $lesson5->setFiche($this->generateArticles($faker));
         $manager->persist($lesson5);
 
         $lesson6 = new Lesson();
-        $lesson6->setTitle('Dynamiser votre site avec JavaScript')
-            ->setPrice(32)
-            ->setCursus($cursusWeb)
-            ->setImage('images/themes/informatique/dynamiser_site_javascript.jpg')
-            ->setFiche($this->generateArticles($faker));
+        $lesson6->setTitle('Dynamiser votre site avec JavaScript');
+        $lesson6->setSlug($this->buildSafeSlug($lesson6->getTitle() ?? 'lesson'));
+        $lesson6->setPrice(32);
+        $lesson6->setCursus($cursusWeb);
+        $lesson6->setImage('images/themes/informatique/dynamiser_site_javascript.jpg');
+        $lesson6->setFiche($this->generateArticles($faker));
         $manager->persist($lesson6);
 
         // === Thème Jardinage ===
         $themeJardin = new Theme();
-        $themeJardin->setName('Jardinage')
-            ->setDescription('Cursus d’initiation au jardinage')
-            ->setImage('images/themes/jardinage/initiation_jardinage.jpg');
+        $themeJardin->setName('Jardinage');
+        $themeJardin->setSlug($this->buildSafeSlug($themeJardin->getName() ?? 'theme'));
+        $themeJardin->setDescription('Cursus d’initiation au jardinage');
+        $themeJardin->setImage('images/themes/jardinage/initiation_jardinage.jpg');
         $manager->persist($themeJardin);
 
         $cursusJardin = new Cursus();
-        $cursusJardin->setName('Cursus d’initiation au jardinage')
-            ->setPrice(30)
-            ->setTheme($themeJardin)
-            ->setImage('images/themes/jardinage/initiation_jardinage.jpg');
+        $cursusJardin->setName('Cursus d’initiation au jardinage');
+        $cursusJardin->setSlug($this->buildSafeSlug($cursusJardin->getName() ?? 'cursus'));
+        $cursusJardin->setPrice(30);
+        $cursusJardin->setTheme($themeJardin);
+        $cursusJardin->setImage('images/themes/jardinage/initiation_jardinage.jpg');
         $manager->persist($cursusJardin);
 
         $lesson7 = new Lesson();
-        $lesson7->setTitle('Les outils du jardinier')
-            ->setPrice(16)
-            ->setCursus($cursusJardin)
-            ->setImage('images/themes/jardinage/outils_du_jardinier.jpg')
-            ->setFiche($this->generateArticles($faker));
+        $lesson7->setTitle('Les outils du jardinier');
+        $lesson7->setSlug($this->buildSafeSlug($lesson7->getTitle() ?? 'lesson'));
+        $lesson7->setPrice(16);
+        $lesson7->setCursus($cursusJardin);
+        $lesson7->setImage('images/themes/jardinage/outils_du_jardinier.jpg');
+        $lesson7->setFiche($this->generateArticles($faker));
         $manager->persist($lesson7);
 
         $lesson8 = new Lesson();
-        $lesson8->setTitle('Jardiner avec la lune')
-            ->setPrice(16)
-            ->setCursus($cursusJardin)
-            ->setImage('images/themes/jardinage/jardiner_avec_la_lune.jpg')
-            ->setFiche($this->generateArticles($faker));
+        $lesson8->setTitle('Jardiner avec la lune');
+        $lesson8->setSlug($this->buildSafeSlug($lesson8->getTitle() ?? 'lesson'));
+        $lesson8->setPrice(16);
+        $lesson8->setCursus($cursusJardin);
+        $lesson8->setImage('images/themes/jardinage/jardiner_avec_la_lune.jpg');
+        $lesson8->setFiche($this->generateArticles($faker));
         $manager->persist($lesson8);
 
         // === Thème Cuisine ===
         $themeCuisine = new Theme();
-        $themeCuisine->setName('Cuisine')
-            ->setDescription('Cursus d’initiation à la cuisine et dressage culinaire')
-            ->setImage('images/themes/cuisine/cours_cuisine.jpg');
+        $themeCuisine->setName('Cuisine');
+        $themeCuisine->setSlug($this->buildSafeSlug($themeCuisine->getName() ?? 'theme'));
+        $themeCuisine->setDescription('Cursus d’initiation à la cuisine et dressage culinaire');
+        $themeCuisine->setImage('images/themes/cuisine/cours_cuisine.jpg');
         $manager->persist($themeCuisine);
 
         $cursusCuisine1 = new Cursus();
-        $cursusCuisine1->setName('Cursus d’initiation à la cuisine')
-            ->setPrice(44)
-            ->setTheme($themeCuisine)
-            ->setImage('images/themes/cuisine/cours_cuisine.jpg');
+        $cursusCuisine1->setName('Cursus d’initiation à la cuisine');
+        $cursusCuisine1->setSlug($this->buildSafeSlug($cursusCuisine1->getName() ?? 'cursus'));
+        $cursusCuisine1->setPrice(44);
+        $cursusCuisine1->setTheme($themeCuisine);
+        $cursusCuisine1->setImage('images/themes/cuisine/cours_cuisine.jpg');
         $manager->persist($cursusCuisine1);
 
         $lesson9 = new Lesson();
-        $lesson9->setTitle('Les modes de cuisson')
-            ->setPrice(23)
-            ->setCursus($cursusCuisine1)
-            ->setImage('images/themes/cuisine/modes_cuisson.jpg')
-            ->setFiche($this->generateArticles($faker));
+        $lesson9->setTitle('Les modes de cuisson');
+        $lesson9->setSlug($this->buildSafeSlug($lesson9->getTitle() ?? 'lesson'));
+        $lesson9->setPrice(23);
+        $lesson9->setCursus($cursusCuisine1);
+        $lesson9->setImage('images/themes/cuisine/modes_cuisson.jpg');
+        $lesson9->setFiche($this->generateArticles($faker));
         $manager->persist($lesson9);
 
         $lesson10 = new Lesson();
-        $lesson10->setTitle('Les saveurs')
-            ->setPrice(23)
-            ->setCursus($cursusCuisine1)
-            ->setImage('images/themes/cuisine/saveurs.jpg')
-            ->setFiche($this->generateArticles($faker));
+        $lesson10->setTitle('Les saveurs');
+        $lesson10->setSlug($this->buildSafeSlug($lesson10->getTitle() ?? 'lesson'));
+        $lesson10->setPrice(23);
+        $lesson10->setCursus($cursusCuisine1);
+        $lesson10->setImage('images/themes/cuisine/saveurs.jpg');
+        $lesson10->setFiche($this->generateArticles($faker));
         $manager->persist($lesson10);
 
         $cursusCuisine2 = new Cursus();
-        $cursusCuisine2->setName('Cursus d’initiation à l’art du dressage culinaire')
-            ->setPrice(48)
-            ->setTheme($themeCuisine)
-            ->setImage('images/themes/cuisine/dressage_culinaire.jpg');
+        $cursusCuisine2->setName('Cursus d’initiation à l’art du dressage culinaire');
+        $cursusCuisine2->setSlug($this->buildSafeSlug($cursusCuisine2->getName() ?? 'cursus'));
+        $cursusCuisine2->setPrice(48);
+        $cursusCuisine2->setTheme($themeCuisine);
+        $cursusCuisine2->setImage('images/themes/cuisine/dressage_culinaire.jpg');
         $manager->persist($cursusCuisine2);
 
         $lesson11 = new Lesson();
-        $lesson11->setTitle('Mettre en œuvre le style dans l’assiette')
-            ->setPrice(26)
-            ->setCursus($cursusCuisine2)
-            ->setImage('images/themes/cuisine/style_dans_assiette.jpg')
-            ->setFiche($this->generateArticles($faker));
+        $lesson11->setTitle('Mettre en œuvre le style dans l’assiette');
+        $lesson11->setSlug($this->buildSafeSlug($lesson11->getTitle() ?? 'lesson'));
+        $lesson11->setPrice(26);
+        $lesson11->setCursus($cursusCuisine2);
+        $lesson11->setImage('images/themes/cuisine/style_dans_assiette.jpg');
+        $lesson11->setFiche($this->generateArticles($faker));
         $manager->persist($lesson11);
 
         $lesson12 = new Lesson();
-        $lesson12->setTitle('Harmoniser un repas à quatre plats')
-            ->setPrice(26)
-            ->setCursus($cursusCuisine2)
-            ->setImage('images/themes/cuisine/quatre_plats.jpg')
-            ->setFiche($this->generateArticles($faker));
+        $lesson12->setTitle('Harmoniser un repas à quatre plats');
+        $lesson12->setSlug($this->buildSafeSlug($lesson12->getTitle() ?? 'lesson'));
+        $lesson12->setPrice(26);
+        $lesson12->setCursus($cursusCuisine2);
+        $lesson12->setImage('images/themes/cuisine/quatre_plats.jpg');
+        $lesson12->setFiche($this->generateArticles($faker));
         $manager->persist($lesson12);
 
         $manager->flush();

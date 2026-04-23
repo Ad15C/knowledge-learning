@@ -2,6 +2,8 @@
 
 {% block title %}Mes Achats{% endblock %}
 
+{% block robots %}noindex,nofollow{% endblock %}
+
 {% block stylesheets %}
   {{ parent() }}
   <link rel="stylesheet" href="{{ asset('styles/user/cart.css') }}">
