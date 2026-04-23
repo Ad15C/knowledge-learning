@@ -66,12 +66,12 @@
             {% endif %}
 
             <div class="lesson-validated-actions">
-                <a href="{{ path('lesson_show', { id: lesson.id }) }}" class="btn btn-outline">
+                <a href="{{ path('lesson_show', { slug: lesson.slug }) }}" class="btn btn-outline">
                     Revenir à la leçon
                 </a>
 
                 {% if cursus %}
-                    <a href="{{ path('cursus_show', { id: cursus.id }) }}" class="btn btn-primary">
+                    <a href="{{ path('cursus_show', { slug: cursus.slug}) }}" class="btn btn-primary">
                         Retour au cursus
                     </a>
                 {% else %}

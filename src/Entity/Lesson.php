@@ -18,6 +18,9 @@ class Lesson
     #[Assert\NotBlank(message: 'Le titre est obligatoire.')]
     private ?string $title = null;
 
+    #[ORM\Column(length: 255, unique: true)]
+    private ?string $slug = null;
+
     #[ORM\Column(type: 'decimal', precision: 6, scale: 2, nullable: false)]
     #[Assert\NotBlank(message: 'Le prix est obligatoire.')]
     #[Assert\PositiveOrZero(message: 'Le prix doit être positif ou nul.')]
@@ -52,6 +55,17 @@ class Lesson
     public function setTitle(string $title): static
     {
         $this->title = trim($title);
+        return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(?string $slug): static
+    {
+        $this->slug = $slug !== null ? trim($slug) : null;
         return $this;
     }
 

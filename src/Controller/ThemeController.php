@@ -8,6 +8,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+
 class ThemeController extends AbstractController
 {
     #[Route('/themes', name: 'themes_index', methods: ['GET'])]
@@ -40,14 +41,14 @@ class ThemeController extends AbstractController
         ]);
     }
 
-    #[Route('/themes/{id}', name: 'theme_show', methods: ['GET'])]
-    public function show(int $id, ThemeRepository $themeRepository): Response
+    #[Route('/themes/{slug}', name: 'theme_show', methods: ['GET'], requirements: ['slug' => '[a-z0-9\-]+'])]
+    public function show(string $slug, ThemeRepository $themeRepository): Response
     {
         if ($this->isGranted('ROLE_ADMIN')) {
             return $this->redirectToRoute('admin_dashboard');
         }
 
-        $theme = $themeRepository->findVisibleTheme($id);
+        $theme = $themeRepository->findVisibleThemeBySlug($slug);
 
         if (!$theme) {
             throw $this->createNotFoundException('Thème introuvable.');

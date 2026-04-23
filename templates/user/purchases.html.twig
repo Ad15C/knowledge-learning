@@ -58,7 +58,7 @@
                     <span class="cart-type">(Leçon)</span>
                     — Quantité  {{ item.quantity }}
 
-                    <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}" class="cart-link">
+                    <a href="{{ path('lesson_show', {'slug': item.lesson.slug}) }}" class="cart-link">
                       Accéder
                     </a>
 
@@ -70,7 +70,7 @@
                     {% if item.cursus.lessons is not empty %}
                       <div class="mt-2">
                         {% for lesson in item.cursus.lessons %}
-                          <a href="{{ path('lesson_show', {'id': lesson.id}) }}" class="cart-link">
+                          <a href="{{ path('lesson_show', {'slug': lesson.slug}) }}" class="cart-link">
                             {{ lesson.title }}
                           </a>
                         {% endfor %}

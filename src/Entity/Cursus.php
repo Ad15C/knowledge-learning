@@ -20,6 +20,9 @@ class Cursus
     #[Assert\NotBlank(message: 'Le nom est obligatoire.')]
     private ?string $name = null;
 
+    #[ORM\Column(length: 255, unique: true)]
+    private ?string $slug = null;
+
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     #[Assert\NotBlank(message: 'Le prix est obligatoire.')]
     #[Assert\PositiveOrZero(message: 'Le prix doit être positif ou nul.')]
@@ -65,6 +68,17 @@ class Cursus
     public function setName(string $name): static
     {
         $this->name = trim($name);
+        return $this;
+    }
+    
+        public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(?string $slug): static
+    {
+        $this->slug = $slug !== null ? trim($slug) : null;
         return $this;
     }
 

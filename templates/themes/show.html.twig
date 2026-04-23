@@ -31,13 +31,13 @@
           <p>Prix : <strong>{{ cursus.price }} €</strong></p>
 
           <div style="margin-top: 10px;">
-            <a href="{{ path('cursus_show', {id: cursus.id}) }}" class="btn-secondary">
+            <a href="{{ path('cursus_show', { slug: cursus.slug }) }}" class="btn-secondary">
               Détails du cursus
             </a>
 
-            <form method="post" action="{{ path('cart_add_cursus', {id: cursus.id}) }}" style="display:inline;">
-              <input type="hidden" name="_token" value="{{ csrf_token('cart_add_cursus_' ~ cursus.id) }}">
-              <button type="submit" class="btn">Ajouter au panier</button>
+            <form method="post" action="{{ path('cart_add_cursus', { slug: cursus.slug }) }}" style="display:inline;">
+                <input type="hidden" name="_token" value="{{ csrf_token('cart_add_cursus_' ~ cursus.slug) }}">
+                <button type="submit" class="btn">Ajouter au panier</button>
             </form>
           </div>
 

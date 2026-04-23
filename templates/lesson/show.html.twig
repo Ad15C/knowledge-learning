@@ -16,7 +16,7 @@
             <p class="lesson-meta">
                 <span class="lesson-cursus">
                     Cursus :
-                    <a href="{{ path('cursus_show', { id: lesson.cursus.id }) }}">
+                    <a href="{{ path('cursus_show', { slug: lesson.cursus.slug }) }}">
                         {{ lesson.cursus.name }}
                     </a>
                 </span>
@@ -81,7 +81,7 @@
                 {% if not hasCompleted %}
                     <form
                         method="post"
-                        action="{{ path('lesson_complete', { id: lesson.id }) }}"
+                        action="{{ path('lesson_complete', { slug: lesson.slug }) }}"
                         onsubmit="return confirm('Confirmer que vous avez bien terminé la leçon ?');"
                     >
                         <input type="hidden" name="_token" value="{{ csrf_token('lesson_complete_' ~ lesson.id) }}">
@@ -123,7 +123,7 @@
 
     <div class="lesson-header">
         {% if lesson.cursus %}
-            <a href="{{ path('cursus_show', { id: lesson.cursus.id }) }}" class="back-link">
+            <a href="{{ path('cursus_show', { slug: lesson.cursus.slug }) }}" class="back-link">
                 ← Retour au cursus
             </a>
         {% else %}

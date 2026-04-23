@@ -44,7 +44,7 @@
                 <span class="item-name">{{ item.lesson.title }}</span>
               </div>
 
-              <a href="{{ path('lesson_show', {'id': item.lesson.id}) }}" class="cart-success-link">
+              <a href="{{ path('lesson_show', {'slug': item.lesson.slug}) }}" class="cart-success-link">
                 Accéder <span class="arrow">→</span>
               </a>
             </div>
@@ -68,7 +68,7 @@
                       <span class="item-name">{{ lesson.title }}</span>
                     </div>
 
-                    <a href="{{ path('lesson_show', {'id': lesson.id}) }}" class="cart-success-link">
+                    <a href="{{ path('lesson_show', {'slug': lesson.slug}) }}" class="cart-success-link">
                       Accéder <span class="arrow">→</span>
                     </a>
                   </li>

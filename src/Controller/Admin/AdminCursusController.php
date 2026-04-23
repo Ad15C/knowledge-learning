@@ -12,11 +12,23 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\String\Slugger\SluggerInterface;
 
 #[IsGranted('ROLE_ADMIN')]
 #[Route('/admin/cursus', name: 'admin_cursus_')]
 class AdminCursusController extends AbstractController
 {
+    private function buildSafeSlug(string $text, SluggerInterface $slugger): string
+    {
+        $slug = strtolower($slugger->slug($text)->toString());
+        $slug = str_replace(['’', "'", '`'], '-', $slug);
+        $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+        $slug = preg_replace('/-+/', '-', $slug);
+        $slug = trim($slug, '-');
+
+        return $slug !== '' ? $slug : 'item';
+    }
+
     // 1) Liste
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request, CursusRepository $repo, ThemeRepository $themeRepo): Response
@@ -47,8 +59,13 @@ class AdminCursusController extends AbstractController
 
     // 2) Créer
     #[Route('/new', name: 'new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $em, ThemeRepository $themeRepo): Response
-    {
+    public function new(
+        Request $request,
+        EntityManagerInterface $em,
+        SluggerInterface $slugger,
+        ThemeRepository $themeRepo,
+        CursusRepository $repo
+    ): Response {
         $activeThemesCount = (int) $themeRepo->createQueryBuilder('t')
             ->select('COUNT(t.id)')
             ->andWhere('t.isActive = true')
@@ -70,6 +87,16 @@ class AdminCursusController extends AbstractController
         }
 
         if ($hasActiveThemes && $form->isSubmitted() && $form->isValid()) {
+            $baseSlug = $this->buildSafeSlug($cursus->getName() ?? 'cursus', $slugger);
+            $slug = $baseSlug;
+            $i = 1;
+
+            while ($repo->findOneBy(['slug' => $slug]) !== null) {
+                $slug = $baseSlug . '-' . $i;
+                $i++;
+            }
+            $cursus->setSlug($slug);
+
             $em->persist($cursus);
             $em->flush();
 
@@ -85,12 +112,28 @@ class AdminCursusController extends AbstractController
 
     // 3) Modifier
     #[Route('/{id}/edit', name: 'edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
-    public function edit(Cursus $cursus, Request $request, EntityManagerInterface $em): Response
-    {
+    public function edit(
+        Cursus $cursus,
+        Request $request,
+        SluggerInterface $slugger,
+        EntityManagerInterface $em
+        ): Response {
         $form = $this->createForm(CursusType::class, $cursus);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $baseSlug = $this->buildSafeSlug($cursus->getName() ?? 'cursus', $slugger);
+            $slug = $baseSlug;
+            $i = 1;
+
+            $existing = $em->getRepository(Cursus::class)->findOneBy(['slug' => $slug]);
+
+            while ($existing !== null && $existing->getId() !== $cursus->getId()) {
+                $slug = $baseSlug . '-' . $i;
+                $i++;
+                $existing = $em->getRepository(Cursus::class)->findOneBy(['slug' => $slug]);
+            }
+            $cursus->setSlug($slug);
             $em->flush();
 
             $this->addFlash('success', 'Cursus modifié.');

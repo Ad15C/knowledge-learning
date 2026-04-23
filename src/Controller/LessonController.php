@@ -46,14 +46,14 @@ class LessonController extends AbstractController
         return $out;
     }
 
-    #[Route('/lesson/{id}', name: 'lesson_show', methods: ['GET'])]
-    public function show(int $id, LessonRepository $lessonRepository): Response
+    #[Route('/lesson/{slug}', name: 'lesson_show', methods: ['GET'])]
+    public function show(string $slug, LessonRepository $lessonRepository): Response
     {
         if ($this->isGranted('ROLE_ADMIN')) {
             return $this->redirectToRoute('admin_dashboard');
         }
 
-        $lesson = $lessonRepository->findVisibleLesson($id);
+        $lesson = $lessonRepository->findVisibleLessonBySlug($slug);
 
         if (!$lesson) {
             throw $this->createNotFoundException('Leçon introuvable.');
@@ -67,7 +67,7 @@ class LessonController extends AbstractController
         if (!$this->access->userCanAccessLesson($user, $lesson)) {
             $this->addFlash('danger', "Vous ne pouvez pas accéder à cette leçon pour le moment.");
             return $this->redirectToRoute('cursus_show', [
-                'id' => $lesson->getCursus()?->getId(),
+                'slug' => $lesson->getCursus()?->getSlug(),
             ]);
         }
 
@@ -87,10 +87,10 @@ class LessonController extends AbstractController
         ]);
     }
 
-    #[Route('/lesson/{id}/complete', name: 'lesson_complete', methods: ['POST'])]
+    #[Route('/lesson/{slug}/complete', name: 'lesson_complete', methods: ['POST'])]
     public function complete(
         Request $request,
-        int $id,
+        string $slug,
         LessonRepository $lessonRepository,
         LessonValidatedService $lessonService
     ): Response {
@@ -98,7 +98,7 @@ class LessonController extends AbstractController
             return $this->redirectToRoute('admin_dashboard');
         }
 
-        $lesson = $lessonRepository->findVisibleLesson($id);
+        $lesson = $lessonRepository->findVisibleLessonBySlug($slug);
 
         if (!$lesson) {
             throw $this->createNotFoundException('Leçon introuvable.');
@@ -119,7 +119,7 @@ class LessonController extends AbstractController
         if (!$this->access->userCanAccessLesson($user, $lesson)) {
             $this->addFlash('danger', "Vous ne pouvez pas accéder à cette leçon pour le moment.");
             return $this->redirectToRoute('cursus_show', [
-                'id' => $lesson->getCursus()?->getId(),
+                'slug' => $lesson->getCursus()?->getSlug(),
             ]);
         }
 
@@ -128,7 +128,7 @@ class LessonController extends AbstractController
         $this->addFlash('success', 'Félicitations ! Vous avez validé cette leçon. Votre certificat est désormais disponible.');
 
         return $this->redirectToRoute('lesson_show', [
-            'id' => $lesson->getId(),
+            'slug' => $lesson->getSlug(),
         ]);
     }
 }

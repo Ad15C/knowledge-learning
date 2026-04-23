@@ -108,4 +108,19 @@ class LessonRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    public function findVisibleLessonBySlug(string $slug): ?Lesson
+    {
+        return $this->createQueryBuilder('l')
+            ->innerJoin('l.cursus', 'c')
+            ->innerJoin('c.theme', 't')
+            ->addSelect('c', 't')
+            ->andWhere('l.slug = :slug')
+            ->andWhere('l.isActive = true')
+            ->andWhere('c.isActive = true')
+            ->andWhere('t.isActive = true')
+            ->setParameter('slug', $slug)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

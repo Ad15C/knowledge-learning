@@ -48,17 +48,17 @@ class CursusRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function findVisibleWithVisibleLessons(int $id): ?Cursus
+   public function findVisibleWithVisibleLessonsBySlug(string $slug): ?Cursus
     {
         return $this->createQueryBuilder('c')
-            ->distinct()
             ->innerJoin('c.theme', 't')
-            ->innerJoin('c.lessons', 'l', 'WITH', 'l.isActive = true')
-            ->addSelect('t', 'l')
-            ->andWhere('c.id = :id')
+            ->addSelect('t')
+            ->leftJoin('c.lessons', 'l', 'WITH', 'l.isActive = true')
+            ->addSelect('l')
+            ->andWhere('c.slug = :slug')
             ->andWhere('c.isActive = true')
             ->andWhere('t.isActive = true')
-            ->setParameter('id', $id)
+            ->setParameter('slug', $slug)
             ->getQuery()
             ->getOneOrNullResult();
     }
@@ -114,5 +114,18 @@ class CursusRepository extends ServiceEntityRepository
         }
 
         return $qb;
+    }
+
+    public function findVisibleCursusBySlug(string $slug): ?Cursus
+    {
+        return $this->createQueryBuilder('c')
+            ->innerJoin('c.theme', 't')
+            ->addSelect('t')
+            ->andWhere('c.slug = :slug')
+            ->andWhere('c.isActive = true')
+            ->andWhere('t.isActive = true')
+            ->setParameter('slug', $slug)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 }
