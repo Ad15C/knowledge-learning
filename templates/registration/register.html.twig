@@ -17,4 +17,12 @@
     {% set back_path = path('homepage') %}
 
     {% include 'form/_form_container.html.twig' %}
+
+    <p class="form-rgpd">
+        Les informations recueillies sont nécessaires à la création de votre compte et à l’accès aux formations.
+        Pour en savoir plus, consultez notre
+        <a href="{{ path('privacy_policy') }}">Politique de confidentialité</a>
+        et nos
+        <a href="{{ path('cgv_policy') }}">Conditions générales de vente</a>.
+    </p>
 {% endblock %}

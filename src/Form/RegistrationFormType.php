@@ -11,6 +11,8 @@ use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Validator\Constraints\IsTrue;
 
 class RegistrationFormType extends AbstractType
 {
@@ -49,13 +51,38 @@ class RegistrationFormType extends AbstractType
                 'second_options' => ['label' => 'Confirmer le mot de passe'],
                 'constraints' => [
                     new Assert\NotBlank(['message' => 'Veuillez saisir un mot de passe.']),
-                    new Assert\Length(['min' => 8, 'minMessage' => 'Le mot de passe doit contenir au moins {{ limit }} caractères.']),
-                    new Assert\Regex(['pattern' => '/[A-Z]/', 'message' => 'Le mot de passe doit contenir au moins une majuscule.']),
-                    new Assert\Regex(['pattern' => '/[a-z]/', 'message' => 'Le mot de passe doit contenir au moins une minuscule.']),
-                    new Assert\Regex(['pattern' => '/[0-9]/', 'message' => 'Le mot de passe doit contenir au moins un chiffre.']),
-                    new Assert\Regex(['pattern' => '/[\W_]/', 'message' => 'Le mot de passe doit contenir au moins un caractère spécial.']),
+                    new Assert\Length([
+                        'min' => 8,
+                        'minMessage' => 'Le mot de passe doit contenir au moins {{ limit }} caractères.',
+                    ]),
+                    new Assert\Regex([
+                        'pattern' => '/[A-Z]/',
+                        'message' => 'Le mot de passe doit contenir au moins une majuscule.',
+                    ]),
+                    new Assert\Regex([
+                        'pattern' => '/[a-z]/',
+                        'message' => 'Le mot de passe doit contenir au moins une minuscule.',
+                    ]),
+                    new Assert\Regex([
+                        'pattern' => '/[0-9]/',
+                        'message' => 'Le mot de passe doit contenir au moins un chiffre.',
+                    ]),
+                    new Assert\Regex([
+                        'pattern' => '/[\W_]/',
+                        'message' => 'Le mot de passe doit contenir au moins un caractère spécial.',
+                    ]),
                 ],
-            ]);
+            ])
+            ->add('agreePrivacyPolicy', CheckboxType::class, [
+            'mapped' => false,
+            'required' => true,
+            'label' => 'J’accepte la politique de confidentialité et les conditions générales de vente',
+            'constraints' => [
+                new IsTrue([
+                    'message' => 'Vous devez accepter la politique de confidentialité et les conditions générales de vente.',
+                ]),
+            ],
+        ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

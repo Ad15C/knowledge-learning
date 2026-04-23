@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Mon Panier  | Knowledge Learning{% endblock %}
+{% block title %}Mon Panier | Knowledge Learning{% endblock %}
 
 {% block robots %}noindex,nofollow{% endblock %}
 
@@ -10,87 +10,121 @@
 {% endblock %}
 
 {% block body %}
-<h1>Mon Panier</h1>
+  <h1>Mon Panier</h1>
 
-{% if purchase and purchase.items|length > 0 %}
+  {% if purchase and purchase.items|length > 0 %}
 
-  <p>
-    <span class="badge">
-      {{ purchase.statusLabel }}
-    </span>
-  </p>
+    <p>
+      <span class="badge">
+        {{ purchase.statusLabel }}
+      </span>
+    </p>
 
-  <p class="cart-meta">
-    {{ purchase.items|length }} produits —
-    {% set qty = 0 %}
-    {% for it in purchase.items %}
-      {% set qty = qty + it.quantity %}
-    {% endfor %}
-    {{ qty }} articles
-  </p>
+    <p class="cart-meta">
+      {{ purchase.items|length }} produits —
+      {% set qty = 0 %}
+      {% for it in purchase.items %}
+        {% set qty = qty + it.quantity %}
+      {% endfor %}
+      {{ qty }} articles
+    </p>
 
-  <div class="cart-items">
-    {% for item in purchase.items %}
-      <div class="cart-item-card">
-        <div class="cart-item-info">
-          <h3>
+    <div class="cart-items">
+      {% for item in purchase.items %}
+        <div class="cart-item-card">
+          <div class="cart-item-info">
+            <h3>
+              {% if item.cursus %}
+                {{ item.cursus.name }}
+              {% elseif item.lesson %}
+                {{ item.lesson.title }}
+              {% else %}
+                Produit
+              {% endif %}
+            </h3>
+
             {% if item.cursus %}
-              {{ item.cursus.name }}
+              <span class="cart-type">Cursus</span>
             {% elseif item.lesson %}
-              {{ item.lesson.title }}
-            {% else %}
-              Produit
+              <span class="cart-type">Leçon</span>
             {% endif %}
-          </h3>
+          </div>
 
-          {% if item.cursus %}
-            <span class="cart-type">Cursus</span>
-          {% elseif item.lesson %}
-            <span class="cart-type">Leçon</span>
-          {% endif %}
+          <div class="cart-item-actions">
+            <span class="cart-price">
+              {{ item.total|number_format(2, '.', ' ') }} €
+            </span>
+
+            <span>Quantité : {{ item.quantity }}</span>
+
+            {% set removeType = item.cursus ? 'cursus' : 'lesson' %}
+            {% set removeId   = item.cursus ? item.cursus.id : item.lesson.id %}
+
+            <form method="post"
+                  action="{{ path('cart_remove', {'type': removeType, 'id': removeId}) }}"
+                  style="display:inline;">
+              <input type="hidden" name="_token" value="{{ csrf_token('cart_remove_' ~ removeType ~ '_' ~ removeId) }}">
+              <button type="submit" class="btn-remove">Supprimer</button>
+            </form>
+          </div>
         </div>
-
-        <div class="cart-item-actions">
-          <span class="cart-price">
-            {{ item.total|number_format(2, '.', ' ') }} €
-          </span>
-
-          <span>Quantité : {{ item.quantity }}</span>
-
-          {% set removeType = item.cursus ? 'cursus' : 'lesson' %}
-          {% set removeId   = item.cursus ? item.cursus.id : item.lesson.id %}
-
-          <form method="post"
-                action="{{ path('cart_remove', {'type': removeType, 'id': removeId}) }}"
-                style="display:inline;">
-            <input type="hidden" name="_token" value="{{ csrf_token('cart_remove_' ~ removeType ~ '_' ~ removeId) }}">
-            <button type="submit" class="btn-remove">Supprimer</button>
-          </form>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
-
-  <div class="cart-summary-wrapper">
-    <div class="cart-summary">
-      <div class="cart-total">
-        Total : <strong>{{ purchase.total|number_format(2, '.', ' ') }} €</strong>
-      </div>
-
-      <a href="{{ path('themes_index') }}" class="btn btn-outline">
-        Ajouter un cursus / leçon
-      </a>
-
-      <form method="post" action="{{ path('cart_pay') }}">
-        <input type="hidden" name="_token" value="{{ csrf_token('cart_pay') }}">
-        <button type="submit" class="btn btn-primary">
-          Passer au paiement
-        </button>
-      </form>
+      {% endfor %}
     </div>
-  </div>
 
-{% else %}
-  <p class="cart-empty">Votre panier est vide.</p>
-{% endif %}
+    <div class="cart-summary-wrapper">
+      <div class="cart-summary">
+
+        <div class="cart-total">
+          Total : <strong>{{ purchase.total|number_format(2, '.', ' ') }} €</strong>
+        </div>
+
+        <a href="{{ path('themes_index') }}" class="btn btn-outline">
+          Ajouter un cursus / leçon
+        </a>
+
+        {# FORMULAIRE PAIEMENT AVEC CONFORMITÉ RGPD / CGV #}
+        <form method="post" action="{{ path('cart_pay') }}" class="cart-pay-form">
+          <input type="hidden" name="_token" value="{{ csrf_token('cart_pay') }}">
+
+          <p class="cart-legal-note">
+            En validant ce paiement, vous confirmez votre commande de contenu numérique
+            accessible immédiatement après achat.
+          </p>
+
+          <div class="cart-legal-box">
+
+            <label class="checkbox-container">
+              <input type="checkbox" name="accept_cgv" value="1" required>
+              <span>
+                J’accepte les
+                <a href="{{ path('cgv_policy') }}" target="_blank" rel="noopener">
+                  Conditions générales de vente
+                </a>.
+              </span>
+            </label>
+
+            <label class="checkbox-container">
+              <input type="checkbox" name="accept_retractation_waiver" value="1" required>
+              <span>
+                Je reconnais que l’accès au contenu numérique peut commencer immédiatement après paiement
+                et je renonce à mon droit de rétractation, conformément aux
+                <a href="{{ path('cgv_policy') }}" target="_blank" rel="noopener">
+                  CGV
+                </a>.
+              </span>
+            </label>
+
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            Payer avec obligation de paiement
+          </button>
+        </form>
+
+      </div>
+    </div>
+
+  {% else %}
+    <p class="cart-empty">Votre panier est vide.</p>
+  {% endif %}
 {% endblock %}
