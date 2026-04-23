@@ -7,6 +7,8 @@ use App\Entity\Lesson;
 use App\Entity\Purchase;
 use App\Entity\PurchaseItem;
 use App\Entity\User;
+use App\Repository\CursusRepository;
+use App\Repository\LessonRepository;
 use App\Repository\PurchaseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -62,14 +64,29 @@ class PurchaseController extends AbstractController
         ]);
     }
 
-    #[Route('/cart/add/lesson/{id}', name: 'cart_add_lesson', methods: ['POST'])]
-    public function addLesson(Request $request, Lesson $lesson): Response
-    {
+    /* Routes pour ajouter des leçons ou cursus au panier, supprimer des items, payer, etc. */
+    #[Route('/cart/add/lesson/{slug}', name: 'cart_add_lesson', methods: ['POST'])]
+    public function addLesson(
+        Request $request,
+        string $slug,
+        LessonRepository $lessonRepository
+    ): Response {
         if ($response = $this->redirectAdminToDashboard()) {
             return $response;
         }
 
-        if (!$this->isCsrfTokenValid('cart_add_lesson_' . $lesson->getId(), (string) $request->request->get('_token'))) {
+        $lesson = $lessonRepository->findVisibleLessonBySlug($slug);
+
+        if (!$lesson instanceof Lesson) {
+            throw $this->createNotFoundException('Leçon introuvable ou indisponible.');
+        }
+
+        if (
+            !$this->isCsrfTokenValid(
+                'cart_add_lesson_' . $lesson->getSlug(),
+                (string) $request->request->get('_token')
+            )
+        ) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
@@ -111,14 +128,28 @@ class PurchaseController extends AbstractController
         return $this->redirectToRoute('cart_show');
     }
 
-    #[Route('/cart/add/cursus/{id}', name: 'cart_add_cursus', methods: ['POST'])]
-    public function addCursus(Request $request, Cursus $cursus): Response
-    {
+    #[Route('/cart/add/cursus/{slug}', name: 'cart_add_cursus', methods: ['POST'])]
+    public function addCursus(
+        Request $request,
+        string $slug,
+        CursusRepository $cursusRepository
+    ): Response {
         if ($response = $this->redirectAdminToDashboard()) {
             return $response;
         }
 
-        if (!$this->isCsrfTokenValid('cart_add_cursus_' . $cursus->getId(), (string) $request->request->get('_token'))) {
+        $cursus = $cursusRepository->findVisibleCursusBySlug($slug);
+
+        if (!$cursus instanceof Cursus) {
+            throw $this->createNotFoundException('Cursus introuvable ou indisponible.');
+        }
+
+        if (
+            !$this->isCsrfTokenValid(
+                'cart_add_cursus_' . $cursus->getSlug(),
+                (string) $request->request->get('_token')
+            )
+        ) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
@@ -160,6 +191,7 @@ class PurchaseController extends AbstractController
         return $this->redirectToRoute('cart_show');
     }
 
+
     #[Route('/cart/remove/{type}/{id}', name: 'cart_remove', methods: ['POST'])]
     public function remove(Request $request, string $type, int $id): Response
     {
@@ -171,7 +203,12 @@ class PurchaseController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        if (!$this->isCsrfTokenValid('cart_remove_' . $type . '_' . $id, (string) $request->request->get('_token'))) {
+        if (
+            !$this->isCsrfTokenValid(
+                'cart_remove_' . $type . '_' . $id,
+                (string) $request->request->get('_token')
+            )
+        ) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 

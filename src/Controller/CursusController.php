@@ -40,9 +40,9 @@ class CursusController extends AbstractController
         return $out;
     }
 
-    #[Route('/cursus/{id}', name: 'cursus_show', methods: ['GET'])]
+    #[Route('/cursus/{slug}', name: 'cursus_show', methods: ['GET'], requirements: ['slug' => '[a-z0-9\-]+'])]
     public function show(
-        int $id,
+        string $slug,
         CursusRepository $cursusRepository,
         LessonAccessService $access
     ): Response {
@@ -50,7 +50,7 @@ class CursusController extends AbstractController
             return $this->redirectToRoute('admin_dashboard');
         }
 
-        $cursus = $cursusRepository->findVisibleWithVisibleLessons($id);
+        $cursus = $cursusRepository->findVisibleWithVisibleLessonsBySlug($slug);
 
         if (!$cursus) {
             throw $this->createNotFoundException('Cursus introuvable.');

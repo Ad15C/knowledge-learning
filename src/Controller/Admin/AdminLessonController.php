@@ -13,11 +13,23 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\String\Slugger\SluggerInterface;
 
 #[IsGranted('ROLE_ADMIN')]
 #[Route('/admin/lesson', name: 'admin_lesson_')]
 class AdminLessonController extends AbstractController
 {
+    private function buildSafeSlug(string $text, SluggerInterface $slugger): string
+    {
+        $slug = strtolower($slugger->slug($text)->toString());
+        $slug = str_replace(['’', "'", '`'], '-', $slug);
+        $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+        $slug = preg_replace('/-+/', '-', $slug);
+        $slug = trim($slug, '-');
+
+        return $slug !== '' ? $slug : 'item';
+    }
+
     // 1) Liste
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request, LessonRepository $repo, CursusRepository $cursusRepo, ThemeRepository $themeRepo): Response
@@ -48,15 +60,44 @@ class AdminLessonController extends AbstractController
 
     // 2) Créer
     #[Route('/new', name: 'new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $em): Response
-    {
+    public function new(
+        Request $request,
+        SluggerInterface $slugger,
+        EntityManagerInterface $em,
+        LessonRepository $repo,
+        CursusRepository $cursusRepo
+    ): Response {
+        $activeCursusCount = (int) $cursusRepo->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->andWhere('c.isActive = true')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $hasActiveCursus = $activeCursusCount > 0;
+
         $lesson = new Lesson();
         $lesson->setIsActive(true);
 
         $form = $this->createForm(LessonType::class, $lesson);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if (!$hasActiveCursus && $request->isMethod('POST')) {
+            $this->addFlash('error', 'Aucun cursus actif disponible. Crée ou réactive un cursus avant de créer une leçon.');
+            return $this->redirectToRoute('admin_cursus_index');
+        }
+
+        if ($hasActiveCursus && $form->isSubmitted() && $form->isValid()) {
+            $baseSlug = $this->buildSafeSlug($lesson->getTitle() ?? 'lesson', $slugger);
+            $slug = $baseSlug;
+            $i = 1;
+
+            while ($repo->findOneBy(['slug' => $slug]) !== null) {
+                $slug = $baseSlug . '-' . $i;
+                $i++;
+            }
+
+            $lesson->setSlug($slug);
+
             $em->persist($lesson);
             $em->flush();
 
@@ -66,17 +107,37 @@ class AdminLessonController extends AbstractController
 
         return $this->render('admin/lesson/new.html.twig', [
             'form' => $form->createView(),
+            'has_active_cursus' => $hasActiveCursus,
         ]);
     }
 
     // 3) Modifier
-    #[Route('/{id}/edit', name: 'edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
-    public function edit(Lesson $lesson, Request $request, EntityManagerInterface $em): Response
-    {
+     #[Route('/{id}/edit', name: 'edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
+    public function edit(
+        Lesson $lesson,
+        Request $request,
+        EntityManagerInterface $em,
+        SluggerInterface $slugger,
+        LessonRepository $repo
+    ): Response {
         $form = $this->createForm(LessonType::class, $lesson);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $baseSlug = $this->buildSafeSlug($lesson->getTitle() ?? 'lesson', $slugger);
+            $slug = $baseSlug;
+            $i = 1;
+
+            $existing = $repo->findOneBy(['slug' => $slug]);
+
+            while ($existing !== null && $existing->getId() !== $lesson->getId()) {
+                $slug = $baseSlug . '-' . $i;
+                $i++;
+                $existing = $repo->findOneBy(['slug' => $slug]);
+            }
+
+            $lesson->setSlug($slug);
+
             $em->flush();
 
             $this->addFlash('success', 'Leçon modifiée.');

@@ -20,6 +20,9 @@ class Theme
     #[Assert\NotBlank(message: 'Le nom est obligatoire.')]
     private ?string $name = null;
 
+    #[ORM\Column(length: 255, unique: true)]
+    private ?string $slug = null;
+
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $description = null;
 
@@ -55,6 +58,17 @@ class Theme
     public function getName(): ?string
     {
         return $this->name;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(?string $slug): static
+    {
+        $this->slug = $slug !== null ? trim($slug) : null;
+        return $this;
     }
 
     public function setName(?string $name): static

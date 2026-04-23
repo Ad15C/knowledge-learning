@@ -54,13 +54,14 @@ class ThemeRepository extends ServiceEntityRepository
     /**
      * FRONT : un thème visible + charge cursus/lessons visibles (utile page show)
      */
-    public function findVisibleTheme(int $themeId): ?Theme
+     /* Méthode pour URL avec slug */
+    public function findVisibleThemeBySlug(string $slug): ?Theme
     {
         return $this->createQueryBuilder('t')
             ->distinct()
-            ->andWhere('t.id = :id')
+            ->andWhere('t.slug = :slug')
             ->andWhere('t.isActive = true')
-            ->setParameter('id', $themeId)
+            ->setParameter('slug', $slug)
             ->innerJoin('t.cursus', 'c', 'WITH', 'c.isActive = true')
             ->innerJoin('c.lessons', 'l', 'WITH', 'l.isActive = true')
             ->addSelect('c', 'l')

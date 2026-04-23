@@ -43,7 +43,7 @@
 
                 <div class="lesson-actions">
                     {% if alreadyOwned %}
-                        <a href="{{ path('lesson_show', { id: lesson.id }) }}" class="btn btn-success">
+                        <a href="{{ path('lesson_show', { slug: lesson.slug }) }}" class="btn btn-success">
                             {% if hasCompleted %}
                                 Revoir la leçon
                             {% else %}
@@ -52,8 +52,8 @@
                         </a>
                     {% else %}
                         {% if app.user %}
-                            <form method="post" action="{{ path('cart_add_lesson', { id: lesson.id }) }}">
-                                <input type="hidden" name="_token" value="{{ csrf_token('cart_add_lesson_' ~ lesson.id) }}">
+                            <form method="post" action="{{ path('cart_add_lesson', { slug: lesson.slug }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('cart_add_lesson_' ~ lesson.slug) }}">
                                 <button type="submit" class="btn btn-outline">
                                     Ajouter au panier
                                 </button>
@@ -74,7 +74,7 @@
 
     <div class="mt-3">
         {% if cursus.theme %}
-            <a href="{{ path('theme_show', { id: cursus.theme.id }) }}" class="back-link">
+            <a href="{{ path('theme_show', { slug: cursus.theme.slug }) }}" class="back-link">
                 ← Retour au thème "{{ cursus.theme.name }}"
             </a>
         {% else %}
