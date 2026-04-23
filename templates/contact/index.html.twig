@@ -6,16 +6,25 @@
     <link rel="stylesheet" href="{{ asset('styles/user/contact.css') }}">
 {% endblock %}
 
-{% block title %}Contactez-nous{% endblock %}
+{% block title %}Contactez-nous | Knowledge Learning{% endblock %}
+
+{% block meta_description %}
+Contactez Knowledge Learning pour toute question sur nos formations, votre compte ou vos commandes.
+{% endblock %}
+
+{% block canonical_url %}
+{{ absolute_url(path('contact_index')) }}
+{% endblock %}
 
 {% block body %}
 <div class="contact-page">
 
     <h1>Nous contacter</h1>
-    <p class="contact-intro">Pour toute question concernant nos formations, votre compte ou vos commandes,
-    n’hésitez pas à nous écrire via le formulaire ci-dessous.
-    notre équipe vous répondra sous 24 à 48 heures ouvrées.
-    </p>
+        <p class="contact-intro">
+            Pour toute question concernant nos formations, votre compte ou vos commandes,
+            n’hésitez pas à nous écrire via le formulaire ci-dessous.
+            Notre équipe vous répondra sous 24 à 48 heures ouvrées.
+        </p>
 
     <div class="contact-form-wrapper">
         {{ form_start(contactForm, {'attr': {'class': 'contact-form'}}) }}

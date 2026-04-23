@@ -5,12 +5,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>{% block title %}Plateforme Knowledge Learning{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Plateforme de formation en ligne Knowledge Learning.{% endblock %}">
+    <link rel="canonical" href="{% block canonical_url %}{{ app.request.uri }}{% endblock %}">
+
+    <meta name="robots" content="{% block robots %}index,follow{% endblock %}">
+
     <link rel="icon" href="{{ asset('images/knowledge_learning_favicon.png') }}" type="image/x-icon">
 
     {% block stylesheets %}
         <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
     {% endblock %}
+    
+    {% block structured_data %}{% endblock %}
 </head>
 <body>
 

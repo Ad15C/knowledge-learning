@@ -1,6 +1,20 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Thèmes{% endblock %}
+{% block title %}Tous les thèmes de formation | Knowledge Learning{% endblock %}
+
+{% block meta_description %}
+Explorez nos thèmes de formation en ligne : musique, informatique, cuisine, jardinage.
+{% endblock %}
+
+{% block canonical_url %}
+{{ absolute_url(path('themes_index')) }}
+{% endblock %}
+
+{% set hasFilters = filter_name or filter_minPrice or filter_maxPrice %}
+
+{% block robots %}
+{{ hasFilters ? 'noindex,follow' : 'index,follow' }}
+{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -9,35 +23,39 @@
 {% endblock %}
 
 {% block body %}
-<h1>Liste des Thèmes</h1>
+<h1>Tous les thèmes de formation</h1>
 
-<form id="filter-form" method="get" class="dashboard-filters" autocomplete="off">
-    <label>
-        <span>Nom du thème</span>
-        <input type="search" name="name" placeholder="Ex : Nutrition" value="{{ filter_name|default('') }}">
-    </label>
+    <p>
+    Découvrez nos thèmes de formation en ligne et trouvez le cursus qui correspond à vos objectifs.
+    </p>
 
-    <label>
-        <span>Prix minimum</span>
-        <input type="number" step="0.01" min="0" name="minPrice" placeholder="0.00" value="{{ filter_minPrice|default('') }}">
-    </label>
+    <form id="filter-form" method="get" class="dashboard-filters" autocomplete="off">
+        <label>
+            <span>Nom du thème</span>
+            <input type="search" name="name" placeholder="Ex : Nutrition" value="{{ filter_name|default('') }}">
+        </label>
 
-    <label>
-        <span>Prix maximum</span>
-        <input type="number" step="0.01" min="0" name="maxPrice" placeholder="0.00" value="{{ filter_maxPrice|default('') }}">
-    </label>
+        <label>
+            <span>Prix minimum</span>
+            <input type="number" step="0.01" min="0" name="minPrice" placeholder="0.00" value="{{ filter_minPrice|default('') }}">
+        </label>
 
-    <div class="filter-actions">
-        <button type="submit">Filtrer</button>
-        <a href="{{ path('themes_index') }}" class="btn">Réinitialiser</a>
+        <label>
+            <span>Prix maximum</span>
+            <input type="number" step="0.01" min="0" name="maxPrice" placeholder="0.00" value="{{ filter_maxPrice|default('') }}">
+        </label>
+
+        <div class="filter-actions">
+            <button type="submit">Filtrer</button>
+            <a href="{{ path('themes_index') }}" class="btn">Réinitialiser</a>
+        </div>
+    </form>
+
+    <div id="themes-list">
+        {% include 'themes/_themes_list.html.twig' with {'themes': themes} %}
     </div>
-</form>
 
-<div id="themes-list">
-    {% include 'themes/_themes_list.html.twig' with {'themes': themes} %}
-</div>
-
-<a href="{{ path('homepage') }}" class="back-link">← Retour à l'accueil</a>
+    <a href="{{ path('homepage') }}" class="back-link">← Retour à l'accueil</a>
 {% endblock %}
 
 {% block javascripts %}
@@ -63,5 +81,16 @@
         });
     });
 })();
+</script>
+{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Tous les thèmes de formation",
+  "url": "{{ absolute_url(path('themes_index')) }}"
+}
 </script>
 {% endblock %}

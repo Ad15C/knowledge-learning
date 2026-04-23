@@ -1,6 +1,14 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Accueil{% endblock %}
+{% block title %}Formation en ligne | Knowledge Learning{% endblock %}
+
+{% block meta_description %}
+Découvrez des formations en ligne : développement web, musique, cuisine, jardinage. Apprenez à votre rythme.
+{% endblock %}
+
+{% block canonical_url %}
+{{ absolute_url(path('homepage')) }}
+{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
