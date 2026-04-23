@@ -170,7 +170,14 @@
 
 <main>{% block body %}{% endblock %}</main>
 
-<footer>&copy; {{ "now"|date("Y") }} Knowledge Learning - Tous droits réservés</footer>
+<footer>
+    &copy; {{ "now"|date("Y") }} Knowledge Learning - Tous droits réservés.
+    <br>
+    <a href="{{ path('privacy_policy') }}">Politique de confidentialité</a> |
+    <a href="{{ path('legal_notice') }}">Mentions légales</a> |
+    <a href="{{ path('cookies_policy') }}">Cookies</a> |
+    <a href="{{ path('cgv_policy') }}">Conditions générales de vente</a>
+</footer>
 
 <script>
 window.addEventListener('load', () => {

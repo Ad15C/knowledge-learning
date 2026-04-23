@@ -1,0 +1,174 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Conditions générales de vente | Knowledge Learning{% endblock %}
+
+{% block meta_description %}
+Consultez les Conditions générales de vente de la plateforme Knowledge Learning.
+{% endblock %}
+
+{% block canonical_url %}
+{{ absolute_url(path('cgv_policy')) }}
+{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+  <h1>Conditions Générales de Vente</h1>
+    <p>
+        Les présentes <strong>Conditions Générales de Vente (CGV)</strong> régissent l’achat de formations
+        en ligne sur la plateforme Knowledge Learning.
+    </p>
+
+    <section>
+        <h2> 1. Objet</h2>
+            <p>
+                Les présentes CGV définissent les conditions dans lesquelles les utilisateurs
+                peuvent acheter et accéder aux formations proposées.
+            </p>
+    </section>
+
+    <section>
+        <h2> 2. Compte utilisateur</h2>
+            <p>
+                L’utilisateur est responsable des informations fournies lors de son inscription
+                et de la confidentialité de ses identifiants de connexion.
+            </p>
+
+            <p>
+                L’accès aux formations est strictement personnel.
+                Toute utilisation frauduleuse ou partage de compte pourra entraîner la suspension de l’accès.
+            </p>
+    </section>
+
+    <section>
+        <h2> 3. Accès aux formations</h2>
+            <p>
+                L’accès aux contenus pédagogiques est réservé aux utilisateurs ayant procédé
+                au paiement de la formation correspondante.
+            </p>
+
+            <p>
+                Après validation du paiement :
+            </p>
+
+            <ul>
+                <li>L’accès aux leçons est débloqué</li>
+                <li>L’utilisateur peut suivre la formation à son rythme</li>
+                <li>Un certificat peut être délivré après validation</li>
+            </ul>
+    </section>
+
+    <section>
+        <h2> 4. Prix</h2>
+            <p>
+                Les prix sont indiqués en euros (€).
+                La plateforme se réserve le droit de modifier les prix à tout moment,
+                sans effet sur les achats déjà effectués.
+            </p>
+    </section>
+
+    <section>
+        <h2> 5. Commande</h2>
+            <p>
+                Toute commande passée sur la plateforme implique l’acceptation pleine et entière des présentes CGV.
+            </p>
+
+            <p>
+                La validation de la commande vaut signature électronique et acceptation des conditions.
+            </p>
+    </section>
+
+    <section>
+        <h2> 6. Paiement</h2>
+            <p>
+                Les paiements sont effectués via Stripe, qui est une plateforme sécurisée.
+                Aucune donnée bancaire n’est stockée sur nos serveurs.
+            </p>
+
+            <p>
+                Le paiement est exigible immédiatement au moment de la commande.
+            </p>
+    </section>
+
+    <section>
+        <h2> 7. Droit de rétractation</h2>
+            <p>
+                Conformément aux dispositions applicables aux contenus numériques fournis
+                sans support matériel, l’utilisateur reconnaît que l’accès à la formation
+                peut commencer immédiatement après validation du paiement.
+            </p>
+
+            <p>
+                En conséquence, lorsque l’exécution de la prestation a commencé avec l’accord
+                préalable exprès de l’utilisateur, celui-ci reconnaît renoncer à son droit de
+                rétractation, dans les conditions prévues par la réglementation applicable.
+            </p>
+    </section>
+
+    <section>
+        <h2> 8. Accès et disponibilité</h2>
+            <p>
+                L’accès aux formations est disponible tant que le contenu est actif sur la plateforme.
+                Certaines formations peuvent être mises à jour ou archivées.
+            </p>
+    </section>
+
+    <section>
+        <h2> 9. Mise à jour des contenus pédagogiques</h2>
+            <p>
+                Knowledge Learning se réserve le droit de faire évoluer, corriger, compléter ou mettre à jour
+                les contenus pédagogiques proposés sur la plateforme, à tout moment.
+            </p>
+    </section>
+
+    <section>
+        <h2> 10. Certificat</h2>
+            <p>
+                Un certificat peut être délivré après validation des leçons.
+                Il atteste du suivi de la formation, toutefois, il n’a pas de valeur officielle.
+            </p>
+    </section>
+
+    <section>
+        <h2> 11. Responsabilité</h2>
+            <p>
+                La plateforme ne saurait être tenue responsable en cas de :
+            </p>
+
+            <ul>
+                <li>problème technique</li>
+                <li>interruption du service</li>
+                <li>mauvaise utilisation des contenus</li>
+            </ul>
+    </section>
+
+    <section>
+        <h2> 12. Données personnelles</h2>
+            <p>
+                Les données sont traitées conformément à notre
+                <a href="{{ path('privacy_policy') }}">politique de confidentialité</a>.
+            </p>
+    </section>
+
+    <section>
+        <h2> 13. Modification des CGV</h2>
+            <p>
+                Knowledge Learning se réserve le droit de modifier les présentes CGV à tout moment.
+            </p>
+    </section>
+
+    <section>
+        <h2> 14. Droit applicable</h2>
+            <p>
+                Les présentes CGV sont soumises au droit français.
+                En cas de litige, une solution amiable sera privilégiée avant toute action judiciaire.
+            </p>
+    </section>
+
+    <section>
+        <h2> 15. Projet pédagogique</h2>
+            <p>
+                Cette plateforme est un projet fictif réalisé dans un cadre pédagogique.
+            </p>
+    </section>
+</div>
+{% endblock %}

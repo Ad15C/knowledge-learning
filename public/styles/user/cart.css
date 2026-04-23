@@ -124,6 +124,39 @@
 }
 
 /* =========================
+  RGPD
+========================= */ 
+.cart-legal-box {
+  margin: 15px 0;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.checkbox-container input[type="checkbox"] {
+  margin-top: 4px;
+  cursor: pointer;
+}
+
+.cart-legal-note {
+  font-size: 13px;
+  color: #666;
+  margin-top: 10px;
+}
+
+/* =========================
    BOUTONS OUTLINE / PRIMARY
 ========================= */
 .btn-outline {

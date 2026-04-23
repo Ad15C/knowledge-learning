@@ -258,6 +258,14 @@ class PurchaseController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
+        $acceptCgv = $request->request->getBoolean('accept_cgv');
+        $acceptRetractationWaiver = $request->request->getBoolean('accept_retractation_waiver');
+
+        if (!$acceptCgv || !$acceptRetractationWaiver) {
+            $this->addFlash('error', 'Vous devez accepter les CGV et reconnaître la renonciation au droit de rétractation pour poursuivre le paiement.');
+            return $this->redirectToRoute('cart_show');
+        }
+
         $user = $this->getConnectedUser();
         if (!$user) {
             return $this->redirectToRoute('app_login');
