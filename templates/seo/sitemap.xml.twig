@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    {% for item in staticUrls %}
+        <url>
+            <loc>{{ absolute_url(path(item.route)) }}</loc>
+        </url>
+    {% endfor %}
+
+    {% for theme in themes %}
+        <url>
+            <loc>{{ absolute_url(path('theme_show', { slug: theme.slug })) }}</loc>
+        </url>
+    {% endfor %}
+
+    {% for item in cursus %}
+        <url>
+            <loc>{{ absolute_url(path('cursus_show', { slug: item.slug })) }}</loc>
+        </url>
+    {% endfor %}
+</urlset>

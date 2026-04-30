@@ -6,6 +6,9 @@
 Découvrez le thème {{ theme.name }} sur Knowledge Learning et explorez ses cursus disponibles.
 {% endblock %}
 
+{# Pages publiques #}
+{% block robots %}index,follow{% endblock %}
+
 {% block canonical_url %}
     {{ absolute_url(path('theme_show', { slug: theme.slug })) }}
 {% endblock %}

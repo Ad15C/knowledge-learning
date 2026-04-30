@@ -12,6 +12,9 @@
 Contactez Knowledge Learning pour toute question sur nos formations, votre compte ou vos commandes.
 {% endblock %}
 
+{# Pages publiques #}
+{% block robots %}index,follow{% endblock %}
+
 {% block canonical_url %}
 {{ absolute_url(path('contact_index')) }}
 {% endblock %}
