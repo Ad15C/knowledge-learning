@@ -6,6 +6,9 @@
 Découvrez des formations en ligne : développement web, musique, cuisine, jardinage. Apprenez à votre rythme.
 {% endblock %}
 
+{# Pages publiques #}
+{% block robots %}index,follow{% endblock %}
+
 {% block canonical_url %}
 {{ absolute_url(path('homepage')) }}
 {% endblock %}

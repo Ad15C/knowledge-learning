@@ -6,6 +6,9 @@
 Explorez tous nos thèmes de formation : musique, informatique, cuisine, jardinage.
 {% endblock %}
 
+{# Pages publiques #}
+{% block robots %}index,follow{% endblock %}
+
 {% block canonical_url %}
 {{ absolute_url(path('themes_index')) }}
 {% endblock %}
@@ -21,12 +24,11 @@ Explorez tous nos thèmes de formation : musique, informatique, cuisine, jardina
 
     <div class="themes-grid">
         {% for theme in themes %}
-            <div class="theme-card">
-
+            <article class="theme-card">
                 {% if theme.image %}
                     <img 
                         src="{{ asset(theme.image) }}" 
-                        alt="Formation {{ theme.name }}" 
+                        alt="{{ theme.alt|default('Formation ' ~ theme.name) }}"
                         class="theme-image"
                         loading="lazy"
                     >
@@ -41,7 +43,7 @@ Explorez tous nos thèmes de formation : musique, informatique, cuisine, jardina
                 <a href="{{ path('theme_show', {'slug': theme.slug}) }}" class="btn btn-primary">
                     Découvrir le thème {{ theme.name }}
                 </a>
-            </div>
+            </article>
 
         {% else %}
             <p>Aucun thème disponible.</p>

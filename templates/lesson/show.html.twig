@@ -2,6 +2,7 @@
 
 {% block title %}{{ lesson.title }} | Knowledge Learning{% endblock %}
 
+{# Pages privées #}
 {% block robots %}noindex,nofollow{% endblock %}
 
 {% block stylesheets %}
@@ -44,7 +45,7 @@
         <div class="lesson-content">
             {% if lesson.image %}
                 <div class="lesson-cover">
-                    <img src="{{ asset(lesson.image) }}" alt="{{ lesson.title }}" class="lesson-image">
+                    <img src="{{ asset(lesson.image) }}" alt="{{ lesson.alt|default(lesson.title) }}" class="lesson-image">
                 </div>
             {% endif %}
 
@@ -123,7 +124,7 @@
         </div>
     {% endif %}
 
-    <div class="lesson-header">
+    <div class="lesson-footer">
         {% if lesson.cursus %}
             <a href="{{ path('cursus_show', { slug: lesson.cursus.slug }) }}" class="back-link">
                 ← Retour au cursus

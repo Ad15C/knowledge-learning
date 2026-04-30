@@ -2,10 +2,12 @@
 
 {% block title %}Mentions légales | Knowledge Learning{% endblock %}
 
-
 {% block meta_description %}
 Consultez les mentions légales concernant la plateforme Knowledge Learning.
 {% endblock %}
+
+{# Pages publiques #}
+{% block robots %}index,follow{% endblock %}
 
 {% block canonical_url %}
 {{ absolute_url(path('legal_notice'))}}

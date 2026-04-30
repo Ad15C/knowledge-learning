@@ -6,6 +6,9 @@
 Découvrez le cursus {{ cursus.name }}{% if cursus.theme %} du thème {{ cursus.theme.name }}{% endif %}, ses leçons et son contenu pédagogique.
 {% endblock %}
 
+{# Pages publiques #}
+{% block robots %}index,follow{% endblock %}
+
 {% block canonical_url %}
 {{ absolute_url(path('cursus_show', { slug: cursus.slug })) }}
 {% endblock %}
