@@ -10,11 +10,7 @@ Explorez nos thèmes de formation en ligne : musique, informatique, cuisine, jar
 {{ absolute_url(path('themes_index')) }}
 {% endblock %}
 
-{% set hasFilters = filter_name or filter_minPrice or filter_maxPrice %}
-
-{% block robots %}
-{{ hasFilters ? 'noindex,follow' : 'index,follow' }}
-{% endblock %}
+{% block robots %}index,follow{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -30,19 +26,19 @@ Explorez nos thèmes de formation en ligne : musique, informatique, cuisine, jar
     </p>
 
     <form id="filter-form" method="get" class="dashboard-filters" autocomplete="off">
-        <label>
-            <span>Nom du thème</span>
-            <input type="search" name="name" placeholder="Ex : Nutrition" value="{{ filter_name|default('') }}">
+        <label for="name">
+            <span>Nom du thème :</span>
+            <input type="search" name="name" id="name" placeholder="Ex : Nutrition" value="{{ filter_name|default('') }}">
         </label>
 
-        <label>
-            <span>Prix minimum</span>
-            <input type="number" step="0.01" min="0" name="minPrice" placeholder="0.00" value="{{ filter_minPrice|default('') }}">
+        <label for="minPrice">
+            <span>Prix minimum :</span>
+            <input type="number" step="0.01" min="0" name="minPrice" id="minPrice" placeholder="0.00" value="{{ filter_minPrice|default('') }}">
         </label>
 
-        <label>
-            <span>Prix maximum</span>
-            <input type="number" step="0.01" min="0" name="maxPrice" placeholder="0.00" value="{{ filter_maxPrice|default('') }}">
+        <label for="maxPrice">
+            <span>Prix maximum :</span>
+            <input type="number" step="0.01" min="0" name="maxPrice" id="maxPrice" placeholder="0.00" value="{{ filter_maxPrice|default('') }}">
         </label>
 
         <div class="filter-actions">

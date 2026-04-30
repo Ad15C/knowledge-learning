@@ -37,11 +37,16 @@
 <header class="main-header">
     <div class="logo">
         <a href="{{ path('homepage') }}">
-            <img src="{{ asset('images/knowledge_learning_logo.jpeg') }}">
+            <img
+                src="{{ asset('images/knowledge_learning_logo.jpeg') }}"
+                alt="Logo de la plateforme Knowledge Learning"
+            >
         </a>
     </div>
 
-    <div class="menu-toggle" id="menuToggle" aria-label="Ouvrir le menu">☰</div>
+    <button class="menu-toggle" id="menuToggle" aria-label="Ouvrir le menu" type="button">
+        ☰
+    </button>
 
     <nav class="main-nav">
         {% set route = app.request.attributes.get('_route') %}

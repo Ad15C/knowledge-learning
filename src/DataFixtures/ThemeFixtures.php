@@ -45,24 +45,27 @@ class ThemeFixtures extends Fixture
         $theme->setSlug($this->buildSafeSlug($theme->getName() ?? 'theme'));
         $theme->setDescription('Apprenez la guitare et le piano');
         $theme->setImage('images/themes/musique/cours_musique.jpg');
+        $theme->setAlt('Instruments de musique dans un studio avec guitares et clavier');
         $manager->persist($theme);
         $this->addReference(self::THEME_MUSIQUE_REF, $theme);
 
         $cursusGuitare = new Cursus();
-        $cursusGuitare->setName('Cursus d’initiation à la guitare');
+        $cursusGuitare->setName("Cursus d’initiation à la guitare");
         $cursusGuitare->setSlug($this->buildSafeSlug($cursusGuitare->getName() ?? 'cursus'));
         $cursusGuitare->setPrice(50);
         $cursusGuitare->setTheme($theme);
         $cursusGuitare->setImage('images/themes/musique/cours_guitare.jpg');
+        $cursusGuitare->setAlt("Gros plan d'une personne jouant de la guitare acoustique");
         $manager->persist($cursusGuitare);
         $this->addReference(self::CURSUS_GUITARE_REF, $cursusGuitare);
 
         $lesson1 = new Lesson();
-        $lesson1->setTitle('Découverte de l’instrument');
+        $lesson1->setTitle("Découverte de l’instrument");
         $lesson1->setSlug($this->buildSafeSlug($lesson1->getTitle() ?? 'lesson'));
         $lesson1->setPrice(26);
         $lesson1->setCursus($cursusGuitare);
         $lesson1->setImage('images/themes/musique/cours_guitare.jpg');
+        $lesson1->setAlt("Personne jouant de la guitare acoustique en gros plan");
         $lesson1->setFiche($this->generateArticles($faker));
         $lesson1->setVideoUrl('https://youtu.be/example1');
         $manager->persist($lesson1);
@@ -74,17 +77,19 @@ class ThemeFixtures extends Fixture
         $lesson2->setPrice(26);
         $lesson2->setCursus($cursusGuitare);
         $lesson2->setImage('images/themes/musique/accords_et_gammes.jpg');
+        $lesson2->setAlt('Partition de musique avec notes et accords en gros plan');
         $lesson2->setFiche($this->generateArticles($faker));
         $lesson2->setVideoUrl('https://youtu.be/example2');
         $manager->persist($lesson2);
         $this->addReference(self::LESSON_GUITAR_2_REF, $lesson2);
 
         $cursusPiano = new Cursus();
-        $cursusPiano->setName('Cursus d’initiation au piano');
+        $cursusPiano->setName("Cursus d’initiation au piano");
         $cursusPiano->setSlug($this->buildSafeSlug($cursusPiano->getName() ?? 'cursus'));
         $cursusPiano->setPrice(50);
         $cursusPiano->setTheme($theme);
         $cursusPiano->setImage('images/themes/musique/cours_piano.jpg');
+        $cursusPiano->setAlt('Clavier de piano vu en perspective avec touches noires et blanches');
         $manager->persist($cursusPiano);
 
         $lesson3 = new Lesson();
@@ -93,6 +98,7 @@ class ThemeFixtures extends Fixture
         $lesson3->setPrice(26);
         $lesson3->setCursus($cursusPiano);
         $lesson3->setImage('images/themes/musique/cours_piano.jpg');
+        $lesson3->setAlt("Vue perspective d'un clavier de piano");
         $lesson3->setFiche($this->generateArticles($faker));
         $manager->persist($lesson3);
 
@@ -102,6 +108,7 @@ class ThemeFixtures extends Fixture
         $lesson4->setPrice(26);
         $lesson4->setCursus($cursusPiano);
         $lesson4->setImage('images/themes/musique/accords_et_gammes.jpg');
+        $lesson4->setAlt('Gros plan sur une partition de musique avec des notes et accords');
         $lesson4->setFiche($this->generateArticles($faker));
         $manager->persist($lesson4);
 
@@ -111,14 +118,16 @@ class ThemeFixtures extends Fixture
         $themeInformatique->setSlug($this->buildSafeSlug($themeInformatique->getName() ?? 'theme'));
         $themeInformatique->setDescription('Initiez-vous au développement web');
         $themeInformatique->setImage('images/themes/informatique/cours_developpement_web.jpg');
+        $themeInformatique->setAlt("Écran d'ordinateur avec code visible à travers des lunettes");
         $manager->persist($themeInformatique);
 
         $cursusWeb = new Cursus();
-        $cursusWeb->setName('Cursus d’initiation au développement web');
+        $cursusWeb->setName("Cursus d’initiation au développement web");
         $cursusWeb->setSlug($this->buildSafeSlug($cursusWeb->getName() ?? 'cursus'));
         $cursusWeb->setPrice(60);
         $cursusWeb->setTheme($themeInformatique);
         $cursusWeb->setImage('images/themes/informatique/cours_developpement_web.jpg');
+        $cursusWeb->setAlt("Aperçu de code sur un écran d'ordinateur");
         $manager->persist($cursusWeb);
 
         $lesson5 = new Lesson();
@@ -127,6 +136,7 @@ class ThemeFixtures extends Fixture
         $lesson5->setPrice(32);
         $lesson5->setCursus($cursusWeb);
         $lesson5->setImage('images/themes/informatique/les_langages_html_css.jpg');
+        $lesson5->setAlt('Code HTML et CSS affiché sur un écran');
         $lesson5->setFiche($this->generateArticles($faker));
         $manager->persist($lesson5);
 
@@ -136,6 +146,7 @@ class ThemeFixtures extends Fixture
         $lesson6->setPrice(32);
         $lesson6->setCursus($cursusWeb);
         $lesson6->setImage('images/themes/informatique/dynamiser_site_javascript.jpg');
+        $lesson6->setAlt('Interface de développement avec du code JavaScript affiché');
         $lesson6->setFiche($this->generateArticles($faker));
         $manager->persist($lesson6);
 
@@ -145,14 +156,16 @@ class ThemeFixtures extends Fixture
         $themeJardin->setSlug($this->buildSafeSlug($themeJardin->getName() ?? 'theme'));
         $themeJardin->setDescription('Cursus d’initiation au jardinage');
         $themeJardin->setImage('images/themes/jardinage/initiation_jardinage.jpg');
+        $themeJardin->setAlt("Arrosoir versant de l'eau sur des plantes dans un jardin");
         $manager->persist($themeJardin);
 
         $cursusJardin = new Cursus();
-        $cursusJardin->setName('Cursus d’initiation au jardinage');
+        $cursusJardin->setName("Cursus d’initiation au jardinage");
         $cursusJardin->setSlug($this->buildSafeSlug($cursusJardin->getName() ?? 'cursus'));
         $cursusJardin->setPrice(30);
         $cursusJardin->setTheme($themeJardin);
         $cursusJardin->setImage('images/themes/jardinage/initiation_jardinage.jpg');
+        $cursusJardin->setAlt("Photo montrant l'arrosage des plantes dans un jardin");
         $manager->persist($cursusJardin);
 
         $lesson7 = new Lesson();
@@ -161,6 +174,7 @@ class ThemeFixtures extends Fixture
         $lesson7->setPrice(16);
         $lesson7->setCursus($cursusJardin);
         $lesson7->setImage('images/themes/jardinage/outils_du_jardinier.jpg');
+        $lesson7->setAlt('Outils de jardinage posés sur une surface en bois');
         $lesson7->setFiche($this->generateArticles($faker));
         $manager->persist($lesson7);
 
@@ -170,6 +184,7 @@ class ThemeFixtures extends Fixture
         $lesson8->setPrice(16);
         $lesson8->setCursus($cursusJardin);
         $lesson8->setImage('images/themes/jardinage/jardiner_avec_la_lune.jpg');
+        $lesson8->setAlt('Pleine lune visible dans le ciel nocturne à travers des arbres');
         $lesson8->setFiche($this->generateArticles($faker));
         $manager->persist($lesson8);
 
@@ -177,8 +192,9 @@ class ThemeFixtures extends Fixture
         $themeCuisine = new Theme();
         $themeCuisine->setName('Cuisine');
         $themeCuisine->setSlug($this->buildSafeSlug($themeCuisine->getName() ?? 'theme'));
-        $themeCuisine->setDescription('Cursus d’initiation à la cuisine et dressage culinaire');
+        $themeCuisine->setDescription("Cursus d’initiation à la cuisine et dressage culinaire");
         $themeCuisine->setImage('images/themes/cuisine/cours_cuisine.jpg');
+        $themeCuisine->setAlt('Deux personnes préparant un plat ensemble dans une cuisine');
         $manager->persist($themeCuisine);
 
         $cursusCuisine1 = new Cursus();
@@ -187,6 +203,7 @@ class ThemeFixtures extends Fixture
         $cursusCuisine1->setPrice(44);
         $cursusCuisine1->setTheme($themeCuisine);
         $cursusCuisine1->setImage('images/themes/cuisine/cours_cuisine.jpg');
+        $cursusCuisine1->setAlt('Photo de deux personnes préparant un plat ensemble dans une cuisine');
         $manager->persist($cursusCuisine1);
 
         $lesson9 = new Lesson();
@@ -195,6 +212,7 @@ class ThemeFixtures extends Fixture
         $lesson9->setPrice(23);
         $lesson9->setCursus($cursusCuisine1);
         $lesson9->setImage('images/themes/cuisine/modes_cuisson.jpg');
+        $lesson9->setAlt('Poêles sur une cuisinière avec aliments en train de cuire');
         $lesson9->setFiche($this->generateArticles($faker));
         $manager->persist($lesson9);
 
@@ -204,23 +222,26 @@ class ThemeFixtures extends Fixture
         $lesson10->setPrice(23);
         $lesson10->setCursus($cursusCuisine1);
         $lesson10->setImage('images/themes/cuisine/saveurs.jpg');
+        $lesson10->setAlt('Épices variées présentées dans de petits bols');
         $lesson10->setFiche($this->generateArticles($faker));
         $manager->persist($lesson10);
 
         $cursusCuisine2 = new Cursus();
-        $cursusCuisine2->setName('Cursus d’initiation à l’art du dressage culinaire');
+        $cursusCuisine2->setName("Cursus d’initiation à l’art du dressage culinaire");
         $cursusCuisine2->setSlug($this->buildSafeSlug($cursusCuisine2->getName() ?? 'cursus'));
         $cursusCuisine2->setPrice(48);
         $cursusCuisine2->setTheme($themeCuisine);
         $cursusCuisine2->setImage('images/themes/cuisine/dressage_culinaire.jpg');
+        $cursusCuisine2->setAlt('Table de restaurant dressée avec des assiettes et bougies');
         $manager->persist($cursusCuisine2);
 
         $lesson11 = new Lesson();
-        $lesson11->setTitle('Mettre en œuvre le style dans l’assiette');
+        $lesson11->setTitle("Mettre en œuvre le style dans l’assiette");
         $lesson11->setSlug($this->buildSafeSlug($lesson11->getTitle() ?? 'lesson'));
         $lesson11->setPrice(26);
         $lesson11->setCursus($cursusCuisine2);
         $lesson11->setImage('images/themes/cuisine/style_dans_assiette.jpg');
+        $lesson11->setAlt('Chef dressant des assiettes avec soin en cuisine');
         $lesson11->setFiche($this->generateArticles($faker));
         $manager->persist($lesson11);
 
@@ -230,6 +251,7 @@ class ThemeFixtures extends Fixture
         $lesson12->setPrice(26);
         $lesson12->setCursus($cursusCuisine2);
         $lesson12->setImage('images/themes/cuisine/quatre_plats.jpg');
+        $lesson12->setAlt('Assortiment de plats avec vin, dessert et plats salés');
         $lesson12->setFiche($this->generateArticles($faker));
         $manager->persist($lesson12);
 

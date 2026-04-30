@@ -4,11 +4,17 @@
       {% set hasSubmenu = item.submenu is defined and item.submenu is not empty %}
 
       <li class="{{ hasSubmenu ? 'has-submenu' : '' }}">
-        <a href="{{ item.path ?? '#' }}" class="{{ item.active ?? '' }}">
+        <a 
+          href="{{ item.path ?? '#' }}" 
+          class="{{ item.active ?? '' }}"
+          {% if hasSubmenu %}aria-haspopup="true" aria-expanded="false"{% endif %}
+        >
           {{ item.label }}
 
           {% if item.count is defined and item.count > 0 %}
-            <span class="menu-badge">{{ item.count }}</span>
+            <span class="menu-badge" aria-label="{{ item.count }} éléments dans le panier">
+              {{ item.count }}
+            </span>
           {% endif %}
         </a>
 
@@ -19,4 +25,3 @@
     {% endfor %}
   </ul>
 {% endmacro %}
-
