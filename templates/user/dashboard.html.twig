@@ -12,36 +12,34 @@
 {% block dashboard_content %}
 
   <h1>Bonjour, {{ user.firstName }} {{ user.lastName }}.</h1>
-  <p class="dashboard-subtitle"> Ravi de vous revoir ! Voici un aperçu de votre activité récente.</p>
-  <div class="dashboard-cards">
+    <p class="dashboard-subtitle"> Ravi de vous revoir ! Voici un aperçu de votre activité récente.</p>
+      <div class="dashboard-cards">
 
-    <!-- Progression -->
-    <div class="dashboard-card">
-      <h2>Progression</h2>
-      <p>Niveau actuel : <strong>{{ status }}</strong></p>
+        <!-- Progression -->
+        <div class="dashboard-card">
+          <h2>Progression</h2>
+            <p>Niveau actuel : <strong>{{ status }}</strong></p>
 
-      <div class="progress-bar">
-        <span class="progress-fill" style="width: {{ progressPercent|default(0) }}%;"></span>
+            <div class="progress-bar">
+              <span class="progress-fill" style="width: {{ progressPercent|default(0) }}%;"></span>
+            </div>
+
+            <small>Progression vers {{ nextStatus }} : {{ progressPercent|default(0) }}%</small>
+        </div>
+
+        <!-- Mes achats -->
+        <a href="{{ path('user_dashboard_purchases') }}" class="dashboard-card dashboard-card-clickable">
+          <h2>Mes achats</h2>
+            <p>Total achats : <strong>{{ totalOrders }}</strong></p>
+            <p>Total dépensé : <strong>{{ totalSpent }} €</strong></p>
+            <span class="card-link-indicator">Voir mes achats →</span>
+        </a>
+
+        <!-- Mes certificats -->
+        <a href="{{ path('user_dashboard_certifications') }}" class="dashboard-card dashboard-card-clickable">
+          <h2>Mes certificats</h2>
+            <p>Certificats obtenus <strong>{{ certificationsCount }}</strong></p>
+            <span class="card-link-indicator">Voir mes certificats →</span>
+        </a>
       </div>
-
-      <small>Progression vers {{ nextStatus }} : {{ progressPercent|default(0) }}%</small>
-    </div>
-
-    <!-- Mes achats -->
-    <a href="{{ path('user_dashboard_purchases') }}" class="dashboard-card dashboard-card-clickable">
-      <h2>Mes achats</h2>
-      <p>Total achats : <strong>{{ totalOrders }}</strong></p>
-      <p>Total dépensé : <strong>{{ totalSpent }} €</strong></p>
-      <span class="card-link-indicator">Voir mes achats →</span>
-    </a>
-
-    <!-- Mes certificats -->
-    <a href="{{ path('user_dashboard_certifications') }}" class="dashboard-card dashboard-card-clickable">
-      <h2>Mes certificats</h2>
-      <p>Certificats obtenus <strong>{{ certificationsCount }}</strong></p>
-      <span class="card-link-indicator">Voir mes certificats →</span>
-    </a>
-
-  </div>
-
 {% endblock %}

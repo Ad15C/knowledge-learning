@@ -126,6 +126,9 @@ main {
     color: var(--color-primary-dark);
     user-select: none;
     line-height: 1;
+    border: none;
+    background: transparent;
+    padding: 0;
 }
 
 /* =======================

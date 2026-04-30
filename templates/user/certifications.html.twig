@@ -16,14 +16,14 @@
 
   <form method="get" class="dashboard-filters" autocomplete="off">
     <label for="cursus">Cursus :</label>
-    <select name="cursus" id="cursus">
-      <option value="">Tous</option>
-      {% for cursus in all_cursus %}
-        <option value="{{ cursus.id }}" {% if filter_cursus == cursus.id %}selected{% endif %}>
-          {{ cursus.name }}
-        </option>
-      {% endfor %}
-    </select>
+      <select name="cursus" id="cursus">
+        <option value="">Tous</option>
+        {% for cursus in all_cursus %}
+          <option value="{{ cursus.id }}" {% if filter_cursus == cursus.id %}selected{% endif %}>
+            {{ cursus.name }}
+          </option>
+        {% endfor %}
+      </select>
 
     <label for="from">Du :</label>
     <input type="date" name="from" id="from" value="{{ filter_from|default('') }}">

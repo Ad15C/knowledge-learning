@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <title>Certificat - Knowledge Learning</title>
   <style>
     body { font-family: DejaVu Sans, sans-serif; }
     .wrap { text-align: center; margin-top: 120px; }
@@ -12,21 +13,23 @@
 <body>
   <div class="wrap">
     <h1>CERTIFICAT OFFICIEL</h1>
-    <p>Knowledge Learning certifie que</p>
+      <p>Knowledge Learning certifie que</p>
 
-    <h2>{{ cert.user.firstName }} {{ cert.user.lastName }}</h2>
+        <h2>{{ cert.user.firstName }} {{ cert.user.lastName }}</h2>
 
-    {% if cert.lesson %}
-      <p>a complété la leçon : <strong>{{ cert.lesson.title ?? '—' }}</strong></p>
-    {% elseif cert.cursus %}
-      <p>a complété le cursus : <strong>{{ cert.cursus.name ?? '—' }}</strong></p>
-    {% elseif cert.theme %}
-      <p>a complété le thème : <strong>{{ cert.theme.name ?? '—' }}</strong></p>
-    {% else %}
-      <p>Certification : <strong>—</strong></p>
-    {% endif %}
+          <div class="content">
+            {% if cert.lesson %}
+              <p>a complété la leçon : <strong>{{ cert.lesson.title ?? '—' }}</strong></p>
+            {% elseif cert.cursus %}
+              <p>a complété le cursus : <strong>{{ cert.cursus.name ?? '—' }}</strong></p>
+            {% elseif cert.theme %}
+              <p>a complété le thème : <strong>{{ cert.theme.name ?? '—' }}</strong></p>
+            {% else %}
+              <p>Certificat : <strong>—</strong></p>
+            {% endif %}
+          </div>
 
-    <p>Délivré le {{ cert.issuedAt|date('d/m/Y') }}</p>
+          <p>Délivré le {{ cert.issuedAt|date('d/m/Y') }}</p>
 
     <div class="code">
       Code du certificat : {{ cert.certificateCode }}

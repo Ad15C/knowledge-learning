@@ -18,27 +18,32 @@ Découvrez des formations en ligne : développement web, musique, cuisine, jardi
 
 {% block body %}
 <h1>Bienvenue sur Knowledge Learning</h1>
-<p>Découvrez nos thèmes et formations :</p>
 
-<div class="themes-grid">
-    {% for theme in themes %}
-        <div class="theme-card">
-            {% if theme.image %}
-                <img src="{{ asset(theme.image) }}" alt="{{ theme.name }}" class="theme-image">
-            {% endif %}
+    <p>Découvrez nos thèmes et formations :</p>
 
-            <h2>{{ theme.name }}</h2>
+        <div class="themes-grid">
+            {% for theme in themes %}
+                <article class="theme-card">
+                    {% if theme.image %}
+                        <img
+                            src="{{ asset(theme.image) }}"
+                            alt="{{ theme.alt|default(theme.name) }}"
+                            class="theme-image"
+                        >
+                    {% endif %}
 
-            {% if theme.description %}
-                <p>{{ theme.description }}</p>
-            {% endif %}
+                    <h2>{{ theme.name }}</h2>
 
-            <a href="{{ path('theme_show', {'slug': theme.slug}) }}" class="btn btn-primary">
-                Découvrir
-            </a>
+                    {% if theme.description %}
+                        <p>{{ theme.description }}</p>
+                    {% endif %}
+
+                    <a href="{{ path('theme_show', {'slug': theme.slug}) }}" class="btn btn-primary">
+                        Découvrir
+                    </a>
+                </article>
+            {% else %}
+                <p>Aucun thème disponible pour le moment.</p>
+            {% endfor %}
         </div>
-    {% else %}
-        <p>Aucun thème disponible pour le moment.</p>
-    {% endfor %}
-</div>
 {% endblock %}
