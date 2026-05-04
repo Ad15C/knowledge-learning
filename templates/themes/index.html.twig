@@ -6,8 +6,6 @@
 Explorez nos thèmes de formation en ligne : musique, informatique, cuisine, jardinage.
 {% endblock %}
 
-{% block robots %}index,follow{% endblock %}
-
 {% block canonical_url %}
 {{ absolute_url(path('themes_index')) }}
 {% endblock %}
@@ -19,10 +17,11 @@ Explorez nos thèmes de formation en ligne : musique, informatique, cuisine, jar
 {% endblock %}
 
 {% block body %}
-<h1>Tous les thèmes de formation</h1>
+<div class="themes-page">
+    <h1>Tous les thèmes de formation</h1>
 
     <p>
-    Découvrez nos thèmes de formation en ligne et trouvez le cursus qui correspond à vos objectifs.
+        Découvrez nos thèmes de formation en ligne et trouvez le cursus qui correspond à vos objectifs.
     </p>
 
     <form id="filter-form" method="get" class="dashboard-filters" autocomplete="off">
@@ -52,6 +51,7 @@ Explorez nos thèmes de formation en ligne : musique, informatique, cuisine, jar
     </div>
 
     <a href="{{ path('homepage') }}" class="back-link">← Retour à l'accueil</a>
+</div>
 {% endblock %}
 
 {% block javascripts %}
