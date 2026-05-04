@@ -6,8 +6,7 @@
 Consultez les Conditions générales de vente de la plateforme Knowledge Learning.
 {% endblock %}
 
-{# Pages publiques #}
-{% block robots %}index,follow{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
 
 {% block canonical_url %}
 {{ absolute_url(path('cgv_policy')) }}
