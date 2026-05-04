@@ -184,12 +184,17 @@
     <a href="{{ path('cgv_policy') }}">Conditions générales de vente</a>
 </footer>
 
+<button id="scrollTopBtn" title="Retour en haut" type="button">
+    <img src="{{ asset('images/fleche-32.png') }}" alt="Retour en haut">
+</button>
+
 <script>
 window.addEventListener('load', () => {
     const menuToggle = document.getElementById('menuToggle');
     const mainMenu = document.querySelector('.main-nav > ul');
     const submenuParents = document.querySelectorAll('.has-submenu');
     const scrollTopBtn = document.getElementById('scrollTopBtn');
+    const footer = document.querySelector('footer');
 
     if (menuToggle && mainMenu) {
         menuToggle.addEventListener('click', () => {
@@ -199,7 +204,6 @@ window.addEventListener('load', () => {
 
     submenuParents.forEach(item => {
         const link = item.querySelector('a');
-
         if (!link) return;
 
         link.addEventListener('click', (e) => {
@@ -219,10 +223,24 @@ window.addEventListener('load', () => {
         document.querySelectorAll('.flash').forEach(flash => flash.remove());
     }, 4000);
 
+    function updateScrollTopButton() {
+        if (!scrollTopBtn || !footer) return;
+
+        scrollTopBtn.style.display = window.scrollY > 200 ? 'block' : 'none';
+
+        const footerTop = footer.getBoundingClientRect().top;
+        const windowHeight = window.innerHeight;
+
+        if (footerTop < windowHeight) {
+            scrollTopBtn.style.bottom = (windowHeight - footerTop + 10) + 'px';
+        } else {
+            scrollTopBtn.style.bottom = '30px';
+        }
+    }
+
     if (scrollTopBtn) {
-        window.addEventListener('scroll', () => {
-            scrollTopBtn.style.display = window.scrollY > 200 ? 'block' : 'none';
-        });
+        window.addEventListener('scroll', updateScrollTopButton);
+        window.addEventListener('resize', updateScrollTopButton);
 
         scrollTopBtn.addEventListener('click', () => {
             window.scrollTo({
@@ -230,14 +248,13 @@ window.addEventListener('load', () => {
                 behavior: 'smooth'
             });
         });
+
+        updateScrollTopButton();
     }
 });
 </script>
 
 {% block javascripts %}{% endblock %}
 
-<button id="scrollTopBtn" title="Retour en haut">
-    <img src="{{ asset('images/fleche-32.png') }}" alt="Retour en haut">
-</button>
 </body>
 </html>
