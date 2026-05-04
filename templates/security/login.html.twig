@@ -1,13 +1,15 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Connexion  | Knowledge Learning{% endblock %}
+{% block title %}Connexion | Knowledge Learning{% endblock %}
 
-{# Pages privées #}
 {% block robots %}noindex,nofollow{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/user/login.css') }}">
+{% endblock %}
+
 {% block body %}
-{# Ajouter le CSS spécifique à cette page #}
-<link rel="stylesheet" href="{{ asset('styles/user/login.css') }}">
 
 <main class="login-page">
     <div class="login-container">

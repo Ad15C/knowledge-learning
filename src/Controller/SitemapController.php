@@ -19,14 +19,10 @@ class SitemapController extends AbstractController
             ['route' => 'homepage'],
             ['route' => 'themes_index'],
             ['route' => 'contact_index'],
-            ['route' => 'privacy_policy'],
-            ['route' => 'legal_notice'],
-            ['route' => 'cookies_policy'],
-            ['route' => 'cgv_policy'],
         ];
 
-        $themes = $themeRepository->findAll();
-        $cursus = $cursusRepository->findAll();
+        $themes = $themeRepository->findBy(['isActive' => true]);
+        $cursus = $cursusRepository->findBy(['isActive' => true]);
 
         $xml = $this->renderView('seo/sitemap.xml.twig', [
             'staticUrls' => $staticUrls,

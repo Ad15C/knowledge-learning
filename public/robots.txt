@@ -1,0 +1,12 @@
+User-agent: *
+
+# Zones privées
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /cart
+Disallow: /login
+Disallow: /register
+Disallow: /verify-email
+
+# Sitemap
+Sitemap: https://knowledgelearningproject.alwaysdata.net/sitemap.xml
