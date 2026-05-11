@@ -31,14 +31,10 @@
 }
 
 .theme-card img {
-    width: 100%;
-    aspect-ratio: 16/9;
-    object-fit: cover;
     border-radius: var(--radius-md);
-    display: block;
 }
 
-.theme-card h2 {
+.theme-card h3 {
     margin: 14px 0 10px;
     color: var(--color-text);
     font-size: 1.15rem;
@@ -157,11 +153,7 @@
 }
 
 .cursus-card img {
-    width: 100%;
-    aspect-ratio: 16/9;
-    object-fit: cover;
     border-radius: var(--radius-md);
-    display: block;
 }
 
 .cursus-card h3 {
@@ -196,7 +188,7 @@
 }
 
 @media (max-width: 520px) {
-    .theme-card h2,
+    .theme-card h3,
     .cursus-card h3 {
         font-size: 1rem;
     }

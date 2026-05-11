@@ -19,10 +19,23 @@ Découvrez des formations en ligne : développement web, musique, cuisine, jardi
 {% endblock %}
 
 {% block body %}
-<h1>Bienvenue sur Knowledge Learning</h1>
+<section class="homepage-intro">
+    <h1>Bienvenue sur Knowledge Learning</h1>
 
-    <p>Découvrez nos thèmes et formations :</p>
+        <p>
+            Développez vos compétences grâce à des formations en ligne accessibles à tous. 
+            Avec Knowledge Learning, progressez à votre rythme, sans limite de temps, et 
+            découvrez des contenus pédagogiques variés dans plusieurs domaines. 
+        </p>
 
+        <p>
+            De nouvelles formations et mises à jour sont proposées régulièrement 
+            afin d’enrichir votre parcours d'apprentissage.
+        </p>
+</section>
+
+<section class="homepage-themes">
+    <h2>Découvrez nos thèmes et formations :</h2>
         <div class="themes-grid">
             {% for theme in themes %}
                 <article class="theme-card">
@@ -30,11 +43,14 @@ Découvrez des formations en ligne : développement web, musique, cuisine, jardi
                         <img
                             src="{{ asset(theme.image) }}"
                             alt="{{ theme.alt|default(theme.name) }}"
-                            class="theme-image"
+                            width="600"
+                            height="338"
+                            class="img-card"
+                            loading="lazy"
                         >
                     {% endif %}
 
-                    <h2>{{ theme.name }}</h2>
+                    <h3>{{ theme.name }}</h3>
 
                     {% if theme.description %}
                         <p>{{ theme.description }}</p>
@@ -45,7 +61,8 @@ Découvrez des formations en ligne : développement web, musique, cuisine, jardi
                     </a>
                 </article>
             {% else %}
-                <p>Aucun thème disponible pour le moment.</p>
+                    <p>Aucun thème disponible pour le moment.</p>
             {% endfor %}
         </div>
+</section>
 {% endblock %}

@@ -42,7 +42,14 @@
         <div class="lesson-content">
             {% if lesson.image %}
                 <div class="lesson-cover">
-                    <img src="{{ asset(lesson.image) }}" alt="{{ lesson.alt|default(lesson.title) }}" class="lesson-image">
+                    <img 
+                    src="{{ asset(lesson.image) }}" 
+                    alt="{{ lesson.alt|default(lesson.title) }}" 
+                    class="img-card"
+                    width="600"
+                    height="338"
+                    loading="lazy"
+                    >
                 </div>
             {% endif %}
 
