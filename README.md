@@ -11,7 +11,7 @@
 **Knowledge Learning** est une plateforme e-learning développée avec **Symfony 6.4**
 
 Elle permet : 
--  de suivre des contenus pédagogiques structurés (*thèmes*, *cursus*, *leçons*)
+- de suivre des contenus pédagogiques structurés (*thèmes*, *cursus*, *leçons*)
 - de suivre la progression utilisateur
 - d'acheter du contenu
 - d'obtenir des *Certifications PDF*
@@ -115,7 +115,7 @@ Architecture en couches favorisant la séparation des responsabilités, la maint
 
 ## Internationalisation
 * **Symfony Translation** (traduction)
-* **Symfony Intl** (internalisation)
+* **Symfony Intl** (internationalisation)
 
 ## E-commerce (simulation)
 * Système de panier
@@ -146,6 +146,19 @@ Architecture en couches favorisant la séparation des responsabilités, la maint
 ## Dev tools
 * **Symfony Maker Bundle** ( génération de code)
 * **Symfony CLI**
+
+
+## Compétences développées
+
+- Architecture Symfony
+- Gestion d’authentification
+- Sécurité des accès
+- Gestion de workflow utilisateur
+- Doctrine ORM
+- Tests automatisés
+- Génération de PDF
+- Architecture applicative
+  
 ---
 
 # Installation
@@ -165,12 +178,7 @@ composer install
 
 # Configuration de l'environnement
 
-Créer un fichier `.env.local` :
-
-APP_ENV=dev
-APP_SECRET=change_this_secret
-
-DATABASE_URL="mysql://user:password@127.0.0.1:3306/knowledge_learning?serverVersion=8.0&charset=utf8mb4"
+Créer un fichier `.env.local` 
 
 ---
 
